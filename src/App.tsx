@@ -149,26 +149,40 @@ export default function App() {
     }, 150);
   };
 
-  // Directly add to tray and checkout from Style Experience
+  // Directly add to cart and open cart drawer from Style Experience
   const handleSelectAndAddDirectlyToTrayAndCheckout = (shapeId: MagnetShapeId, photoUrl: string, photoName: string, scale: number, panX: number, panY: number) => {
     const shapeObj = BASE_SHAPES.find(s => s.id === shapeId) || { name: 'Custom Frame', price: 399 };
 
-    const uniqueId = `item-direct-${Date.now()}`;
-    const newCartItem: CartItem = {
-      id: uniqueId,
-      shapeId,
-      shapeName: shapeObj.name,
-      quantity: 1,
-      previewUrl: photoUrl,
-      photoName: photoName || `${shapeObj.name} custom.jpg`,
-      captionText: shapeId === 'polaroid' ? 'Sunny Moments' : '',
-      photoScale: scale,
-      photoPanX: panX,
-      photoPanY: panY,
-      price: shapeObj.price
-    };
+    // Check if an identical item (same shape + same photo) already exists in cart
+    const existingIndex = cart.findIndex(
+      item => item.shapeId === shapeId && item.previewUrl === photoUrl
+    );
 
-    setCart(prev => [...prev, newCartItem]);
+    if (existingIndex !== -1) {
+      // Increment quantity of existing item instead of adding duplicate
+      setCart(prev =>
+        prev.map((item, i) =>
+          i === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      );
+    } else {
+      // Add as new cart item
+      const uniqueId = `item-direct-${Date.now()}`;
+      const newCartItem: CartItem = {
+        id: uniqueId,
+        shapeId,
+        shapeName: shapeObj.name,
+        quantity: 1,
+        previewUrl: photoUrl,
+        photoName: photoName || `${shapeObj.name} custom.jpg`,
+        captionText: shapeId === 'polaroid' ? 'Sunny Moments' : '',
+        photoScale: scale,
+        photoPanX: panX,
+        photoPanY: panY,
+        price: shapeObj.price
+      };
+      setCart(prev => [...prev, newCartItem]);
+    }
 
     setActiveWorkspaceShape(shapeId);
     setCustomizerPhotoUrl(photoUrl);
@@ -188,6 +202,8 @@ export default function App() {
           onBackToHome={() => setCurrentView('home')}
           onSelectAndCustomize={handleSelectAndCustomizeFromExperience}
           onAddDirectlyToTrayAndCheckout={handleSelectAndAddDirectlyToTrayAndCheckout}
+          onOpenCart={() => setIsCartOpen(true)}
+          cartItemCount={cart.reduce((acc, x) => acc + x.quantity, 0)}
           initialShapeId={activeWorkspaceShape}
         />
         <CartDrawer 
