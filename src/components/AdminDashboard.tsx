@@ -757,12 +757,27 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
       {/* --- PRODUCTION PRINT-READY WORK SHEET POPUP (IFRAME SAFE VIEW) --- */}
       {isPrintWorkOrderOpen && (
         <div className="fixed inset-0 z-50 bg-neutral-900/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-3xl border border-neutral-300 shadow-2xl overflow-hidden text-left flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-3xl w-full max-w-4xl border border-neutral-300 shadow-2xl overflow-hidden text-left flex flex-col max-h-[90vh]">
             
+            {/* SVG ClipPaths for Print Cuts */}
+            <svg className="absolute w-0 h-0 pointer-events-none opacity-0 overflow-hidden" aria-hidden="true">
+              <defs>
+                <clipPath id="heart-print-clip" clipPathUnits="objectBoundingBox">
+                  <path d="M 0.5, 0.25 C 0.35, 0.05, 0.05, 0.05, 0.05, 0.35 C 0.05, 0.65, 0.25, 0.85, 0.5, 1 C 0.75, 0.85, 0.95, 0.65, 0.95, 0.35 C 0.95, 0.05, 0.65, 0.05, 0.5, 0.25 Z" />
+                </clipPath>
+                <clipPath id="arch-print-clip" clipPathUnits="objectBoundingBox">
+                  <path d="M 0,0.5 A 0.5,0.5 0 0,1 1,0.5 L 1,1 L 0,1 Z" />
+                </clipPath>
+                <clipPath id="hexagon-print-clip" clipPathUnits="objectBoundingBox">
+                  <path d="M 0.5,0 L 1,0.25 L 1,0.75 L 0.5,1 L 0,0.75 L 0,0.25 Z" />
+                </clipPath>
+              </defs>
+            </svg>
+
             {/* Sheet Control Header */}
             <div className="bg-neutral-100 p-4 border-b border-neutral-200 flex justify-between items-center">
               <div>
-                <h4 className="font-mono text-xs font-bold text-neutral-800 uppercase tracking-widest">Print Room Engraving Work Sheet</h4>
+                <h4 className="font-mono text-xs font-bold text-neutral-800 uppercase tracking-widest">Print Room & Laser Cut Work Sheet</h4>
                 <p className="text-4xs font-mono text-neutral-500 uppercase tracking-widest mt-1">Order ID: {isPrintWorkOrderOpen.id}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -800,6 +815,37 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 </div>
               </div>
 
+              {/* Workflow Checklist Bar */}
+              <div className="border border-neutral-300 rounded-xl p-4 bg-neutral-50/50 grid grid-cols-3 gap-4 font-mono text-[11px] uppercase tracking-wider font-bold">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded border border-neutral-400 bg-white flex items-center justify-center text-xs text-neutral-800">
+                    {['Paid', 'Processing', 'Printing', 'Quality Check', 'Packed', 'Shipped'].includes(isPrintWorkOrderOpen.status) ? '✓' : ''}
+                  </div>
+                  <div>
+                    <p className="text-neutral-900">1. Order Received</p>
+                    <p className="text-[8px] text-neutral-400 font-normal normal-case">Checked upon secure payment approval</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 border-l border-neutral-200 pl-4">
+                  <div className="w-5 h-5 rounded border border-neutral-400 bg-white flex items-center justify-center text-xs text-neutral-800">
+                    {isPrintWorkOrderOpen.status === 'Shipped' ? '✓' : ''}
+                  </div>
+                  <div>
+                    <p className="text-neutral-900">2. Order Dispatched</p>
+                    <p className="text-[8px] text-neutral-400 font-normal normal-case">Checked when logistics token syncs</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 border-l border-neutral-200 pl-4">
+                  <div className="w-5 h-5 rounded border border-neutral-400 bg-white flex items-center justify-center text-xs text-neutral-800">
+                    {/* Simulated Delivery tick */}
+                  </div>
+                  <div>
+                    <p className="text-neutral-900">3. Order Delivered</p>
+                    <p className="text-[8px] text-neutral-400 font-normal normal-case">Requires Courier API confirmation</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Specifications guidelines */}
               <div className="grid grid-cols-4 gap-4 p-4.5 bg-neutral-50 border border-neutral-200 rounded-xl font-mono text-[10px] text-neutral-600">
                 <div>
@@ -820,50 +866,99 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 </div>
               </div>
 
-              {/* Items Table */}
+              {/* Visual Print & Cut Out Layout guides */}
               <div className="space-y-6">
-                <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-neutral-800 border-b border-neutral-200 pb-1.5">Asset Cut & Alignment Specifications</h4>
+                <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-neutral-800 border-b border-neutral-200 pb-1.5">Print-Room High Resolution Cut Templates</h4>
                 
-                <table className="w-full text-xs text-neutral-700 leading-normal border-collapse">
-                  <thead>
-                    <tr className="border-b border-neutral-900 font-mono text-[10px] text-neutral-500 uppercase text-left">
-                      <th className="py-2.5">Asset Reference</th>
-                      <th className="py-2.5">Shape Profile</th>
-                      <th className="py-2.5">Align/Engrave Crop specs</th>
-                      <th className="py-2.5 text-right">Units</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isPrintWorkOrderOpen.cart.map((item: any, idx: number) => (
-                      <tr key={idx} className="border-b border-neutral-100 font-sans text-[11px] hover:bg-neutral-50/50">
-                        <td className="py-4 flex gap-3.5 items-center">
-                          <div className="h-14 w-14 rounded overflow-hidden border border-neutral-300 relative bg-neutral-100">
-                            <img src={item.previewUrl} alt="Cut preview" className="h-full w-full object-cover" />
-                          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {isPrintWorkOrderOpen.cart.map((item: any, idx: number) => {
+                    // Map shape profiles to clipping paths & outer guidelines
+                    let clipStyle: React.CSSProperties = {};
+                    let outlineClass = "rounded-none";
+                    let sizeLabel = "70 x 70 mm";
+
+                    if (item.shapeId === 'circle') {
+                      clipStyle = { borderRadius: '50%' };
+                      outlineClass = "rounded-full";
+                      sizeLabel = "75 x 75 mm Circle";
+                    } else if (item.shapeId === 'heart') {
+                      clipStyle = { clipPath: 'url(#heart-print-clip)' };
+                      outlineClass = "heart-outline-container";
+                      sizeLabel = "80 x 75 mm Heart";
+                    } else if (item.shapeId === 'arch') {
+                      clipStyle = { clipPath: 'url(#arch-print-clip)' };
+                      outlineClass = "arch-outline-container";
+                      sizeLabel = "65 x 90 mm Arch";
+                    } else if (item.shapeId === 'hexagon') {
+                      clipStyle = { clipPath: 'url(#hexagon-print-clip)' };
+                      outlineClass = "hexagon-outline-container";
+                      sizeLabel = "75 x 85 mm Hexagon";
+                    } else if (item.shapeId === 'polaroid') {
+                      clipStyle = {};
+                      outlineClass = "border-neutral-800 p-2.5 pb-8 bg-white border shadow-sm";
+                      sizeLabel = "70 x 90 mm Polaroid Card";
+                    } else if (item.shapeId === 'square') {
+                      clipStyle = { borderRadius: '12px' };
+                      outlineClass = "rounded-xl";
+                      sizeLabel = "70 x 70 mm Rounded Square";
+                    }
+
+                    return (
+                      <div key={idx} className="border border-neutral-200 p-5 rounded-2xl space-y-4 bg-neutral-50/50 print:bg-white print:border-none print:p-0">
+                        <div className="flex justify-between items-start font-mono text-[10px]">
                           <div>
-                            <p className="font-bold text-neutral-900 select-all">{item.photoName || 'photo_upload.png'}</p>
-                            <p className="text-[10px] text-neutral-500 font-mono italic">Asset ID: {item.id || `item-${idx}`}</p>
+                            <p className="font-bold text-neutral-900 uppercase">Item #{idx + 1}: {item.shapeName}</p>
+                            <p className="text-neutral-500">Qty: {item.quantity} units</p>
                           </div>
-                        </td>
-                        <td className="py-4 font-mono font-bold uppercase text-neutral-800">
-                          {item.shapeId}
-                        </td>
-                        <td className="py-4 font-mono text-[10.5px] leading-relaxed text-neutral-600">
-                          <p>🔎 Zoom Scale: <strong className="text-neutral-900">{Math.round((item.photoScale || 1.0) * 100)}%</strong></p>
-                          <p>🎯 Alignment Pan: <strong className="text-neutral-900">{Math.round(item.photoPanX || 0)}px, {Math.round(item.photoPanY || 0)}px</strong></p>
-                          {item.captionText && (
-                            <p className="font-sans font-bold text-neutral-900 bg-neutral-100 p-1 rounded inline-block text-[10px] italic">
-                              Polaroid Caption: "{item.captionText}"
-                            </p>
-                          )}
-                        </td>
-                        <td className="py-4 text-right font-mono font-bold text-neutral-900 text-sm">
-                          {item.quantity}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          <span className="bg-neutral-900 text-white font-bold px-2 py-0.5 rounded text-[8px] uppercase tracking-wider">
+                            {sizeLabel}
+                          </span>
+                        </div>
+
+                        {/* 1:1 High-Res Layout Box for laser / manual trimming */}
+                        <div className="flex items-center justify-center py-6 bg-white border border-neutral-100 rounded-xl shadow-inner print:shadow-none print:border-none">
+                          <div 
+                            className={`relative w-44 h-44 border border-dashed border-neutral-400 flex items-center justify-center overflow-hidden transition-all ${outlineClass}`}
+                            style={{ 
+                              width: item.shapeId === 'arch' ? '140px' : item.shapeId === 'polaroid' ? '140px' : '160px',
+                              height: item.shapeId === 'arch' ? '190px' : item.shapeId === 'polaroid' ? '180px' : '160px',
+                            }}
+                          >
+                            <img 
+                              src={item.previewUrl} 
+                              alt="Production Cut Asset" 
+                              className="w-full h-full object-cover select-none"
+                              style={{
+                                ...clipStyle,
+                                transform: `scale(${item.photoScale || 1.0}) translate(${item.photoPanX || 0}px, ${item.photoPanY || 0}px)`
+                              }}
+                            />
+                            
+                            {/* Polaroid caption text for physical print emulation */}
+                            {item.shapeId === 'polaroid' && item.captionText && (
+                              <div className="absolute bottom-1.5 left-0 right-0 text-center font-serif text-[11px] font-bold text-neutral-900 tracking-wide select-none">
+                                {item.captionText}
+                              </div>
+                            )}
+
+                            {/* Center alignment guide crosshair for drilling/alignment (non-printing on final design but good for work) */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                              <div className="w-full h-[0.5px] bg-red-500 absolute" />
+                              <div className="h-full w-[0.5px] bg-red-500 absolute" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Production metadata */}
+                        <div className="font-mono text-[9px] text-neutral-500 space-y-1 bg-neutral-100 p-3 rounded-lg">
+                          <p><strong>Image Filename:</strong> {item.photoName || 'asset.jpg'}</p>
+                          <p><strong>Applied Crop specs:</strong> Scale: {Math.round((item.photoScale || 1)*100)}% | Offset: X={Math.round(item.photoPanX || 0)}px, Y={Math.round(item.photoPanY || 0)}px</p>
+                          {item.captionText && <p><strong>Engraving Caption:</strong> "{item.captionText}"</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Footer sign off */}
