@@ -10,12 +10,19 @@ interface StyleCarouselProps {
   onBackToHome: () => void;
   onSelectAndCustomize: (shapeId: MagnetShapeId, photoUrl: string, photoName: string, scale: number, panX: number, panY: number) => void;
   onAddDirectlyToTrayAndCheckout: (shapeId: MagnetShapeId, photoUrl: string, photoName: string, scale: number, panX: number, panY: number) => void;
-  onOpenCart?: () => void;
-  cartItemCount?: number;
   initialShapeId?: MagnetShapeId;
+  cartCount?: number;
+  onOpenCart?: () => void;
 }
 
-export default function StyleCarousel({ onBackToHome, onSelectAndCustomize, onAddDirectlyToTrayAndCheckout, onOpenCart, cartItemCount = 0, initialShapeId }: StyleCarouselProps) {
+export default function StyleCarousel({ 
+  onBackToHome, 
+  onSelectAndCustomize, 
+  onAddDirectlyToTrayAndCheckout, 
+  initialShapeId,
+  cartCount = 0,
+  onOpenCart
+}: StyleCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState<number>(() => {
     if (initialShapeId) {
       const idx = BASE_SHAPES.findIndex(s => s.id === initialShapeId);
@@ -542,22 +549,29 @@ Please guide me on how to send my photos to customize this design. Thank you!`;
       </main>
 
       {/* Hovering Cart Floating Button in Bottom Right Corner */}
-      
-   <div className="fixed bottom-6 right-6 z-50">
-        <button
-          onClick={() => setIsCartOpen(true)}
-          aria-label="Open Shopping Cart"
-          className="w-14 h-14 rounded-full bg-[#111111] hover:bg-neutral-800 text-white flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white cursor-pointer relative group"
-          title="View Shopping Cart"
-        >
-          <ShoppingBag className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
-          {cart.reduce((acc, x) => acc + x.quantity, 0) > 0 && (
-            <span className="absolute -top-1 -right-1 bg-[#6B1D2F] text-white text-[11px] font-mono font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in-50">
-              {cart.reduce((acc, x) => acc + x.quantity, 0)}
-            </span>
-          )}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => {
+          if (onOpenCart) {
+            onOpenCart();
+          } else {
+            onAddDirectlyToTrayAndCheckout(activeShape.id, photoUrl, photoName, photoScale, photoPanX, photoPanY);
+          }
+        }}
+        className="fixed bottom-6 right-6 z-50 bg-[#111111] hover:bg-neutral-800 text-white p-3.5 sm:p-4 rounded-full shadow-2xl border-2 border-white/20 flex items-center justify-center gap-2.5 transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer group"
+        title="View Shopping Cart"
+        aria-label="View Shopping Cart"
+      >
+        <ShoppingBag className="h-5 w-5 text-[#E8DCCF] group-hover:scale-110 transition-transform" />
+        <span className="font-mono text-xs font-bold uppercase tracking-wider hidden sm:inline text-[#FAF8F5]">
+          Cart
+        </span>
+        {cartCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-[#6B1D2F] text-white text-[10px] font-mono font-bold w-5.5 h-5.5 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in-50">
+            {cartCount}
+          </span>
+        )}
+      </button>
 
       {/* Footer Details */}
       <footer className="bg-neutral-50 border-t border-neutral-200/50 py-6 text-center text-neutral-400 font-mono text-[9px] uppercase tracking-wider mt-12">
