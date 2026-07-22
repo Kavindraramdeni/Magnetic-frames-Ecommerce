@@ -644,7 +644,7 @@ export default function Customizer({
         rzp.open();
       }
     } catch (err: any) {
-      setCheckoutError('Connection error. Please check your internet connection and try again.');
+      setCheckoutError(err.message || 'Connection error. Please check your internet connection and try again.');
     } finally {
       setIsPaymentLoading(false);
     }
