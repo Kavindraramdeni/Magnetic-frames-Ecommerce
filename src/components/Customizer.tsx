@@ -528,7 +528,11 @@ export default function Customizer({
     if (pin.length === 6) {
       setIsPincodeChecking(true);
       try {
-        const res = await fetch(`/api/shiprocket/check-serviceability?pincode=${pin}`);
+        const res = await fetch('/api/shiprocket/check-serviceability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pincode: pin, orderValue: grandTotal, weight: 0.25 * (cart.length || 1) })
+        });
         const data = await res.json();
         setServiceabilityResult({
           serviceable: data.serviceable ?? true,
@@ -590,62 +594,57 @@ export default function Customizer({
     const finalGrandTotal = finalSubtotal + finalDelivery;
 
     try {
-      const response = await fetch('/api/razorpay/create-order', {
+      const response = await fetch('/api/checkout/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: finalGrandTotal * 100,
-          currency: 'INR',
-          items: itemsToPay,
-          customerDetails: shippingDetails
+          cart: itemsToPay,
+          shippingDetails,
+          acceptedPolicies
         })
       });
 
       const orderRes = await response.json();
 
-      if (orderRes.success && orderRes.orderId) {
-        setRazorpayOrderData({
-          orderId: orderRes.orderId,
-          key: orderRes.key,
+      if (!response.ok) {
+        setCheckoutError(orderRes.error || 'Failed to initialize payment gateway.');
+        return;
+      }
+
+      setRazorpayOrderData({
+        orderId: orderRes.orderId,
+        key: orderRes.razorpayKeyId,
+        amount: orderRes.amount,
+        currency: orderRes.currency,
+        grandTotal: orderRes.grandTotal
+      });
+
+      if (orderRes.isMock || !orderRes.razorpayKeyId) {
+        setShowSimulatedGateway(true);
+      } else {
+        // Initialize Razorpay SDK
+        const options = {
+          key: orderRes.razorpayKeyId,
           amount: orderRes.amount,
           currency: orderRes.currency,
-          grandTotal: finalGrandTotal
-        });
-
-        if (orderRes.simulated || !orderRes.key || orderRes.key === 'rzp_test_placeholder') {
-          setShowSimulatedGateway(true);
-        } else {
-          // Initialize Razorpay SDK if available
-          const options = {
-            key: orderRes.key,
-            amount: orderRes.amount,
-            currency: orderRes.currency,
-            name: "KRIA Studio Acrylics",
-            description: "Custom Laser-Cut Acrylic Magnet Order",
-            order_id: orderRes.orderId,
-            handler: function (response: any) {
-              handlePaymentSuccess(response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature);
-            },
-            prefill: {
-              name: shippingDetails.fullName,
-              email: shippingDetails.email,
-              contact: shippingDetails.phone
-            },
-            theme: { color: "#111111" }
-          };
-          const rzp = new (window as any).Razorpay(options);
-          rzp.open();
-        }
-      } else {
-        setCheckoutError(orderRes.error || 'Failed to initialize payment gateway.');
+          name: "KRIA Studio Acrylics",
+          description: "Custom Laser-Cut Acrylic Magnet Order",
+          order_id: orderRes.orderId,
+          handler: function (response: any) {
+            handlePaymentSuccess(response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature);
+          },
+          prefill: {
+            name: shippingDetails.fullName,
+            email: shippingDetails.email,
+            contact: shippingDetails.phone
+          },
+          theme: { color: "#111111" }
+        };
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
       }
     } catch (err: any) {
-      setCheckoutError('Connection timeout. Initializing secure checkout mode...');
-      setRazorpayOrderData({
-        orderId: `ORD-${Date.now()}`,
-        grandTotal: finalGrandTotal
-      });
-      setShowSimulatedGateway(true);
+      setCheckoutError('Connection error. Please check your internet connection and try again.');
     } finally {
       setIsPaymentLoading(false);
     }
@@ -662,45 +661,54 @@ export default function Customizer({
 
   const handlePaymentSuccess = async (paymentId: string, orderId: string, signature: string) => {
     setIsPaymentLoading(true);
-    try {
-      const itemsToBook = cart.length > 0 ? cart : [{
-        id: 'single-custom-item',
-        shapeId: activeShape.id,
-        shapeName: activeShape.name,
-        quantity,
-        previewUrl: photoUrl,
-        photoName,
-        captionText: activeShape.id === 'polaroid' ? customCaption : '',
-        photoScale,
-        photoPanX,
-        photoPanY,
-        price: activeShape.price
-      }];
+    const itemsToBook = cart.length > 0 ? cart : [{
+      id: 'single-custom-item',
+      shapeId: activeShape.id,
+      shapeName: activeShape.name,
+      quantity,
+      previewUrl: photoUrl,
+      photoName,
+      captionText: activeShape.id === 'polaroid' ? customCaption : '',
+      photoScale,
+      photoPanX,
+      photoPanY,
+      price: activeShape.price
+    }];
 
-      const res = await fetch('/api/orders/confirm', {
+    try {
+      const isMockPayment = orderId.startsWith('ORD-') || orderId.startsWith('order_mock_');
+      const res = await fetch('/api/checkout/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          paymentId,
-          orderId,
-          signature,
+          razorpay_payment_id: paymentId,
+          razorpay_order_id: orderId,
+          razorpay_signature: signature,
+          cart: itemsToBook,
           shippingDetails,
-          items: itemsToBook,
-          totalAmount: razorpayOrderData?.grandTotal || grandTotal
+          acceptedPolicies,
+          isMock: isMockPayment
         })
       });
 
       const confirmData = await res.json();
+
+      if (!res.ok) {
+        setCheckoutError(confirmData.error || 'Order confirmation failed. Please contact support.');
+        return;
+      }
+
       setPlacedOrderDetails({
-        orderId: confirmData.orderId || orderId,
-        trackingNumber: confirmData.shiprocketAwb || `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`,
-        courierName: serviceabilityResult?.courierName || 'Delhivery Express Surface',
-        deliveryEstimate: serviceabilityResult?.estimatedDays ? `${serviceabilityResult.estimatedDays} Business Days` : '3-4 Business Days'
+        orderId: confirmData.transactionId || orderId,
+        trackingNumber: confirmData.trackingNumber || `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`,
+        courierName: confirmData.courierName || serviceabilityResult?.courierName || 'Delhivery Express Surface',
+        deliveryEstimate: confirmData.deliveryEstimate || (serviceabilityResult?.estimatedDays ? `${serviceabilityResult.estimatedDays} Business Days` : '3-4 Business Days')
       });
 
       setCheckoutStep('success');
       setCart([]);
     } catch (err) {
+      // Fallback: show success even if confirmation call fails (payment already captured)
       setPlacedOrderDetails({
         orderId,
         trackingNumber: `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`,
@@ -1252,12 +1260,12 @@ export default function Customizer({
                 {addedFeedback ? (
                   <>
                     <Check className="h-4 w-4 text-emerald-300 stroke-[3px]" />
-                    <span>Added to Design Tray!</span>
+                    <span>Added to Cart!</span>
                   </>
                 ) : (
                   <>
                     <ShoppingBag className="h-4 w-4 text-[#E8DCCF]" />
-                    <span>Add Active Design to Tray (₹{currentItemSubtotal})</span>
+                    <span>Add to Cart (₹{currentItemSubtotal})</span>
                   </>
                 )}
               </button>
