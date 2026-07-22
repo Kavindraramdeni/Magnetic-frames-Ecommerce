@@ -10,10 +10,12 @@ interface StyleCarouselProps {
   onBackToHome: () => void;
   onSelectAndCustomize: (shapeId: MagnetShapeId, photoUrl: string, photoName: string, scale: number, panX: number, panY: number) => void;
   onAddDirectlyToTrayAndCheckout: (shapeId: MagnetShapeId, photoUrl: string, photoName: string, scale: number, panX: number, panY: number) => void;
+  onOpenCart?: () => void;
+  cartItemCount?: number;
   initialShapeId?: MagnetShapeId;
 }
 
-export default function StyleCarousel({ onBackToHome, onSelectAndCustomize, onAddDirectlyToTrayAndCheckout, initialShapeId }: StyleCarouselProps) {
+export default function StyleCarousel({ onBackToHome, onSelectAndCustomize, onAddDirectlyToTrayAndCheckout, onOpenCart, cartItemCount = 0, initialShapeId }: StyleCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState<number>(() => {
     if (initialShapeId) {
       const idx = BASE_SHAPES.findIndex(s => s.id === initialShapeId);
@@ -532,7 +534,7 @@ Please guide me on how to send my photos to customize this design. Thank you!`;
               }`}
             >
               <Check className={`h-4 w-4 ${addedFeedback ? 'text-white' : 'text-neutral-900'}`} />
-              {addedFeedback ? 'Added to Design Tray!' : 'Add to tray'}
+              {addedFeedback ? 'Added to Cart!' : 'Add to Cart'}
             </button>
           </div>
         </div>
@@ -542,14 +544,19 @@ Please guide me on how to send my photos to customize this design. Thank you!`;
       {/* Hovering Cart Floating Button in Bottom Right Corner */}
       <button
         type="button"
-        onClick={() => onAddDirectlyToTrayAndCheckout(activeShape.id, photoUrl, photoName, photoScale, photoPanX, photoPanY)}
-        className="fixed bottom-6 right-6 z-50 bg-[#111111] text-[#FAF8F5] hover:bg-neutral-800 p-4 rounded-full shadow-2xl border border-neutral-700/80 flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer group"
-        title="View Design Tray & Checkout"
+        onClick={() => onOpenCart ? onOpenCart() : onAddDirectlyToTrayAndCheckout(activeShape.id, photoUrl, photoName, photoScale, photoPanX, photoPanY)}
+        className="fixed bottom-6 right-6 z-50 bg-[#111111] text-[#FAF8F5] hover:bg-neutral-800 p-4 rounded-full shadow-2xl border border-neutral-700/80 flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer group relative"
+        title="View Cart & Checkout"
       >
         <ShoppingBag className="h-5 w-5 text-[#E8DCCF]" />
         <span className="font-mono text-xs font-bold uppercase tracking-wider pr-1 hidden sm:inline">
-          Tray / Checkout
+          Cart{cartItemCount > 0 ? ` (${cartItemCount})` : ''}
         </span>
+        {cartItemCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-[#6B1D2F] text-white text-[11px] font-mono font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-neutral-900 shadow-md">
+            {cartItemCount}
+          </span>
+        )}
       </button>
 
       {/* Footer Details */}
