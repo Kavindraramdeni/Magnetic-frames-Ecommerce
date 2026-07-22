@@ -71,19 +71,6 @@ db.exec(`
     payload_json TEXT NOT NULL,
     processed_at TEXT NOT NULL
   );
-  CREATE TABLE IF NOT EXISTS products (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    price REAL NOT NULL,
-    original_price REAL,
-    dimensions TEXT NOT NULL,
-    description TEXT NOT NULL,
-    shape_class TEXT NOT NULL,
-    frame_ratio TEXT NOT NULL,
-    tagline TEXT NOT NULL,
-    is_trending INTEGER DEFAULT 0,
-    created_at TEXT NOT NULL
-  );
 `);
 
 const serializeOrder = (order: any) => ({
@@ -170,14 +157,16 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
 
 function calculateOrderTotals(cart: any[]) {
   let subtotal = 0;
+  let totalQuantity = 0;
   cart.forEach((item: any) => {
     const backendPrice = SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom;
     const qty = Math.max(1, Math.min(99, parseInt(item.quantity) || 1));
     subtotal += backendPrice * qty;
+    totalQuantity += qty;
   });
-  const bulkDiscount = 0;
+  const bulkDiscount = totalQuantity >= 10 ? Math.round(subtotal * 0.15) : 0;
   const deliveryCharge = subtotal === 0 ? 0 : (subtotal >= 699 ? 0 : 60);
-  return { subtotal, bulkDiscount: 0, deliveryCharge, grandTotal: subtotal + deliveryCharge };
+  return { subtotal, bulkDiscount, deliveryCharge, grandTotal: subtotal - bulkDiscount + deliveryCharge };
 }
 
 async function postNotificationWebhook(url: string, payload: any) {
@@ -190,34 +179,8 @@ async function postNotificationWebhook(url: string, payload: any) {
 }
 
 async function notifyCustomer(order: any, event: string) {
-  const customerName = order.shippingDetails?.fullName || "Valued Customer";
-  const tracking = order.trackingNumber || "Assigned upon dispatch";
-  const courier = order.courierName || "Express Courier";
-  
-  let eventMsg = `Your KRIA order ${order.id} update: ${event}.`;
-  if (event.includes("confirmed") || event.includes("Paid")) {
-    eventMsg = `Hi ${customerName}! ✨ Your KRIA Studio order ${order.id} (₹${order.grandTotal}) is confirmed! Our artisans are preparing your custom acrylic items. Tracking AWB: ${tracking}.`;
-  } else if (event.includes("Printing")) {
-    eventMsg = `🎨 Production Update for ${order.id}: Your photo designs are currently being printed & laser-cut with high-precision UV inks.`;
-  } else if (event.includes("Shipped") || event.includes("Logistics") || event.includes("In Transit")) {
-    eventMsg = `🚀 Dispatched! Your package ${order.id} is on its way via ${courier}! Track shipment with AWB ${tracking}. Estimated delivery: ${order.deliveryEstimate || "2-4 days"}.`;
-  } else if (event.includes("Delivered")) {
-    eventMsg = `🎁 Delivered! Your KRIA Studio package ${order.id} has been delivered. We hope you love your custom photo magnets! Tag us @KriaStudio!`;
-  }
-
-  const payload = {
-    orderId: order.id,
-    customerName,
-    phone: order.shippingDetails?.phone,
-    email: order.shippingDetails?.email,
-    event,
-    message: eventMsg,
-    trackingNumber: tracking,
-    courierName: courier,
-    grandTotal: order.grandTotal,
-    timestamp: new Date().toISOString()
-  };
-
+  const message = `KRIA Studio: ${event} for order ${order.id}. Tracking: ${order.trackingNumber}.`;
+  const payload = { orderId: order.id, to: order.shippingDetails, message, event };
   const configuredChannels = [
     ["email", process.env.EMAIL_WEBHOOK_URL || process.env.NOTIFICATION_WEBHOOK_URL],
     ["sms", process.env.SMS_WEBHOOK_URL],
@@ -225,8 +188,8 @@ async function notifyCustomer(order: any, event: string) {
   ].filter(([, url]) => Boolean(url)) as [string, string][];
 
   if (configuredChannels.length === 0) {
-    console.log(`[NOTIFICATION DRY-RUN] ${eventMsg}`);
-    return { sent: false, channel: "dry-run", message: eventMsg };
+    console.log(`[NOTIFICATION DRY-RUN] ${message}`);
+    return { sent: false, channel: "dry-run", message };
   }
 
   const results = await Promise.all(configuredChannels.map(async ([channel, url]) => ({
@@ -234,7 +197,7 @@ async function notifyCustomer(order: any, event: string) {
     sent: await postNotificationWebhook(url, payload),
   })));
 
-  return { sent: results.some((result) => result.sent), channel: results.map((result) => result.channel).join(","), message: eventMsg, results };
+  return { sent: results.some((result) => result.sent), channel: results.map((result) => result.channel).join(","), message, results };
 }
 
 let shiprocketTokenCache: { token: string; expiresAt: number } | null = null;
@@ -283,16 +246,10 @@ function validateShippingDetails(shippingDetails: any) {
   if (!shippingDetails || typeof shippingDetails !== "object") return "Shipping details are required.";
   const required = ["fullName", "email", "phone", "address", "city", "state", "pincode"];
   for (const field of required) {
-    if (!shippingDetails[field] || typeof shippingDetails[field] !== "string" || !shippingDetails[field].trim()) {
-      return `${field} is required.`;
-    }
+    if (!shippingDetails[field] || typeof shippingDetails[field] !== "string") return `${field} is required.`;
   }
-  if (shippingDetails.fullName.trim().length < 3) return "Please enter your complete full name (minimum 3 letters).";
-  if (!/^\S+@\S+\.\S+$/.test(shippingDetails.email.trim())) return "A valid email address is required.";
-  const cleanPhone = shippingDetails.phone.replace(/\D/g, "");
-  if (!/^[6-9]\d{9}$/.test(cleanPhone)) return "A valid 10-digit Indian mobile number is required for SMS/WhatsApp updates.";
-  if (shippingDetails.address.trim().length < 10) return "Please provide a complete street address with landmark/house number (minimum 10 characters).";
-  if (!/^\d{6}$/.test(shippingDetails.pincode.trim())) return "A valid 6-digit postal pincode is required.";
+  if (!/^\S+@\S+\.\S+$/.test(shippingDetails.email)) return "A valid email is required.";
+  if (!/^\d{6}$/.test(shippingDetails.pincode)) return "A valid 6-digit pincode is required.";
   return null;
 }
 
@@ -331,6 +288,7 @@ app.post("/api/uploads/image", async (req, res) => {
   return res.json({ url: `/stored-assets/${storedName}`, objectKey: storedName });
 });
 
+app.get("/api/health", (_req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
 app.get("/api/catalog", (_req, res) => res.json({ prices: SHAPE_PRICES }));
 
 function createPaidOrderFromSession(session: any, paymentId: string, isMock = false) {
@@ -357,7 +315,7 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
   return order;
 }
 
-app.post("/api/checkout/create-order", async (req, res) => {
+app.post(["/api/checkout/create-order", "/api/razorpay/create-order"], async (req, res) => {
   try {
     const { cart, shippingDetails, acceptedPolicies = true } = req.body;
     const cartError = validateCart(cart);
@@ -382,7 +340,7 @@ app.post("/api/checkout/create-order", async (req, res) => {
   } catch (error: any) { res.status(500).json({ error: error.message || "Failed to establish a secure transaction session." }); }
 });
 
-app.post("/api/checkout/verify-payment", async (req, res) => {
+app.post(["/api/checkout/verify-payment", "/api/orders/confirm", "/api/confirm-payment"], async (req, res) => {
   try {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature, cart, shippingDetails, isMock, acceptedPolicies } = req.body;
     const cartError = validateCart(cart);
@@ -478,37 +436,6 @@ app.post("/api/webhooks/razorpay", async (req, res) => {
   return res.json({ received: true });
 });
 
-app.post("/api/webhooks/shiprocket", async (req, res) => {
-  try {
-    const { awb, current_status, courier_name, order_id } = req.body || {};
-    if (!awb && !order_id) return res.status(400).json({ error: "Missing tracking payload." });
-    const orders = getOrders();
-    const order = orders.find((o: any) => o.trackingNumber === awb || o.id === order_id);
-    if (order) {
-      const statusMap: { [key: string]: string } = {
-        "PICKED UP": "Processing",
-        "IN TRANSIT": "Shipped",
-        "OUT FOR DELIVERY": "Out For Delivery",
-        "DELIVERED": "Delivered",
-        "RTO IN TRANSIT": "RTO Returned",
-      };
-      const nextStatus = statusMap[String(current_status).toUpperCase()] || current_status || "Shipped";
-      order.status = nextStatus;
-      if (courier_name) order.courierName = courier_name;
-      order.history.push({
-        status: nextStatus,
-        timestamp: new Date().toISOString(),
-        note: `Shiprocket live tracking scan: ${current_status} (Courier: ${courier_name || order.courierName})`
-      });
-      saveOrder(order);
-      await notifyCustomer(order, `Logistics update: ${nextStatus}`);
-    }
-    return res.json({ success: true, processed: Boolean(order) });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
 app.post("/api/orders/track", (req, res) => {
   const { orderId, emailOrPhone } = req.body || {};
   if (!orderId || !emailOrPhone) return res.status(400).json({ error: "Order ID and email/phone are required." });
@@ -526,9 +453,6 @@ app.post("/api/orders/track", (req, res) => {
     trackingNumber: order.trackingNumber,
     courierName: order.courierName,
     deliveryEstimate: order.deliveryEstimate,
-    productionLeadTime: "24 Hours Custom Laser Cutting & UV Printing",
-    transitEstimate: "2-4 Business Days Express Shipping",
-    shippingAddressSummary: `${order.shippingDetails?.city}, ${order.shippingDetails?.state} - ${order.shippingDetails?.pincode}`,
     createdAt: order.createdAt,
     grandTotal: order.grandTotal,
     history: order.history,
@@ -536,30 +460,6 @@ app.post("/api/orders/track", (req, res) => {
 });
 
 app.get("/api/admin/orders", requireAdmin, (_req, res) => res.json({ success: true, orders: getOrders() }));
-
-app.post("/api/admin/orders/recover-payments", requireAdmin, async (_req, res) => {
-  try {
-    const sessions = db.prepare("SELECT * FROM checkout_sessions").all() as any[];
-    const recovered: any[] = [];
-    for (const session of sessions) {
-      const paymentEvents = db.prepare("SELECT * FROM payment_events WHERE external_order_id = ? AND event_type = 'payment.captured'").all(session.razorpay_order_id) as any[];
-      for (const event of paymentEvents) {
-        const parsedSession = {
-          id: session.id,
-          razorpayOrderId: session.razorpay_order_id,
-          cart: JSON.parse(session.cart_json),
-          shippingDetails: JSON.parse(session.shipping_json),
-          totals: JSON.parse(session.totals_json)
-        };
-        const order = createPaidOrderFromSession(parsedSession, event.external_payment_id || `recovered_${Date.now()}`, false);
-        recovered.push(order.id);
-      }
-    }
-    return res.json({ success: true, recoveredCount: recovered.length, recoveredOrders: recovered });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
 app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
   const order = getOrders().find((o: any) => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: "Order record not found." });
@@ -581,47 +481,6 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, (req, res) => {
 app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
   db.prepare("DELETE FROM orders WHERE id = ?").run(req.params.id);
   res.json({ success: true, message: `Voided order ${req.params.id}` });
-});
-
-app.get("/api/products", (_req, res) => {
-  try {
-    const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all().map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      originalPrice: p.original_price,
-      dimensions: p.dimensions,
-      description: p.description,
-      shapeClass: p.shape_class,
-      frameRatio: p.frame_ratio,
-      tagline: p.tagline,
-      isTrending: Boolean(p.is_trending)
-    }));
-    return res.json({ success: true, products });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/api/admin/products", requireAdmin, (req, res) => {
-  try {
-    const { id, name, price, originalPrice, dimensions, description, shapeClass, frameRatio, tagline, isTrending } = req.body;
-    if (!id || !name || !price) return res.status(400).json({ error: "ID, Name, and Price are required." });
-    db.prepare(`INSERT OR REPLACE INTO products
-      (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      id, name, price, originalPrice || null, dimensions || "Standard", description || "", shapeClass || "rounded-2xl border-2", frameRatio || "aspect-[4/5]", tagline || "Custom Product", isTrending ? 1 : 0, new Date().toISOString()
-    );
-    return res.json({ success: true, message: `Product ${name} saved successfully.` });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete("/api/admin/products/:id", requireAdmin, (req, res) => {
-  db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
-  res.json({ success: true, message: `Deleted product ${req.params.id}` });
 });
 
 async function startServer() {
