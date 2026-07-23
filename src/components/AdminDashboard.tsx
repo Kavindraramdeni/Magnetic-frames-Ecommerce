@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import { jsPDF } from 'jspdf';
+import { BASE_SHAPES } from '../data';
 
 interface AdminDashboardProps {
   onBackToHome: () => void;
@@ -130,28 +131,65 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     }
   };
 
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [productsList, setProductsList] = useState<any[]>([]);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+
   // Fetch active database orders
-  const fetchOrders = async () => {
-    setIsLoading(true);
+  const fetchOrders = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const response = await fetch('/api/admin/orders', { headers: { Authorization: `Bearer ${adminToken}` } });
       if (response.ok) {
         const data = await response.json();
-        setOrders(data.orders || []);
+        const freshOrders = data.orders || [];
+        
+        setOrders(prev => {
+          if (prev.length > 0 && freshOrders.length > prev.length) {
+            const newCount = freshOrders.length - prev.length;
+            const newest = freshOrders[0];
+            setActionLog(logPrev => [
+              `[${new Date().toLocaleTimeString()}] 🔔 LIVE REAL-TIME ALERT: ${newCount} new order(s) received! Latest ID: ${newest.id} (₹${newest.grandTotal})`,
+              ...logPrev
+            ]);
+          }
+          return freshOrders;
+        });
       } else {
         const err = await response.json();
-        setError(err.error || 'Failed to fetch orders database.');
+        if (!silent) setError(err.error || 'Failed to fetch orders database.');
       }
     } catch (e: any) {
-      setError(e.message || 'Server connection issue while fetching orders.');
+      if (!silent) setError(e.message || 'Server connection issue while fetching orders.');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
+    }
+  };
+
+  // Fetch catalog products
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products');
+      if (res.ok) {
+        const data = await res.json();
+        setProductsList(data.products || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch products", e);
     }
   };
 
   useEffect(() => {
     fetchOrders();
+    fetchProducts();
+
+    // Live Real-time Auto Polling every 8 seconds
+    const interval = setInterval(() => {
+      fetchOrders(true);
+    }, 8000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Update specific order status in backend with simulated dispatch SMS/Email logs
@@ -301,16 +339,26 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
-              onClick={fetchOrders}
+              onClick={() => setIsCatalogOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#E8DCCF]/20 border border-[#E8DCCF]/40 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-[#E8DCCF] hover:bg-[#E8DCCF]/30 transition-all cursor-pointer"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Catalog & Prices</span>
+            </button>
+            <button
+              onClick={() => fetchOrders()}
               disabled={isLoading}
               className="flex items-center gap-2 px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-white transition-all cursor-pointer hover:bg-neutral-800"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-[#c0a88a]' : ''}`} />
-              <span>Refresh Orders</span>
+              <span>Refresh</span>
             </button>
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" title="System Live & Listening" />
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] font-mono font-bold uppercase text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Live Sync 8s
+            </span>
           </div>
         </div>
       </header>
@@ -1066,6 +1114,92 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 </div>
 
               </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* --- CATALOG & PRICING MANAGEMENT MODAL --- */}
+      {isCatalogOpen && (
+        <div className="fixed inset-0 z-50 bg-neutral-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-4xl border border-neutral-300 shadow-2xl overflow-hidden text-left flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="bg-neutral-900 text-white p-5 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Sparkles className="h-5 w-5 text-[#E8DCCF]" />
+                <div>
+                  <h3 className="font-serif text-lg text-white font-light">Catalog & Price Manager</h3>
+                  <p className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest">Adjust Sale Prices, MRP Cutoffs & Inventory Availability</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCatalogOpen(false)}
+                className="p-1 hover:bg-neutral-800 rounded-full transition-colors text-white cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Catalog List */}
+            <div className="p-6 overflow-y-auto grow space-y-4 bg-[#FAF8F5]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {BASE_SHAPES.map((shape) => {
+                  const currentPrice = shape.price;
+                  const isEditingThis = editingProduct?.id === shape.id;
+
+                  return (
+                    <div key={shape.id} className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3">
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-serif text-base font-semibold text-neutral-900">{shape.name}</h4>
+                          <span className="font-mono text-[9px] uppercase tracking-wider font-bold bg-neutral-100 px-2 py-0.5 rounded text-neutral-600">
+                            {shape.dimensions}
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-500 line-clamp-2">{shape.description}</p>
+                      </div>
+
+                      <div className="pt-3 border-t border-neutral-100 flex justify-between items-center">
+                        <div>
+                          <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block">BASE SELLING PRICE</span>
+                          <span className="font-mono text-base font-bold text-neutral-900">₹{currentPrice}</span>
+                          <span className="font-mono text-xs text-neutral-400 line-through ml-2">₹{currentPrice + 100}</span>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            const newPriceStr = prompt(`Enter new Selling Price (₹) for "${shape.name}":`, String(currentPrice));
+                            if (newPriceStr) {
+                              const newP = parseInt(newPriceStr);
+                              if (!isNaN(newP) && newP > 0) {
+                                shape.price = newP;
+                                setProductsList([...productsList]);
+                                setActionLog(prev => [`[${new Date().toLocaleTimeString()}] 🏷 Price for ${shape.name} updated to ₹${newP}`, ...prev]);
+                                alert(`Updated price for ${shape.name} to ₹${newP}`);
+                              }
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-[#111111] hover:bg-neutral-800 text-white rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer transition-all"
+                        >
+                          Edit Price
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-neutral-100 p-4 border-t border-neutral-200 flex justify-between items-center text-xs font-mono text-neutral-500">
+              <span>{BASE_SHAPES.length} Active Catalog Frame Designs</span>
+              <button
+                onClick={() => setIsCatalogOpen(false)}
+                className="px-5 py-2 bg-neutral-900 text-white font-bold rounded-xl text-xs uppercase font-mono cursor-pointer"
+              >
+                Close Catalog Manager
+              </button>
             </div>
 
           </div>
