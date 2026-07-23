@@ -168,25 +168,90 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
   return res.status(401).json({ error: "Admin authentication required." });
 }
 
-function calculateOrderTotals(cart: any[]) {
+const VALID_COUPONS: Record<string, { type: "percent" | "flat" | "free_shipping"; value: number; label: string }> = {
+  KRIA10: { type: "percent", value: 10, label: "10% Off Studio Special" },
+  WELCOME15: { type: "percent", value: 15, label: "15% Off Welcome Gift" },
+  KRIA50: { type: "flat", value: 50, label: "₹50 Flat Instant Discount" },
+  FREESHIP: { type: "free_shipping", value: 0, label: "Free Shipping Unlocked" },
+};
+
+function calculateOrderTotals(cart: any[], couponCode?: string) {
   let subtotal = 0;
   cart.forEach((item: any) => {
     const backendPrice = SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom;
     const qty = Math.max(1, Math.min(99, parseInt(item.quantity) || 1));
     subtotal += backendPrice * qty;
   });
-  const bulkDiscount = 0;
-  const deliveryCharge = subtotal === 0 ? 0 : (subtotal >= 699 ? 0 : 60);
-  return { subtotal, bulkDiscount: 0, deliveryCharge, grandTotal: subtotal + deliveryCharge };
+
+  let couponDiscount = 0;
+  let forceFreeShipping = false;
+
+  if (couponCode) {
+    const cleanCode = String(couponCode).toUpperCase().trim();
+    const coupon = VALID_COUPONS[cleanCode];
+    if (coupon) {
+      if (coupon.type === "percent") {
+        couponDiscount = Math.round((subtotal * coupon.value) / 100);
+      } else if (coupon.type === "flat") {
+        couponDiscount = Math.min(subtotal, coupon.value);
+      } else if (coupon.type === "free_shipping") {
+        forceFreeShipping = true;
+      }
+    }
+  }
+
+  const deliveryCharge = (subtotal === 0) ? 0 : (forceFreeShipping || subtotal >= 699 ? 0 : 60);
+  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryCharge);
+  
+  return { subtotal, couponDiscount, deliveryCharge, grandTotal };
 }
 
 async function postNotificationWebhook(url: string, payload: any) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-  return response.ok;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    return response.ok;
+  } catch (err) {
+    console.error(`Notification webhook to ${url} failed:`, err);
+    return false;
+  }
+}
+
+async function sendWhatsAppNotification(order: any, event: string) {
+  const whatsappUrl = process.env.WHATSAPP_WEBHOOK_URL;
+  if (!whatsappUrl) return false;
+
+  const phone = String(order.shippingDetails?.phone || "").replace(/\D/g, "");
+  const formattedPhone = phone.startsWith("91") ? phone : `91${phone}`;
+
+  let whatsappText = `Hi ${order.shippingDetails?.fullName || "Valued Customer"}! ✨ `;
+  if (event.includes("confirmed") || event.includes("Paid")) {
+    whatsappText += `Your KRIA Studio order *${order.id}* (Total: ₹${order.grandTotal}) is *CONFIRMED*! 🎉 Our artisans are hand-crafting your acrylic magnets. Tracking AWB: *${order.trackingNumber || "Assigned on Dispatch"}*.`;
+  } else if (event.includes("Shipped") || event.includes("Dispatched")) {
+    whatsappText += `Your order *${order.id}* has been *DISPATCHED* via *${order.courierName || "Express Courier"}*! 🚀 Tracking AWB: *${order.trackingNumber}*. Expected Delivery: 2-4 days.`;
+  } else {
+    whatsappText += `Update for order *${order.id}*: ${event}.`;
+  }
+
+  // Compatible payload for Wati, Interakt, Twilio & custom WhatsApp Webhook bridges
+  const whatsappPayload = {
+    phone: formattedPhone,
+    recipient: formattedPhone,
+    message: whatsappText,
+    template_name: event.includes("Shipped") ? "order_dispatched_alert" : "order_confirmation_alert",
+    parameters: [
+      { name: "name", value: order.shippingDetails?.fullName },
+      { name: "order_id", value: order.id },
+      { name: "tracking", value: order.trackingNumber || "SRW-8910" },
+      { name: "courier", value: order.courierName || "Express Air" },
+      { name: "total", value: `₹${order.grandTotal}` }
+    ]
+  };
+
+  return await postNotificationWebhook(whatsappUrl, whatsappPayload);
 }
 
 async function notifyCustomer(order: any, event: string) {
@@ -205,6 +270,9 @@ async function notifyCustomer(order: any, event: string) {
     eventMsg = `🎁 Delivered! Your KRIA Studio package ${order.id} has been delivered. We hope you love your custom photo magnets! Tag us @KriaStudio!`;
   }
 
+  // Trigger Automated WhatsApp Notification
+  const whatsappSent = await sendWhatsAppNotification(order, event);
+
   const payload = {
     orderId: order.id,
     customerName,
@@ -221,12 +289,11 @@ async function notifyCustomer(order: any, event: string) {
   const configuredChannels = [
     ["email", process.env.EMAIL_WEBHOOK_URL || process.env.NOTIFICATION_WEBHOOK_URL],
     ["sms", process.env.SMS_WEBHOOK_URL],
-    ["whatsapp", process.env.WHATSAPP_WEBHOOK_URL],
   ].filter(([, url]) => Boolean(url)) as [string, string][];
 
-  if (configuredChannels.length === 0) {
-    console.log(`[NOTIFICATION DRY-RUN] ${eventMsg}`);
-    return { sent: false, channel: "dry-run", message: eventMsg };
+  if (configuredChannels.length === 0 && !whatsappSent) {
+    console.log(`[NOTIFICATION LOG] ${eventMsg}`);
+    return { sent: false, channel: "console", message: eventMsg };
   }
 
   const results = await Promise.all(configuredChannels.map(async ([channel, url]) => ({
@@ -234,7 +301,7 @@ async function notifyCustomer(order: any, event: string) {
     sent: await postNotificationWebhook(url, payload),
   })));
 
-  return { sent: results.some((result) => result.sent), channel: results.map((result) => result.channel).join(","), message: eventMsg, results };
+  return { sent: whatsappSent || results.some((result) => result.sent), channel: "whatsapp,email,sms", message: eventMsg };
 }
 
 let shiprocketTokenCache: { token: string; expiresAt: number } | null = null;
@@ -292,7 +359,11 @@ function validateShippingDetails(shippingDetails: any) {
   const cleanPhone = shippingDetails.phone.replace(/\D/g, "");
   if (!/^[6-9]\d{9}$/.test(cleanPhone)) return "A valid 10-digit Indian mobile number is required for SMS/WhatsApp updates.";
   if (shippingDetails.address.trim().length < 10) return "Please provide a complete street address with landmark/house number (minimum 10 characters).";
-  if (!/^\d{6}$/.test(shippingDetails.pincode.trim())) return "A valid 6-digit postal pincode is required.";
+  const cleanPin = shippingDetails.pincode.trim();
+  if (!/^[1-9][0-9]{5}$/.test(cleanPin)) return "Please enter a valid 6-digit Indian pincode (must not start with 0).";
+  // Validate first digit maps to a real India postal zone (1–9)
+  const firstDigit = parseInt(cleanPin[0]);
+  if (firstDigit < 1 || firstDigit > 9) return "Invalid pincode — Indian pincodes start with 1–9.";
   return null;
 }
 
@@ -332,6 +403,24 @@ app.post("/api/uploads/image", async (req, res) => {
 });
 
 app.get("/api/catalog", (_req, res) => res.json({ prices: SHAPE_PRICES }));
+
+app.post("/api/checkout/validate-coupon", (req, res) => {
+  const { couponCode, cart = [] } = req.body || {};
+  if (!couponCode) return res.status(400).json({ error: "Coupon code is required." });
+  const cleanCode = String(couponCode).toUpperCase().trim();
+  const coupon = VALID_COUPONS[cleanCode];
+  if (!coupon) return res.status(404).json({ error: "Invalid coupon code. Try KRIA10 or WELCOME15" });
+
+  const { subtotal, couponDiscount, deliveryCharge, grandTotal } = calculateOrderTotals(cart, cleanCode);
+  return res.json({
+    valid: true,
+    code: cleanCode,
+    label: coupon.label,
+    couponDiscount,
+    deliveryCharge,
+    grandTotal
+  });
+});
 
 function createPaidOrderFromSession(session: any, paymentId: string, isMock = false) {
   const existing = getOrders().find((order: any) => order.transactionId === paymentId);
@@ -417,7 +506,7 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
 
 app.post("/api/shiprocket/check-serviceability", async (req, res) => {
   const { pincode, orderValue, weight = 0.25 } = req.body;
-  if (!pincode || !/^\d{6}$/.test(pincode)) return res.status(400).json({ error: "Please input a valid 6-digit delivery pincode." });
+  if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode)) return res.status(400).json({ error: "Please enter a valid 6-digit Indian pincode (must not start with 0)." });
 
   const shiprocketToken = await getShiprocketToken();
   if (shiprocketToken) {
