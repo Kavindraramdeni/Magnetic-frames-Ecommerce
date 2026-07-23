@@ -77,11 +77,22 @@ export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'policies' | 'tracking'>('home');
   const [adminToken, setAdminToken] = useState<string>('');
 
-  // Lifted cart state with localStorage persistence
+  // Lifted cart state with localStorage persistence and sanitization
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('kria_studio_cart');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(item => item && typeof item === 'object' && item.shapeId).map(item => ({
+          ...item,
+          quantity: Math.max(1, parseInt(item.quantity) || 1),
+          price: item.price || 299,
+          shapeName: item.shapeName || 'Custom Frame',
+          previewUrl: item.previewUrl || '/images/Landingprofile.png'
+        }));
+      }
+      return [];
     } catch (e) {
       return [];
     }
