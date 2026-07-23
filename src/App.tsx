@@ -77,8 +77,24 @@ export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'policies' | 'tracking'>('home');
   const [adminToken, setAdminToken] = useState<string>('');
 
-  // Lifted cart state to share with Header and Customizer
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Lifted cart state with localStorage persistence
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('kria_studio_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kria_studio_cart', JSON.stringify(cart));
+    } catch (e) {
+      console.warn('Could not save cart to localStorage', e);
+    }
+  }, [cart]);
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
