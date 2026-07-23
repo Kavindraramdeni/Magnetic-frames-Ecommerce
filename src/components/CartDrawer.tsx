@@ -203,13 +203,16 @@ export default function CartDrawer({
                   >
                     <div className="flex items-center gap-3.5 overflow-hidden">
                       {/* Interactive miniature preview shape */}
-                      <div className={`h-14 w-14 shrink-0 overflow-hidden relative shadow-md border-2 border-white bg-neutral-100 ${
+                      <div className={`h-14 w-14 shrink-0 overflow-hidden relative shadow-md border-2 border-white bg-neutral-200 ${
                         item.shapeId === 'circle' || item.shapeId === 'circle-bloom' ? 'rounded-full' : 'rounded-xl'
                       }`}>
                         <img 
-                          src={item.previewUrl} 
+                          src={item.previewUrl || '/images/Landingprofile.png'} 
                           alt={item.shapeName} 
-                          className="h-full w-full object-cover" 
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = '/images/Landingprofile.png';
+                          }}
                           referrerPolicy="no-referrer" 
                         />
                         {/* 3D Acrylic reflection gloss shimmer */}
