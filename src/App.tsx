@@ -54,8 +54,8 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
           <p className="mt-3 text-sm text-neutral-500">Enter your order ID plus the email or phone used at checkout.</p>
         </div>
         <form onSubmit={handleTrack} className="grid gap-4">
-          <input value={orderId} onChange={(e) => setOrderId(e.target.value)} required placeholder="KRIA-ORD-1234" className="rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-neutral-900" />
-          <input value={emailOrPhone} onChange={(e) => setEmailOrPhone(e.target.value)} required placeholder="Email or phone" className="rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-neutral-900" />
+          <input value={orderId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOrderId(e.target.value)} required placeholder="KRIA-ORD-1234" className="rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-neutral-900" />
+          <input value={emailOrPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmailOrPhone(e.target.value)} required placeholder="Email or phone" className="rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-neutral-900" />
           <button disabled={isLoading} className="rounded-xl bg-neutral-900 px-5 py-3 text-xs font-bold uppercase tracking-widest text-white disabled:opacity-60">{isLoading ? 'Checking...' : 'Track Order'}</button>
         </form>
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
@@ -84,9 +84,9 @@ export default function App() {
       if (!saved) return [];
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
-        return parsed.filter(item => item && typeof item === 'object' && item.shapeId).map(item => ({
+        return parsed.filter((item: CartItem) => item && typeof item === 'object' && item.shapeId).map((item: CartItem) => ({
           ...item,
-          quantity: Math.max(1, parseInt(item.quantity) || 1),
+          quantity: Math.max(1, parseInt(String(item.quantity)) || 1),
           price: item.price || 299,
           shapeName: item.shapeName || 'Custom Frame',
           previewUrl: item.previewUrl || '/images/Landingprofile.png'
@@ -101,7 +101,7 @@ export default function App() {
   useEffect(() => {
     try {
       // Strip out huge base64 data URLs (> 50KB) before saving to localStorage to prevent QuotaExceededError
-      const safeCart = cart.map(item => {
+      const safeCart = cart.map((item: CartItem) => {
         if (item.previewUrl && item.previewUrl.startsWith('data:image/') && item.previewUrl.length > 50000) {
           return { ...item, previewUrl: '/images/Landingprofile.png' };
         }
@@ -120,14 +120,14 @@ export default function App() {
     if (newQty <= 0) {
       handleRemoveItem(id);
     } else {
-      setCart((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity: newQty } : item))
+      setCart((prev: CartItem[]) =>
+        prev.map((item: CartItem) => (item.id === id ? { ...item, quantity: newQty } : item))
       );
     }
   };
 
   const handleRemoveItem = (id: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    setCart((prev: CartItem[]) => prev.filter((item: CartItem) => item.id !== id));
   };
 
   const handleClearCart = () => {
@@ -189,13 +189,13 @@ export default function App() {
 
     // Check if an identical item (same shape + same photo) already exists in cart
     const existingIndex = cart.findIndex(
-      item => item.shapeId === shapeId && item.previewUrl === photoUrl
+      (item: CartItem) => item.shapeId === shapeId && item.previewUrl === photoUrl
     );
 
     if (existingIndex !== -1) {
       // Increment quantity of existing item instead of adding duplicate
-      setCart(prev =>
-        prev.map((item, i) =>
+      setCart((prev: CartItem[]) =>
+        prev.map((item: CartItem, i: number) =>
           i === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
         )
       );
@@ -215,7 +215,7 @@ export default function App() {
         photoPanY: panY,
         price: shapeObj.price
       };
-      setCart(prev => [...prev, newCartItem]);
+      setCart((prev: CartItem[]) => [...prev, newCartItem]);
     }
 
     setActiveWorkspaceShape(shapeId);
@@ -237,7 +237,7 @@ export default function App() {
           onSelectAndCustomize={handleSelectAndCustomizeFromExperience}
           onAddDirectlyToTrayAndCheckout={handleSelectAndAddDirectlyToTrayAndCheckout}
           onOpenCart={() => setIsCartOpen(true)}
-          cartItemCount={cart.reduce((acc, x) => acc + x.quantity, 0)}
+          cartItemCount={cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
           initialShapeId={activeWorkspaceShape}
         />
         <CartDrawer 
@@ -322,7 +322,7 @@ export default function App() {
         onScrollToCustomizer={scrollToCustomizer}
         onScrollToShapes={scrollToShapes}
         onScrollToGallery={scrollToGallery}
-        cartItemsCount={cart.reduce((acc, x) => acc + x.quantity, 0)}
+        cartItemsCount={cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
         onOpenCart={() => setIsCartOpen(true)}
       />
 
@@ -428,9 +428,9 @@ export default function App() {
           title="View Shopping Cart"
         >
           <ShoppingBag className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
-          {cart.reduce((acc, x) => acc + x.quantity, 0) > 0 && (
+          {cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0) > 0 && (
             <span className="absolute -top-1 -right-1 bg-[#6B1D2F] text-white text-[11px] font-mono font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in-50">
-              {cart.reduce((acc, x) => acc + x.quantity, 0)}
+              {cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
             </span>
           )}
         </button>
