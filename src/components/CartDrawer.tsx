@@ -65,6 +65,30 @@ export default function CartDrawer({
     }
   };
 
+  // Disable body scroll & add Escape key listener when open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
   // Pricing calculations
   const cartItemCount = cart.reduce((acc, x) => acc + x.quantity, 0);
   const cartSubtotal = cart.reduce((acc, x) => acc + (x.price * x.quantity), 0);
@@ -104,7 +128,8 @@ export default function CartDrawer({
             </div>
           </div>
           <button 
-            onClick={onClose}
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
             className="p-1.5 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-neutral-300 hover:text-white"
             aria-label="Close cart"
           >
@@ -147,8 +172,9 @@ export default function CartDrawer({
                 </p>
               </div>
               <button
-                onClick={onClose}
-                className="bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-sans tracking-widest font-extrabold uppercase px-6 py-3 rounded-full transition-all active:scale-95 shadow-sm"
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+                className="bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-sans tracking-widest font-extrabold uppercase px-6 py-3 rounded-full transition-all active:scale-95 shadow-sm cursor-pointer"
               >
                 Start Designing
               </button>
@@ -387,8 +413,9 @@ export default function CartDrawer({
               </button>
               
               <button
-                onClick={onClose}
-                className="w-full text-center py-2 text-[10px] font-mono font-bold tracking-widest text-neutral-500 hover:text-neutral-800 uppercase flex items-center justify-center gap-1 transition"
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+                className="w-full text-center py-2 text-[10px] font-mono font-bold tracking-widest text-neutral-500 hover:text-neutral-800 uppercase flex items-center justify-center gap-1 transition cursor-pointer"
               >
                 <span>Continue Designing</span>
                 <ArrowRight className="h-3 w-3" />
