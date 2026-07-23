@@ -29,49 +29,50 @@ export default function CartDrawer({
   const [pincode, setPincode] = useState<string>('500085');
   const [pincodeMessage, setPincodeMessage] = useState<string>('✅ Verified for 500085 (Hyderabad): Telangana Air Express via Shiprocket — Estimated 2–3 Days');
   
-  // Disable body scroll when open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  // Coupon State
+  const [couponInput, setCouponInput] = useState<string>('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; label: string; discount: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
-  if (!isOpen) return null;
-
-  const handleCheckPincode = (e?: React.FormEvent) => {
+  const handleApplyCoupon = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const cleanPin = pincode.trim();
-    if (cleanPin.length === 6 && /^\d+$/.test(cleanPin)) {
-      if (cleanPin.startsWith('50')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Hyderabad & Telangana Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('11')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Delhi NCR Local Express via Shiprocket — Estimated 1–2 Days`);
-      } else if (cleanPin.startsWith('56')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Bengaluru Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('40') || cleanPin.startsWith('41')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Mumbai & Maharashtra Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('60')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Chennai & Tamil Nadu Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('70')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Kolkata & WB Air Express via Shiprocket — Estimated 2–3 Days`);
+    if (!couponInput.trim()) return;
+    setIsApplyingCoupon(true);
+    setCouponError(null);
+
+    try {
+      const response = await fetch('/api/checkout/validate-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ couponCode: couponInput, cart })
+      });
+      const data = await response.json();
+      if (response.ok && data.valid) {
+        setAppliedCoupon({
+          code: data.code,
+          label: data.label,
+          discount: data.couponDiscount
+        });
+        setCouponError(null);
       } else {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Standard National Air Express via Shiprocket — Estimated 2–4 Days`);
+        setCouponError(data.error || 'Invalid promotional coupon code.');
       }
-    } else {
-      setPincodeMessage('⚠️ Please enter a valid 6-digit Indian pincode.');
+    } catch (err: any) {
+      setCouponError('Unable to validate coupon.');
+    } finally {
+      setIsApplyingCoupon(false);
     }
   };
 
   // Pricing calculations
   const cartItemCount = cart.reduce((acc, x) => acc + x.quantity, 0);
   const cartSubtotal = cart.reduce((acc, x) => acc + (x.price * x.quantity), 0);
-  const deliveryCharge = cartSubtotal === 0 ? 0 : 60;
-  const grandTotal = cartSubtotal + deliveryCharge;
+  const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
+  const deliveryCharge = cartSubtotal === 0 ? 0 : (cartSubtotal >= 699 ? 0 : 60);
+  const amountNeededForFreeShipping = Math.max(0, 699 - cartSubtotal);
+  const freeShippingProgress = Math.min(100, Math.round((cartSubtotal / 699) * 100));
+  const grandTotal = Math.max(0, cartSubtotal - couponDiscount + deliveryCharge);
 
   return createPortal(
     <div className="fixed inset-0 z-[150] flex justify-end overflow-hidden" role="dialog" aria-modal="true">
@@ -109,6 +110,27 @@ export default function CartDrawer({
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        {/* Free Shipping Progress Banner */}
+        <div className="bg-[#E8DCCF]/30 p-3 px-5 border-b border-[#E8DCCF]/60 text-xs font-sans text-neutral-800 flex flex-col gap-1.5 shrink-0">
+          <div className="flex justify-between items-center text-[11px] font-mono">
+            <span className="flex items-center gap-1 font-bold text-neutral-900">
+              <Truck className="h-3.5 w-3.5 text-[#6B1D2F]" />
+              {amountNeededForFreeShipping === 0 ? (
+                <span className="text-emerald-800 font-bold">🎉 UNLOCKED FREE EXPRESS SHIPPING!</span>
+              ) : (
+                <span>Add ₹{amountNeededForFreeShipping} more for FREE Delivery</span>
+              )}
+            </span>
+            <span className="font-bold text-neutral-500">{freeShippingProgress}%</span>
+          </div>
+          <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
+            <div 
+              className="bg-[#6B1D2F] h-full rounded-full transition-all duration-500" 
+              style={{ width: `${freeShippingProgress}%` }} 
+            />
+          </div>
         </div>
 
         {/* Drawer Body - Scrollable Items List */}
@@ -269,12 +291,66 @@ export default function CartDrawer({
               )}
             </div>
 
+            {/* Promo Coupon Discount Box */}
+            <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/80 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-mono font-bold text-neutral-700 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-[#6B1D2F]" />
+                  Apply Promo Coupon
+                </span>
+                <span className="text-[9px] text-neutral-400 font-mono">Try: KRIA10 / WELCOME15</span>
+              </div>
+              
+              {appliedCoupon ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-mono font-bold text-emerald-900 leading-none">{appliedCoupon.code} Applied!</p>
+                    <p className="text-[10px] text-emerald-700 font-sans mt-0.5">{appliedCoupon.label} (-₹{appliedCoupon.discount})</p>
+                  </div>
+                  <button
+                    onClick={() => setAppliedCoupon(null)}
+                    className="text-emerald-700 hover:text-emerald-900 font-mono text-[10px] underline cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder="Enter KRIA10"
+                    className="flex-1 bg-white border border-neutral-300 rounded-lg px-3 py-1.5 text-xs font-mono font-bold uppercase focus:outline-none focus:border-neutral-800"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isApplyingCoupon}
+                    className="bg-[#6B1D2F] hover:bg-[#521523] text-white font-mono text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-lg cursor-pointer transition disabled:opacity-50"
+                  >
+                    {isApplyingCoupon ? '...' : 'Apply'}
+                  </button>
+                </form>
+              )}
+
+              {couponError && (
+                <p className="text-[10px] font-mono text-red-600 leading-tight">{couponError}</p>
+              )}
+            </div>
+
             {/* Pricing Details List */}
             <div className="space-y-1.5 text-xs text-[#666666]">
               <div className="flex justify-between font-light">
                 <span>Subtotal:</span>
                 <span className="font-mono font-medium text-black">₹{cartSubtotal}</span>
               </div>
+
+              {appliedCoupon && (
+                <div className="flex justify-between text-emerald-800 font-semibold">
+                  <span>Coupon ({appliedCoupon.code}):</span>
+                  <span className="font-mono">-₹{appliedCoupon.discount}</span>
+                </div>
+              )}
               
               <div className="flex justify-between items-center font-light">
                 <span className="flex items-center gap-1">
