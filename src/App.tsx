@@ -100,7 +100,14 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('kria_studio_cart', JSON.stringify(cart));
+      // Strip out huge base64 data URLs (> 50KB) before saving to localStorage to prevent QuotaExceededError
+      const safeCart = cart.map(item => {
+        if (item.previewUrl && item.previewUrl.startsWith('data:image/') && item.previewUrl.length > 50000) {
+          return { ...item, previewUrl: '/images/Landingprofile.png' };
+        }
+        return item;
+      });
+      localStorage.setItem('kria_studio_cart', JSON.stringify(safeCart));
     } catch (e) {
       console.warn('Could not save cart to localStorage', e);
     }
