@@ -1127,7 +1127,10 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
 
                 {/* To Recipient Box */}
                 <div className="space-y-1.5 border-b-2 border-dashed border-black pb-3">
-                  <p className="text-[9px] text-neutral-600 uppercase font-bold">SHIP TO (RECIPIENT):</p>
+                  <div className="flex justify-between items-start">
+                    <p className="text-[9px] text-neutral-600 uppercase font-bold">SHIP TO (RECIPIENT):</p>
+                    <span className="px-2 py-0.5 bg-black text-white text-[9px] font-bold uppercase tracking-wider rounded">PREPAID - DO NOT COLLECT CASH</span>
+                  </div>
                   <h4 className="font-sans text-base font-black uppercase text-neutral-950 leading-tight">{isPrintShippingLabelOpen.shippingDetails.fullName}</h4>
                   <div className="text-xs leading-relaxed space-y-0.5">
                     <p className="font-bold">{isPrintShippingLabelOpen.shippingDetails.address}</p>
@@ -1135,6 +1138,29 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     <p>Phone: <strong>{isPrintShippingLabelOpen.shippingDetails.phone}</strong></p>
                     <p>Email: <span className="font-normal">{isPrintShippingLabelOpen.shippingDetails.email}</span></p>
                   </div>
+                </div>
+
+                {/* Itemized Product Manifest Table */}
+                <div className="border-b-2 border-dashed border-black pb-3 space-y-1.5">
+                  <p className="text-[9px] text-neutral-600 uppercase font-bold">PACKAGE CONTENTS ({isPrintShippingLabelOpen.cart?.length || 1} ITEMS):</p>
+                  <table className="w-full text-left text-[10px] border-collapse">
+                    <thead>
+                      <tr className="border-b border-black font-bold">
+                        <th className="py-1">ITEM / SHAPE</th>
+                        <th className="py-1 text-center">QTY</th>
+                        <th className="py-1 text-right">TOTAL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(isPrintShippingLabelOpen.cart || []).map((item: any, idx: number) => (
+                        <tr key={idx} className="border-b border-neutral-200">
+                          <td className="py-1 font-bold truncate max-w-[180px]">{item.shapeName || "Acrylic Magnet"} ({item.shapeId || "custom"})</td>
+                          <td className="py-1 text-center font-bold">{item.quantity}</td>
+                          <td className="py-1 text-right font-bold">₹{item.price * item.quantity}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Return Sender & Package dimensions */}
@@ -1146,8 +1172,8 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     <p>Hyderabad, Telangana - 500081</p>
                   </div>
                   <div className="space-y-1 text-right">
+                    <p><span className="text-neutral-600">TOTAL PAID:</span> <strong>₹{isPrintShippingLabelOpen.grandTotal}</strong></p>
                     <p><span className="text-neutral-600">WEIGHT:</span> <strong>0.35 KG</strong></p>
-                    <p><span className="text-neutral-600">DIM:</span> <strong>15 x 15 x 5 cm</strong></p>
                     <p><span className="text-neutral-600">ORDER NO:</span> <strong>{isPrintShippingLabelOpen.id}</strong></p>
                   </div>
                 </div>

@@ -538,8 +538,56 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
     let isRealShipment = false;
     if (shiprocketToken) {
       try {
-        const shipResponse = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` }, body: JSON.stringify({ order_id: `KRIA_ORDER_${Date.now()}`, order_date: new Date().toISOString().split('T')[0] + " 10:00", pickup_location: "KRIA Studio Warehouse", billing_customer_name: shippingDetails.fullName, billing_last_name: "", billing_address: shippingDetails.address, billing_city: shippingDetails.city, billing_pincode: shippingDetails.pincode, billing_state: shippingDetails.state, billing_country: "India", billing_email: shippingDetails.email, billing_phone: shippingDetails.phone, shipping_is_billing: true, order_items: cart.map((item: any) => ({ name: `${item.shapeName} Acrylic Magnet`, sku: `KRIA-${item.shapeId}`, units: item.quantity, selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom })), payment_method: "Prepaid", sub_total: subtotal, length: 15, width: 15, height: 5, weight: 0.15 * cart.length }) });
-        if (shipResponse.ok) { const shipData: any = await shipResponse.json(); if (shipData.shipment_id) { trackingNumber = `SR-${shipData.shipment_id}`; courierName = shipData.courier_name || courierName; isRealShipment = true; } }
+        const pickupLocRes = await fetch("https://apiv2.shiprocket.in/v1/external/settings/company/pickup", { headers: { Authorization: `Bearer ${shiprocketToken}` } });
+        let pickupName = process.env.SHIPROCKET_PICKUP_LOCATION || "Primary";
+        if (pickupLocRes.ok) {
+          const locData: any = await pickupLocRes.json();
+          if (locData.data?.shipping_address?.length > 0) {
+            pickupName = locData.data.shipping_address[0].pickup_location || pickupName;
+          }
+        }
+        const shipResponse = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+          body: JSON.stringify({
+            order_id: `KRIA_ORD_${Math.floor(1000 + Math.random() * 9000)}`,
+            order_date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+            pickup_location: pickupName,
+            billing_customer_name: shippingDetails.fullName,
+            billing_last_name: "",
+            billing_address: shippingDetails.address,
+            billing_city: shippingDetails.city,
+            billing_pincode: shippingDetails.pincode,
+            billing_state: shippingDetails.state,
+            billing_country: "India",
+            billing_email: shippingDetails.email,
+            billing_phone: shippingDetails.phone,
+            shipping_is_billing: true,
+            order_items: cart.map((item: any) => ({
+              name: `${item.shapeName} Acrylic Magnet`,
+              sku: `KRIA-${item.shapeId}`,
+              units: item.quantity,
+              selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom
+            })),
+            payment_method: "Prepaid",
+            sub_total: subtotal,
+            length: 15,
+            width: 15,
+            height: 5,
+            weight: 0.15 * cart.length
+          })
+        });
+        if (shipResponse.ok) {
+          const shipData: any = await shipResponse.json();
+          if (shipData.shipment_id || shipData.order_id) {
+            trackingNumber = shipData.awb_code || `SR-${shipData.shipment_id || shipData.order_id}`;
+            courierName = shipData.courier_name || courierName;
+            isRealShipment = true;
+            console.log("✅ Successfully created order in Shiprocket:", shipData.order_id);
+          }
+        } else {
+          console.error("Shiprocket order creation error response:", await shipResponse.text());
+        }
       } catch (shipErr) { console.error("Shiprocket order failed", shipErr); }
     }
     const newOrder = { id: `KRIA-ORD-${Math.floor(1000 + Math.random() * 9000)}`, status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId: isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
