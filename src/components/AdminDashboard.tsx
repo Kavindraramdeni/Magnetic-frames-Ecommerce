@@ -587,22 +587,24 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                           </button>
                         )}
                         <button
-                          onClick={() => handleGeneratePDFLabel(order)}
-                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsPrintWorkOrderOpen(order);
+                          }}
+                          className="px-3 py-1 bg-neutral-900 hover:bg-black text-white rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 shadow-sm cursor-pointer"
                         >
-                          <Download className="h-2.5 w-2.5" />
-                          <span>PDF Label</span>
+                          <Printer className="h-2.5 w-2.5 text-[#E8DCCF]" />
+                          <span>Print Photo</span>
                         </button>
                         <button
-                          onClick={() => {
-                            if (order.cart && order.cart.length > 0) {
-                              order.cart.forEach((item: any) => handleDownloadFramedPhoto(item));
-                            }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsPrintShippingLabelOpen(order);
                           }}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 shadow-sm"
+                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
                         >
-                          <Download className="h-2.5 w-2.5" />
-                          <span>Download Photo</span>
+                          <Truck className="h-2.5 w-2.5" />
+                          <span>Label</span>
                         </button>
                       </div>
                     </div>
@@ -835,23 +837,27 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                             )}
                           </div>
 
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                            <button
-                              onClick={() => handleDownloadFramedPhoto(item)}
-                              className="text-[10px] text-emerald-700 hover:underline flex items-center gap-1 font-mono font-bold cursor-pointer"
-                            >
-                              <Download className="h-2.5 w-2.5" />
-                              <span>Download Fitted 4x6 Photo (PNG)</span>
-                            </button>
-                            <a 
-                              href={item.previewUrl} 
-                              download={item.photoName || 'print_ready_image.png'}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[10px] text-neutral-500 hover:underline flex items-center gap-1 font-mono"
-                            >
-                              Raw File
-                            </a>
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleDownloadFramedPhoto(item)}
+                                className="text-[10px] text-emerald-700 hover:underline flex items-center gap-1 font-mono font-bold cursor-pointer"
+                                title="Download fitted PNG asset"
+                              >
+                                <Download className="h-2.5 w-2.5" />
+                                <span>Fitted PNG</span>
+                              </button>
+                              <a 
+                                href={item.previewUrl} 
+                                download={item.photoName || 'raw_upload.png'}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-neutral-400 hover:text-neutral-700 hover:underline flex items-center gap-1 font-mono"
+                                title="Download original uncropped raw file if needed"
+                              >
+                                Raw Upload
+                              </a>
+                            </div>
                             <span className="font-mono font-bold text-neutral-900">₹{item.price * item.quantity}</span>
                           </div>
                         </div>
