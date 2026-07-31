@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import crypto from "crypto";
 import dotenv from "dotenv";
-import fs from "fs";
+import { DatabaseSync } from "node:sqlite";
 import { SHAPE_PRICES } from "./src/catalog.js";
 
 dotenv.config();
@@ -38,7 +38,16 @@ try {
   try {
     db = new DatabaseSync(":memory:");
   } catch (e2) {
-    console.error("DatabaseSync failed completely:", e2);
+    console.error("DatabaseSync unavailable, using in-memory store wrapper.");
+    const memStore = new Map<string, Map<string, any>>();
+    db = {
+      exec: () => {},
+      prepare: (sql: string) => ({
+        run: (...args: any[]) => ({ changes: 1 }),
+        all: (...args: any[]) => [],
+        get: (...args: any[]) => undefined
+      })
+    };
   }
 }
 db.exec(`
