@@ -572,9 +572,9 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
             payment_method: "Prepaid",
             sub_total: subtotal,
             length: 15,
-            width: 15,
+            breadth: 15,
             height: 5,
-            weight: 0.15 * cart.length
+            weight: Number((0.15 * cart.length).toFixed(2))
           })
         });
         if (shipResponse.ok) {
