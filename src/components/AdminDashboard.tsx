@@ -593,6 +593,17 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                           <Download className="h-2.5 w-2.5" />
                           <span>PDF Label</span>
                         </button>
+                        <button
+                          onClick={() => {
+                            if (order.cart && order.cart.length > 0) {
+                              order.cart.forEach((item: any) => handleDownloadFramedPhoto(item));
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 shadow-sm"
+                        >
+                          <Download className="h-2.5 w-2.5" />
+                          <span>Download Photo</span>
+                        </button>
                       </div>
                     </div>
 
@@ -1040,9 +1051,15 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                           </div>
                         </div>
 
-                        <div className="font-mono text-[10px] text-neutral-600 bg-neutral-100 p-2.5 rounded-lg flex justify-between">
-                          <span>Frame Model: <strong>{item.shapeName}</strong></span>
-                          <span>Copies Needed: <strong>{item.quantity}</strong></span>
+                        <div className="font-mono text-[11px] text-neutral-600 bg-neutral-100 p-3 rounded-xl flex flex-wrap justify-between items-center gap-2 print:hidden">
+                          <span>Frame Model: <strong>{item.shapeName}</strong> (Qty: {item.quantity})</span>
+                          <button
+                            onClick={() => handleDownloadFramedPhoto(item)}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-mono font-bold text-[10px] uppercase flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                          >
+                            <Download className="h-3 w-3" />
+                            <span>Download Fitted 4x6 Photo (PNG)</span>
+                          </button>
                         </div>
                       </div>
                     );
