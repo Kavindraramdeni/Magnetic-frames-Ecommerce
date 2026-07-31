@@ -25,6 +25,65 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [isPrintWorkOrderOpen, setIsPrintWorkOrderOpen] = useState<any | null>(null);
   const [isPrintShippingLabelOpen, setIsPrintShippingLabelOpen] = useState<any | null>(null);
 
+  // Download fitted photo framed in its exact selected shape
+  const handleDownloadFramedPhoto = (item: any) => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 1200;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        ctx.clearRect(0, 0, 1200, 1200);
+        ctx.save();
+
+        if (item.shapeId === 'circle') {
+          ctx.beginPath();
+          ctx.arc(600, 600, 500, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+        } else if (item.shapeId === 'heart') {
+          ctx.beginPath();
+          ctx.moveTo(600, 320);
+          ctx.bezierCurveTo(600, 280, 520, 160, 340, 160);
+          ctx.bezierCurveTo(160, 160, 160, 420, 160, 420);
+          ctx.bezierCurveTo(160, 640, 360, 840, 600, 1080);
+          ctx.bezierCurveTo(840, 840, 1040, 640, 1040, 420);
+          ctx.bezierCurveTo(1040, 420, 1040, 160, 860, 160);
+          ctx.bezierCurveTo(680, 160, 600, 280, 600, 320);
+          ctx.closePath();
+          ctx.clip();
+        } else if (item.shapeId === 'arch') {
+          ctx.beginPath();
+          ctx.arc(600, 450, 400, Math.PI, 0, false);
+          ctx.lineTo(1000, 1050);
+          ctx.lineTo(200, 1050);
+          ctx.closePath();
+          ctx.clip();
+        } else {
+          ctx.beginPath();
+          ctx.roundRect(150, 150, 900, 900, 40);
+          ctx.closePath();
+          ctx.clip();
+        }
+
+        ctx.drawImage(img, 0, 0, 1200, 1200);
+        ctx.restore();
+
+        const link = document.createElement('a');
+        link.download = `fitted_${item.shapeId || 'photo'}_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      };
+      img.src = item.previewUrl;
+    } catch (e: any) {
+      alert("Could not generate fitted photo download: " + e.message);
+    }
+  };
+
   // Generate high-fidelity thermal PDF shipping label
   const handleGeneratePDFLabel = (order: any) => {
     try {
@@ -698,10 +757,10 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
-                    className="py-3 px-4 rounded-2xl bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 text-xs font-mono tracking-wider font-bold uppercase flex items-center justify-center gap-2 cursor-pointer transition-all"
+                    className="py-3 px-4 rounded-2xl bg-neutral-900 hover:bg-black text-white border border-neutral-900 text-xs font-mono tracking-wider font-bold uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
                   >
-                    <Printer className="h-4 w-4 text-[#c0a88a]" />
-                    <span>Print Work Order</span>
+                    <Printer className="h-4 w-4 text-[#E8DCCF]" />
+                    <span>🖨️ PRINT 4x6 PHOTO</span>
                   </button>
 
                   <button
@@ -709,7 +768,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     className="py-3 px-4 rounded-2xl bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 text-xs font-mono tracking-wider font-bold uppercase flex items-center justify-center gap-2 cursor-pointer transition-all"
                   >
                     <Truck className="h-4 w-4 text-emerald-600" />
-                    <span>Print Label</span>
+                    <span>🏷️ PRINT SHIPPING LABEL</span>
                   </button>
                 </div>
 
@@ -765,16 +824,22 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                             )}
                           </div>
 
-                          <div className="flex justify-between pt-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <button
+                              onClick={() => handleDownloadFramedPhoto(item)}
+                              className="text-[10px] text-emerald-700 hover:underline flex items-center gap-1 font-mono font-bold cursor-pointer"
+                            >
+                              <Download className="h-2.5 w-2.5" />
+                              <span>Download Fitted 4x6 Photo (PNG)</span>
+                            </button>
                             <a 
                               href={item.previewUrl} 
                               download={item.photoName || 'print_ready_image.png'}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 font-mono font-bold"
+                              className="text-[10px] text-neutral-500 hover:underline flex items-center gap-1 font-mono"
                             >
-                              <Download className="h-2.5 w-2.5" />
-                              Download Original File
+                              Raw File
                             </a>
                             <span className="font-mono font-bold text-neutral-900">₹{item.price * item.quantity}</span>
                           </div>
@@ -864,7 +929,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             {/* Sheet Control Header */}
             <div className="bg-neutral-100 p-4 border-b border-neutral-200 flex justify-between items-center">
               <div>
-                <h4 className="font-mono text-xs font-bold text-neutral-800 uppercase tracking-widest">Print Room & Laser Cut Work Sheet</h4>
+                <h4 className="font-mono text-xs font-bold text-neutral-800 uppercase tracking-widest">🖨️ 4x6 Photo Paper Print Sheet</h4>
                 <p className="text-4xs font-mono text-neutral-500 uppercase tracking-widest mt-1">Order ID: {isPrintWorkOrderOpen.id}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -872,8 +937,8 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   onClick={() => window.print()}
                   className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white transition-all text-2xs font-mono rounded-lg flex items-center gap-1 cursor-pointer font-bold uppercase"
                 >
-                  <Printer className="h-3 w-3" />
-                  <span>Launch Print Room Modal</span>
+                  <Printer className="h-3 w-3 text-[#E8DCCF]" />
+                  <span>Print 4x6 Photo Paper</span>
                 </button>
                 <button
                   onClick={() => setIsPrintWorkOrderOpen(null)}
@@ -885,7 +950,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             </div>
 
             {/* Print Room Paper sheet layout */}
-            <div className="p-8 overflow-y-auto bg-white grow space-y-8 select-all font-sans print:p-0" id="print-work-order-sheet">
+            <div className="p-8 overflow-y-auto bg-white grow space-y-8 select-all font-sans print:p-0" id="print-photo-sheet-body">
               
               {/* Header block */}
               <div className="flex justify-between items-start border-b-2 border-neutral-900 pb-4">

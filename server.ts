@@ -774,9 +774,35 @@ app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
   res.json({ success: true, message: `Voided order ${req.params.id}` });
 });
 
+const DEFAULT_CATALOG_PRODUCTS = [
+  { id: "custom", name: "Custom Silhouette Outlines", price: 399, originalPrice: 539, dimensions: "Up to 10.0 × 15.0 CM", description: "Individually trace-cut outlines.", tagline: "Individually trace-cut outlines.", isTrending: 1 },
+  { id: "polaroid", name: "Classic Polaroid", price: 150, originalPrice: 500, dimensions: "7.0 × 7.0 CM", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
+  { id: "snapshot", name: "Horizontal Snapshot", price: 249, originalPrice: 369, dimensions: "8.8 × 6.3 CM", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
+  { id: "portrait", name: "Classic Portrait", price: 279, originalPrice: 399, dimensions: "7.5 × 10.0 CM", description: "A beautiful vertical rectangle with elegantly rounded borders.", tagline: "Elegantly rounded borders.", isTrending: 1 },
+  { id: "portrait-wide", name: "Aesthetic Portrait Max", price: 299, originalPrice: 419, dimensions: "8.8 × 10.8 CM", description: "A slightly wider, elegant portrait frame.", tagline: "Wider portrait frame.", isTrending: 1 },
+  { id: "cloud", name: "Aesthetic Cloud", price: 299, originalPrice: 429, dimensions: "10.5 × 12.5 CM", description: "A whimsical, soft-curved organic shape.", tagline: "Organic curved cloud shape.", isTrending: 1 },
+  { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "7.5 × 11.5 CM", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
+  { id: "heart", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "9.5 × 9.5 CM", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
+  { id: "hexagon", name: "Modern Hexagon", price: 299, originalPrice: 429, dimensions: "9.0 × 10.5 CM", description: "Geometric 6-sided acrylic frame.", tagline: "Geometric 6-sided frame.", isTrending: 1 },
+  { id: "crest", name: "Royal Crest", price: 299, originalPrice: 429, dimensions: "9.0 × 9.0 CM", description: "Ornate curved shield silhouette.", tagline: "Ornate curved shield silhouette.", isTrending: 1 },
+  { id: "oval", name: "Classic Oval", price: 299, originalPrice: 429, dimensions: "7.5 × 11.5 CM", description: "Smooth continuous oval curves.", tagline: "Smooth continuous oval curves.", isTrending: 1 },
+  { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "8.0 × 14.0 CM", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 },
+  { id: "square", name: "Classic Square", price: 249, originalPrice: 349, dimensions: "7.5 × 7.5 CM", description: "Clean 1:1 symmetrical square.", tagline: "Clean 1:1 symmetrical square.", isTrending: 1 }
+];
+
 app.get("/api/products", (_req, res) => {
   try {
-    const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all().map((p: any) => ({
+    let products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
+    if (products.length === 0) {
+      const stmt = db.prepare(`INSERT OR REPLACE INTO products
+        (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+      for (const p of DEFAULT_CATALOG_PRODUCTS) {
+        stmt.run(p.id, p.name, p.price, p.originalPrice, p.dimensions, p.description, "rounded-2xl border-2", "aspect-[4/5]", p.tagline, p.isTrending, new Date().toISOString());
+      }
+      products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
+    }
+    const formatted = products.map((p: any) => ({
       id: p.id,
       name: p.name,
       price: p.price,
@@ -788,7 +814,7 @@ app.get("/api/products", (_req, res) => {
       tagline: p.tagline,
       isTrending: Boolean(p.is_trending)
     }));
-    return res.json({ success: true, products });
+    return res.json({ success: true, products: formatted });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
