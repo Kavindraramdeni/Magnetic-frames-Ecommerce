@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import crypto from "crypto";
 import dotenv from "dotenv";
+import fs from "fs";
 import { DatabaseSync } from "node:sqlite";
 import { SHAPE_PRICES } from "./src/catalog.js";
 
