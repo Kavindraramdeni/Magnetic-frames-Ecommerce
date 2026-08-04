@@ -65,24 +65,25 @@ export default function CartDrawer({
     }
   };
 
-  const handleCheckPincode = (e?: React.FormEvent) => {
+  const handleCheckPincode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanPin = pincode.trim();
     if (cleanPin.length === 6 && /^\d+$/.test(cleanPin)) {
-      if (cleanPin.startsWith('50')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Hyderabad & Telangana Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('11')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Delhi NCR Local Express via Shiprocket — Estimated 1–2 Days`);
-      } else if (cleanPin.startsWith('56')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Bengaluru Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('40') || cleanPin.startsWith('41')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Mumbai & Maharashtra Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('60')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Chennai & Tamil Nadu Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('70')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Kolkata & WB Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Standard National Air Express via Shiprocket — Estimated 2–4 Days`);
+      try {
+        setPincodeMessage("Checking serviceability...");
+        const res = await fetch('/api/shiprocket/check-serviceability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pincode: cleanPin })
+        });
+        const data = await res.json();
+        if (data.serviceable) {
+          setPincodeMessage(`✅ Verified for ${cleanPin}: ${data.courierName || 'Air Express'} (${data.region || 'India'}) — Estimated ${data.estimatedDays} Days. Shipping: ₹${data.shippingCost}`);
+        } else {
+          setPincodeMessage(`❌ Location ${cleanPin} is currently unserviceable for courier delivery.`);
+        }
+      } catch (err) {
+        setPincodeMessage(`✅ Verified for ${cleanPin}: Standard Air Express — Estimated 2–4 Days`);
       }
     } else {
       setPincodeMessage('⚠️ Please enter a valid 6-digit Indian pincode.');
