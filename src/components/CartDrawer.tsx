@@ -310,202 +310,147 @@ export default function CartDrawer({
           )}
         </div>
 
-        {/* Drawer Footer Summary Block */}
+        {/* Drawer Footer - Compact Luxury Summary & Accordions */}
         {cart.length > 0 && (
-          <div className="bg-white border-t border-neutral-200 p-4 sm:p-5 shrink-0 space-y-4 shadow-inner">
+          <div className="p-4 sm:p-5 bg-white border-t border-neutral-200/90 space-y-3 shrink-0 shadow-lg">
             
-            {/* Pincode & Delivery Calculator */}
-            <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/80 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-mono font-bold text-neutral-700 uppercase tracking-wider text-[10px]">
-                  Check Shipping Pincode
-                </span>
-                <span className="text-[10px] text-emerald-700 font-semibold font-mono">
-                  Shiprocket Logistics
-                </span>
+            {/* Quick 1-Click Promo Pill Badges */}
+            {!appliedCoupon && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-[10px] font-mono">
+                <span className="text-neutral-400 font-bold uppercase shrink-0 text-[9px]">Coupons:</span>
+                {[
+                  { code: 'KRIA10', discountText: '10% OFF' },
+                  { code: 'WELCOME15', discountText: '15% OFF' },
+                  { code: 'FREESHIP', discountText: 'FREE Ship' },
+                  { code: 'KRIA50', discountText: '₹50 OFF' }
+                ].map((c) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => {
+                      setCouponInput(c.code);
+                      setIsApplyingCoupon(true);
+                      fetch('/api/checkout/create-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ cart, couponCode: c.code })
+                      }).then(res => res.json()).then(data => {
+                        setIsApplyingCoupon(false);
+                        if (data.totals?.couponDiscount > 0 || c.code === 'FREESHIP') {
+                          setAppliedCoupon({ code: c.code, label: `${c.code} (${c.discountText})`, discount: data.totals?.couponDiscount || 60 });
+                          setCouponError(null);
+                        } else {
+                          setCouponError(`Valid on orders > ₹499`);
+                        }
+                      }).catch(() => setIsApplyingCoupon(false));
+                    }}
+                    className="shrink-0 bg-neutral-100 hover:bg-[#111111] hover:text-[#E8DCCF] text-neutral-800 font-bold px-2.5 py-1 rounded-full border border-neutral-200 transition cursor-pointer flex items-center gap-1"
+                  >
+                    <span>{c.code}</span>
+                    <span className="opacity-70 font-normal">({c.discountText})</span>
+                  </button>
+                ))}
               </div>
-              <form onSubmit={handleCheckPincode} className="flex gap-2">
+            )}
+
+            {appliedCoupon && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 flex justify-between items-center text-xs font-mono">
+                <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>{appliedCoupon.code} Applied (-₹{appliedCoupon.discount})</span>
+                </div>
+                <button
+                  onClick={() => setAppliedCoupon(null)}
+                  className="text-emerald-700 hover:text-emerald-950 text-[10px] font-bold underline cursor-pointer"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            {/* Pincode & Coupon Expandable Triggers */}
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+              <div className="relative">
                 <input
                   type="text"
-                  maxLength={6}
                   value={pincode}
-                  onChange={(e) => setPincode(e.target.value)}
-                  placeholder="e.g. 110001 (Delhi)"
-                  className="flex-1 bg-white border border-neutral-300 rounded-lg px-3 py-1.5 text-xs font-mono font-medium focus:outline-none focus:border-neutral-800"
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Pincode (e.g. 500085)"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-lg px-2.5 py-1.5 font-mono text-neutral-800 focus:outline-none focus:border-neutral-900"
                 />
-                <button
-                  type="submit"
-                  className="bg-neutral-900 hover:bg-neutral-800 text-white font-mono text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg cursor-pointer transition"
-                >
-                  Verify
-                </button>
-              </form>
-              {pincodeMessage && (
-                <p className="text-[10px] font-sans text-neutral-600 leading-tight">
-                  {pincodeMessage}
-                </p>
-              )}
-            </div>
-
-            {/* Promo Coupon Discount Box */}
-            <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/80 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-mono font-bold text-neutral-700 uppercase tracking-wider text-[10px] flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-[#6B1D2F]" />
-                  Apply Promo Coupon
-                </span>
-                <span className="text-[9px] text-neutral-400 font-mono">Try: KRIA10 / WELCOME15</span>
-              </div>
-              
-              {appliedCoupon ? (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 flex justify-between items-center text-xs">
-                  <div>
-                    <p className="font-mono font-bold text-emerald-900 leading-none">{appliedCoupon.code} Applied!</p>
-                    <p className="text-[10px] text-emerald-700 font-sans mt-0.5">{appliedCoupon.label} (-₹{appliedCoupon.discount})</p>
-                  </div>
+                {pincode.length === 6 && (
                   <button
-                    onClick={() => setAppliedCoupon(null)}
-                    className="text-emerald-700 hover:text-emerald-900 font-mono text-[10px] underline cursor-pointer"
+                    onClick={handleCheckPincode}
+                    className="absolute right-1 top-1 bg-neutral-900 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase cursor-pointer"
                   >
-                    Remove
+                    Check
                   </button>
-                </div>
-              ) : (
-                <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                    placeholder="Enter KRIA10"
-                    className="flex-1 bg-white border border-neutral-300 rounded-lg px-3 py-1.5 text-xs font-mono font-bold uppercase focus:outline-none focus:border-neutral-800"
-                  />
+                )}
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  placeholder="Promo Code"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-lg px-2.5 py-1.5 font-mono text-neutral-800 uppercase focus:outline-none focus:border-neutral-900"
+                />
+                {couponInput.length > 2 && !appliedCoupon && (
                   <button
-                    type="submit"
+                    onClick={handleApplyCoupon}
                     disabled={isApplyingCoupon}
-                    className="bg-[#6B1D2F] hover:bg-[#521523] text-white font-mono text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-lg cursor-pointer transition disabled:opacity-50"
+                    className="absolute right-1 top-1 bg-[#6B1D2F] text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase cursor-pointer"
                   >
                     {isApplyingCoupon ? '...' : 'Apply'}
                   </button>
-                </form>
-              )}
-
-              {couponError && (
-                <p className="text-[10px] font-mono text-red-600 leading-tight">{couponError}</p>
-              )}
-
-              {/* Available 1-Click Coupons Cards */}
-              {!appliedCoupon && (
-                <div className="space-y-1.5 pt-1">
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-neutral-400 font-bold block">
-                    Available Coupons (Click to Apply)
-                  </span>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {[
-                      { code: 'KRIA10', label: '10% OFF Order', icon: '🔥' },
-                      { code: 'WELCOME15', label: '15% OFF New User', icon: '✨' },
-                      { code: 'FREESHIP', label: 'FREE Shipping', icon: '🚚' },
-                      { code: 'KRIA50', label: '₹50 Flat OFF', icon: '🎁' }
-                    ].map((c) => (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => {
-                          setCouponInput(c.code);
-                          setIsApplyingCoupon(true);
-                          fetch('/api/checkout/create-order', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ cart, couponCode: c.code })
-                          }).then(res => res.json()).then(data => {
-                            setIsApplyingCoupon(false);
-                            if (data.totals?.couponDiscount > 0 || c.code === 'FREESHIP') {
-                              setAppliedCoupon({ code: c.code, label: c.label, discount: data.totals?.couponDiscount || 60 });
-                              setCouponError(null);
-                            } else {
-                              setCouponError(`Coupon ${c.code} is valid on orders over ₹499`);
-                            }
-                          }).catch(() => setIsApplyingCoupon(false));
-                        }}
-                        className="border border-dashed border-amber-300 bg-amber-50/70 hover:bg-amber-100 p-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer group"
-                      >
-                        <div>
-                          <span className="font-mono font-bold text-[10px] text-amber-900 block">{c.icon} {c.code}</span>
-                          <span className="text-[8px] text-amber-700 font-sans">{c.label}</span>
-                        </div>
-                        <span className="text-[8px] font-mono font-bold uppercase bg-amber-200 text-amber-900 px-1 py-0.5 rounded group-hover:bg-amber-800 group-hover:text-white transition">
-                          Apply
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Pricing Details List */}
-            <div className="space-y-1.5 text-xs text-[#666666]">
+            {pincodeMessage && (
+              <p className="text-[9px] font-mono text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+                {pincodeMessage}
+              </p>
+            )}
+
+            {/* Pricing Lines */}
+            <div className="space-y-1 text-xs text-neutral-600 font-sans border-t border-neutral-100 pt-2">
               <div className="flex justify-between font-light">
-                <span>Subtotal:</span>
-                <span className="font-mono font-medium text-black">₹{cartSubtotal}</span>
+                <span>Subtotal ({cartItemCount} items):</span>
+                <span className="font-mono font-medium text-neutral-900">₹{cartSubtotal}</span>
               </div>
 
               {bulkDiscount > 0 && (
                 <div className="flex justify-between text-[#6B1D2F] font-semibold">
-                  <span>Bulk discount ({cartItemCount}+ items):</span>
+                  <span>Bulk Discount:</span>
                   <span className="font-mono">-₹{bulkDiscount}</span>
                 </div>
               )}
 
-              {appliedCoupon && (
-                <div className="flex justify-between text-emerald-800 font-semibold">
-                  <span>Coupon ({appliedCoupon.code}):</span>
-                  <span className="font-mono">-₹{appliedCoupon.discount}</span>
-                </div>
-              )}
-              
-              <div className="flex justify-between items-center font-light">
-                <span className="flex items-center gap-1">
-                  Express Delivery:
-                  <span className="text-[9px] font-mono bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded border border-neutral-200">
-                    Standard Rate
-                  </span>
-                </span>
-                <span className="font-mono font-medium text-black">
-                  ₹{deliveryCharge}
-                </span>
-              </div>
-
-              <p className="text-[10px] text-neutral-500 font-sans leading-tight bg-neutral-50 border border-neutral-200/60 p-2 rounded-lg">
-                📦 <strong>Delivery Time:</strong> 2–4 business days via insured express air courier across India.
-              </p>
-
-              <div className="h-[1px] bg-neutral-100 my-2" />
-              
-              <div className="flex justify-between text-sm text-neutral-900 font-semibold items-baseline">
-                <span className="font-serif italic font-medium text-neutral-800">Grand Total:</span>
-                <span className="font-mono text-lg font-bold text-neutral-900">₹{grandTotal}</span>
+              <div className="flex justify-between items-baseline pt-1.5 border-t border-neutral-200 text-neutral-900">
+                <span className="font-serif italic font-bold text-base">Grand Total:</span>
+                <span className="font-mono text-xl font-extrabold text-neutral-900">₹{grandTotal}</span>
               </div>
             </div>
 
-            {/* Checkout CTAs */}
-            <div className="space-y-2">
-              <button
-                onClick={onProceedToCheckout}
-                className="w-full bg-[#111111] hover:bg-neutral-800 text-[#FAF8F5] transition-all py-3.5 rounded-full text-xs font-sans tracking-widest font-extrabold uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md hover:scale-[1.01] active:scale-[0.98]"
-              >
-                <Lock className="h-3.5 w-3.5 text-[#E8DCCF]" />
-                Proceed to Checkout (₹{grandTotal})
-              </button>
-              
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
-                className="w-full text-center py-2 text-[10px] font-mono font-bold tracking-widest text-neutral-500 hover:text-neutral-800 uppercase flex items-center justify-center gap-1 transition cursor-pointer"
-              >
-                <span>Continue Designing</span>
-                <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
+            {/* Primary Checkout CTA */}
+            <button
+              onClick={onProceedToCheckout}
+              className="w-full bg-[#111111] hover:bg-neutral-800 text-[#FAF8F5] transition-all py-3.5 rounded-full text-xs font-sans tracking-widest font-extrabold uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md hover:scale-[1.01] active:scale-[0.98]"
+            >
+              <Lock className="h-3.5 w-3.5 text-[#E8DCCF]" />
+              Proceed to Checkout (₹{grandTotal})
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+              className="w-full text-center py-1 text-[10px] font-mono font-bold tracking-widest text-neutral-500 hover:text-neutral-800 uppercase flex items-center justify-center gap-1 transition cursor-pointer"
+            >
+              <span>Continue Designing</span>
+              <ArrowRight className="h-3 w-3" />
+            </button>
           </div>
         )}
 
