@@ -20,6 +20,7 @@ Set these environment variables before accepting real orders:
 - `EMAIL_WEBHOOK_URL`, `SMS_WEBHOOK_URL`, and `WHATSAPP_WEBHOOK_URL` for real customer notifications; `NOTIFICATION_WEBHOOK_URL` remains a generic fallback
 - `DATABASE_URL=sqlite:/path/to/kria.sqlite` or `DATA_DIR=/persistent/data` for persistent SQLite storage
 - `OBJECT_STORAGE_DIR=/persistent/uploads` for secure uploaded photo object storage
+- `ALLOWED_ORIGINS=https://your-storefront.example` to restrict browser API access in production
 
 Mock checkout is intentionally disabled in production. It only works when `ENABLE_MOCK_CHECKOUT=true` and `NODE_ENV` is not `production`.
 

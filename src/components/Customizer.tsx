@@ -7,7 +7,7 @@ import {
   Upload, Sparkles, MessageSquare, RotateCcw, 
   ZoomIn, ArrowRight, Share2, HelpCircle, 
   Trash2, ShoppingBag, Plus, Minus, Check, Image, Info, ChevronDown, ChevronLeft, ChevronRight,
-  CreditCard, Truck, Lock, ShieldCheck, Activity, X, AlertTriangle, Layers, Maximize2, Move
+  CreditCard, Truck, Lock, ShieldCheck, Activity, X, AlertTriangle, AlertCircle, Layers, Maximize2, Move
 } from 'lucide-react';
 
 export interface PhotoPoolItem {

@@ -19,6 +19,10 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || (ADMIN_PASSWORD ? crypto.createHa
 const ENABLE_MOCK_CHECKOUT = process.env.ENABLE_MOCK_CHECKOUT === "true" && !isProduction;
 const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 120);
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 if (isProduction && !isVercel && (!ADMIN_PASSWORD && !process.env.ADMIN_TOKEN)) {
   throw new Error("ADMIN_PASSWORD or ADMIN_TOKEN is required in production.");
@@ -170,6 +174,18 @@ function savePaymentEvent(event: any) {
     (id, provider, event_type, external_payment_id, external_order_id, payload_json, processed_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)`
   ).run(event.id, event.provider, event.eventType, event.externalPaymentId, event.externalOrderId, JSON.stringify(event.payload), event.processedAt);
+}
+
+function generateOrderId(prefix = "KRIA"): string {
+  const now = new Date();
+  const datePart = now.toISOString().slice(2, 10).replace(/-/g, "");
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const randomPart = crypto.randomInt(1000, 10_000);
+    const orderId = `${prefix}-${datePart}-${randomPart}`;
+    const existing = db.prepare("SELECT id FROM orders WHERE id = ?").get(orderId);
+    if (!existing) return orderId;
+  }
+  return `${prefix}-${datePart}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
 function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -348,9 +364,20 @@ const PORT = Number(process.env.PORT || 3000);
 
 // CORS & Options preflight for Vercel / Render cross-origin & serverless proxy
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const requestOrigin = req.headers.origin;
+  const fallbackToRequestOrigin = ALLOWED_ORIGINS.length === 0 && !isProduction;
+  const isAllowedOrigin = typeof requestOrigin === "string" && (
+    ALLOWED_ORIGINS.includes(requestOrigin) || fallbackToRequestOrigin
+  );
+  if (isAllowedOrigin) {
+    res.header("Access-Control-Allow-Origin", requestOrigin);
+  }
+  res.header("Vary", "Origin");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  if (req.method === "OPTIONS" && requestOrigin && !isAllowedOrigin) {
+    return res.status(403).json({ error: "Origin is not allowed." });
+  }
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -472,7 +499,7 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
   if (existing) return existing;
   const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(session.cart);
   const order = {
-    id: `KRIA-ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+    id: generateOrderId("KRIA-ORD"),
     status: "Paid",
     cart: session.cart,
     shippingDetails: session.shippingDetails,
@@ -550,7 +577,7 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
           body: JSON.stringify({
-            order_id: `KRIA_ORD_${Math.floor(1000 + Math.random() * 9000)}`,
+            order_id: generateOrderId("KRIA-ORD").replace(/-/g, "_"),
             order_date: new Date().toISOString().replace('T', ' ').substring(0, 16),
             pickup_location: pickupName,
             billing_customer_name: shippingDetails.fullName,
@@ -590,7 +617,7 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
         }
       } catch (shipErr) { console.error("Shiprocket order failed", shipErr); }
     }
-    const newOrder = { id: `KRIA-ORD-${Math.floor(1000 + Math.random() * 9000)}`, status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId: isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
+    const newOrder = { id: generateOrderId("KRIA-ORD"), status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId: isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
     saveOrder(newOrder);
     const notification = await notifyCustomer(newOrder, "Order confirmed");
     return res.json({ success: true, transactionId: newOrder.transactionId, trackingNumber, courierName, deliveryEstimate: newOrder.deliveryEstimate, isMockCheckout: isMock, isRealShipment, notification, grandTotal });
