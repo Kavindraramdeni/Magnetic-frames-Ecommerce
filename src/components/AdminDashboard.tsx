@@ -171,6 +171,143 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [isPrintShippingLabelOpen, setIsPrintShippingLabelOpen] = useState<any | null>(null);
   const [isPrintTaxInvoiceOpen, setIsPrintTaxInvoiceOpen] = useState<any | null>(null);
 
+  // Print individual item framed photo cleanly on 4x6 photo paper
+  const handlePrintSingleItemPhoto = (item: any) => {
+    try {
+      const canvas = document.createElement('canvas');
+      const W = 1200;
+      const H = 1800; // 4x6 aspect ratio 1:1.5
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, W, H);
+
+        const centerX = W / 2;
+        const centerY = H / 2;
+
+        let fw = 800;
+        let fh = 1050;
+        if (item.shapeId === 'circle' || item.shapeId === 'circle-bloom' || item.shapeId === 'square') {
+          fw = 900;
+          fh = 900;
+        } else if (item.shapeId === 'polaroid') {
+          fw = 800;
+          fh = 1000;
+        }
+
+        const fx = centerX - fw / 2;
+        const fy = centerY - fh / 2;
+
+        ctx.save();
+        ctx.beginPath();
+
+        if (item.shapeId === 'circle' || item.shapeId === 'circle-bloom') {
+          ctx.arc(centerX, centerY, fw / 2, 0, Math.PI * 2);
+        } else if (item.shapeId === 'heart') {
+          const topCurveHeight = fh * 0.3;
+          ctx.moveTo(centerX, fy + topCurveHeight);
+          ctx.bezierCurveTo(centerX, fy, fx, fy, fx, fy + topCurveHeight);
+          ctx.bezierCurveTo(fx, fy + (fh + topCurveHeight) / 2, centerX - fw / 4, fy + fh * 0.8, centerX, fy + fh);
+          ctx.bezierCurveTo(centerX + fw / 4, fy + fh * 0.8, fx + fw, fy + (fh + topCurveHeight) / 2, fx + fw, fy + topCurveHeight);
+          ctx.bezierCurveTo(fx + fw, fy, centerX, fy, centerX, fy + topCurveHeight);
+        } else if (item.shapeId === 'arch') {
+          const archRadius = fw / 2;
+          ctx.moveTo(fx, fy + archRadius);
+          ctx.arc(centerX, fy + archRadius, archRadius, Math.PI, 0, false);
+          ctx.lineTo(fx + fw, fy + fh);
+          ctx.lineTo(fx, fy + fh);
+          ctx.closePath();
+        } else if (item.shapeId === 'hexagon') {
+          ctx.moveTo(centerX, fy);
+          ctx.lineTo(fx + fw, fy + fh * 0.25);
+          ctx.lineTo(fx + fw, fy + fh * 0.75);
+          ctx.lineTo(centerX, fy + fh);
+          ctx.lineTo(fx, fy + fh * 0.75);
+          ctx.lineTo(fx, fy + fh * 0.25);
+          ctx.closePath();
+        } else if (item.shapeId === 'polaroid') {
+          ctx.rect(fx + 30, fy + 30, fw - 60, fh - 140);
+        } else {
+          if (typeof (ctx as any).roundRect === 'function') {
+            (ctx as any).roundRect(fx, fy, fw, fh, 50);
+          } else {
+            ctx.rect(fx, fy, fw, fh);
+          }
+        }
+        ctx.closePath();
+        ctx.clip();
+
+        const scale = item.photoScale || 1.0;
+        const panX = item.photoPanX || 0;
+        const panY = item.photoPanY || 0;
+
+        const imgRatio = img.width / img.height;
+        const frameRatio = fw / fh;
+        let drawW = fw;
+        let drawH = fh;
+        if (imgRatio > frameRatio) {
+          drawH = fh;
+          drawW = fh * imgRatio;
+        } else {
+          drawW = fw;
+          drawH = fw / imgRatio;
+        }
+
+        drawW *= scale;
+        drawH *= scale;
+
+        const imgX = centerX - drawW / 2 + (panX * 5);
+        const imgY = centerY - drawH / 2 + (panY * 5);
+
+        ctx.drawImage(img, imgX, imgY, drawW, drawH);
+        ctx.restore();
+
+        if (item.shapeId === 'polaroid') {
+          ctx.strokeStyle = '#111111';
+          ctx.lineWidth = 8;
+          ctx.strokeRect(fx, fy, fw, fh);
+          if (item.captionText) {
+            ctx.fillStyle = '#111111';
+            ctx.font = 'bold 48px Cormorant Garamond, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(item.captionText, centerX, fy + fh - 40);
+          }
+        }
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const printWin = window.open('', '_blank');
+        if (printWin) {
+          printWin.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>4x6 Photo Print - ${item.shapeName}</title>
+                <style>
+                  @page { size: 4in 6in; margin: 0; }
+                  body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: white; width: 4in; height: 6in; overflow: hidden; }
+                  img { width: 4in; height: 6in; object-fit: contain; }
+                </style>
+              </head>
+              <body>
+                <img src="${dataUrl}" onload="window.print(); window.close();" />
+              </body>
+            </html>
+          `);
+          printWin.document.close();
+        }
+      };
+      img.src = item.previewUrl;
+    } catch (e: any) {
+      alert("Could not trigger single photo print: " + e.message);
+    }
+  };
+
   // Download fitted photo framed in its exact selected shape
   const handleDownloadFramedPhoto = (item: any) => {
     try {
@@ -1181,13 +1318,22 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                         <p className="font-bold text-neutral-900 uppercase">Item #{idx + 1}: {item.shapeName}</p>
                         <p className="text-neutral-500 font-semibold">Qty: {item.quantity} Frame(s)</p>
                       </div>
-                      <button
-                        onClick={() => handleDownloadFramedPhoto(item)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-mono font-bold text-[10px] uppercase flex items-center gap-1.5 cursor-pointer shadow-sm transition"
-                      >
-                        <Download className="h-3 w-3" />
-                        <span>Download Fitted 4x6 Photo (PNG)</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handlePrintSingleItemPhoto(item)}
+                          className="px-3 py-1.5 bg-neutral-900 hover:bg-black text-white rounded-lg font-mono font-bold text-[10px] uppercase flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                        >
+                          <Printer className="h-3 w-3 text-[#E8DCCF]" />
+                          <span>Print 4x6 Photo</span>
+                        </button>
+                        <button
+                          onClick={() => handleDownloadFramedPhoto(item)}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-mono font-bold text-[10px] uppercase flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                        >
+                          <Download className="h-3 w-3" />
+                          <span>Download Fitted PNG</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Canvas High-Res Render Engine: Scaled, Panned & Clipped in Customer's Selected Frame Shape */}
