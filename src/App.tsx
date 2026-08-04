@@ -11,6 +11,7 @@ import StyleCarousel from './components/StyleCarousel';
 import SectionWrapper from './components/SectionWrapper';
 import AdminDashboard from './components/AdminDashboard';
 import CartDrawer from './components/CartDrawer';
+import BulkCorporateModal from './components/BulkCorporateModal';
 import { MagnetShapeId, CartItem } from './types';
 import { BASE_SHAPES } from './data';
 import { MessageSquare, Sparkles, ShoppingBag } from 'lucide-react';
@@ -73,9 +74,9 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  // Navigation View state: 'home' is the main landing page, 'style-experience' is separate, 'admin' is the fulfillment cms
   const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'policies' | 'tracking'>('home');
   const [adminToken, setAdminToken] = useState<string>('');
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   // Lifted cart state with localStorage persistence and sanitization
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -325,6 +326,7 @@ export default function App() {
         onScrollToGallery={scrollToGallery}
         cartItemsCount={cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
         onOpenCart={() => setIsCartOpen(true)}
+        onOpenBulkModal={() => setIsBulkModalOpen(true)}
       />
 
       {/* Hero Header Banner */}
@@ -451,6 +453,12 @@ export default function App() {
           setIsCartOpen(false);
           setIsCheckoutOpen(true);
         }}
+      />
+
+      {/* Bulk & Corporate Orders Modal */}
+      <BulkCorporateModal 
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
       />
 
     </div>

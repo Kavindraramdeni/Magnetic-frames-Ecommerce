@@ -9,6 +9,7 @@ interface HeaderProps {
   onScrollToShapes: () => void;
   cartItemsCount?: number;
   onOpenCart?: () => void;
+  onOpenBulkModal?: () => void;
 }
 
 export default function Header({ 
@@ -16,7 +17,8 @@ export default function Header({
   onScrollToGallery, 
   onScrollToShapes,
   cartItemsCount = 0,
-  onOpenCart
+  onOpenCart,
+  onOpenBulkModal
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -41,7 +43,7 @@ export default function Header({
         </div>
 
         {/* Desktop Navigation with Animated Underline Micro-interactions */}
-        <nav className="hidden md:flex items-center gap-10 font-sans text-xs tracking-widest font-semibold text-[#555555]">
+        <nav className="hidden md:flex items-center gap-8 font-sans text-xs tracking-widest font-semibold text-[#555555]">
           <button 
             onClick={onScrollToShapes}
             className="relative py-2 hover:text-black transition-colors duration-200 cursor-pointer uppercase after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-neutral-900 after:transition-all after:duration-300"
@@ -54,21 +56,12 @@ export default function Header({
           >
             LIFESTYLE INSPIRATION
           </button>
-          <a 
-            href="#faqs"
-            className="relative py-2 hover:text-black transition-colors duration-200 cursor-pointer uppercase after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-neutral-900 after:transition-all after:duration-300"
+          <button 
+            onClick={onOpenBulkModal}
+            className="relative py-2 text-amber-900 hover:text-amber-950 font-bold tracking-wider transition-colors duration-200 cursor-pointer uppercase flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full border border-amber-300/80 hover:bg-amber-100"
           >
-            SPECIFICATIONS
-          </a>
-          <a 
-            href="https://wa.me/919392576792?text=Hi! I'm interested in bulk orders for KRIA Studio."
-            target="_blank"
-            rel="noreferrer"
-            className="relative py-2 hover:text-black transition-colors duration-200 cursor-pointer uppercase flex items-center gap-1 after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-neutral-900 after:transition-all after:duration-300"
-          >
-            BULK ORDERS
-            <MessageSquare className="h-3 w-3 text-[#B09A84]" />
-          </a>
+            🎁 CORPORATE & WEDDING (100+)
+          </button>
         </nav>
 
         {/* Desktop CTA & Elegant Badging */}

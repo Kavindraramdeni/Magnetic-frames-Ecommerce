@@ -390,12 +390,12 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({
-  limit: "15mb",
+  limit: "50mb",
   verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
     req.rawBody = Buffer.from(buf);
   }
 }));
-app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 app.use("/api", (req, res, next) => {
@@ -467,16 +467,33 @@ app.post("/api/admin/session", (req, res) => {
 app.post("/api/uploads/image", async (req, res) => {
   const { dataUrl, fileName } = req.body || {};
   if (!dataUrl || typeof dataUrl !== "string") return res.status(400).json({ error: "Missing image payload." });
-  const match = dataUrl.match(/^data:(image\/(png|jpeg|jpg|webp));base64,(.+)$/);
-  if (!match) return res.status(400).json({ error: "Only png, jpg, jpeg, and webp images are accepted." });
-  const buffer = Buffer.from(match[3], "base64");
-  if (buffer.length > 10 * 1024 * 1024) return res.status(400).json({ error: "Image must be under 10MB." });
-  const ext = match[2] === "jpeg" ? "jpg" : match[2];
-  const id = crypto.randomUUID();
-  const safeName = String(fileName || "customer-photo").replace(/[^a-z0-9._-]/gi, "-").slice(0, 80);
-  const storedName = `${id}-${safeName}.${ext}`;
-  fs.writeFileSync(path.join(UPLOAD_DIR, storedName), buffer);
-  return res.json({ url: `/stored-assets/${storedName}`, objectKey: storedName });
+
+  let base64Data = "";
+  let ext = "png";
+
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.-]+);base64,([\s\S]+)$/i);
+  if (match) {
+    const mime = match[1].toLowerCase();
+    ext = mime.includes("jpeg") || mime.includes("jpg") ? "jpg" : mime.includes("webp") ? "webp" : "png";
+    base64Data = match[2].trim();
+  } else if (dataUrl.includes(";base64,")) {
+    base64Data = dataUrl.split(";base64,")[1].trim();
+  } else {
+    base64Data = dataUrl.trim();
+  }
+
+  try {
+    const buffer = Buffer.from(base64Data, "base64");
+    if (buffer.length > 25 * 1024 * 1024) return res.status(400).json({ error: "Image must be under 25MB." });
+    const id = crypto.randomUUID();
+    const safeName = String(fileName || "customer-photo").replace(/[^a-z0-9._-]/gi, "-").slice(0, 80);
+    const storedName = `${id}-${safeName}.${ext}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, storedName), buffer);
+    return res.json({ url: `/stored-assets/${storedName}`, objectKey: storedName });
+  } catch (err: any) {
+    console.error("Image upload processing error:", err);
+    return res.status(500).json({ error: "Failed to save image." });
+  }
 });
 
 app.get("/api/catalog", (_req, res) => res.json({ prices: SHAPE_PRICES }));
