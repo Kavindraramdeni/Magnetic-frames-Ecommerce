@@ -518,34 +518,37 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
   return order;
 }
 
-app.post("/api/checkout/create-order", async (req, res) => {
+const createCheckoutOrderHandler = async (req: express.Request, res: express.Response) => {
   try {
-    const { cart, shippingDetails, acceptedPolicies = true } = req.body;
+    const { cart, shippingDetails, acceptedPolicies = true, couponCode } = req.body;
     const cartError = validateCart(cart);
     if (cartError) return res.status(400).json({ error: cartError });
     const shippingError = validateShippingDetails(shippingDetails);
     if (shippingError) return res.status(400).json({ error: shippingError });
-    const { grandTotal, subtotal, deliveryCharge, bulkDiscount } = calculateOrderTotals(cart);
+    const { grandTotal, subtotal, deliveryCharge, bulkDiscount, couponDiscount } = calculateOrderTotals(cart, couponCode);
     const rzpKeyId = (process.env.RAZORPAY_KEY_ID || "").trim().replace(/['"]/g, "");
     const rzpKeySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim().replace(/['"]/g, "");
     if (!rzpKeyId || !rzpKeySecret) {
       if (!ENABLE_MOCK_CHECKOUT) return res.status(503).json({ error: "Payment gateway is not configured. Mock checkout is disabled outside development." });
       const mockOrderId = `order_mock_${crypto.randomUUID()}`;
-      saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: mockOrderId, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
-      return res.json({ orderId: mockOrderId, amount: grandTotal * 100, currency: "INR", isMock: true, subtotal, deliveryCharge, bulkDiscount, grandTotal, razorpayKeyId: "rzp_test_mock_key_studio_kria" });
+      saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: mockOrderId, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
+      return res.json({ orderId: mockOrderId, amount: grandTotal * 100, currency: "INR", isMock: true, subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal, razorpayKeyId: "rzp_test_mock_key_studio_kria" });
     }
     const authString = Buffer.from(`${rzpKeyId}:${rzpKeySecret}`).toString("base64");
     const rzpResponse = await fetch("https://api.razorpay.com/v1/orders", { method: "POST", headers: { Authorization: `Basic ${authString}`, "Content-Type": "application/json" }, body: JSON.stringify({ amount: grandTotal * 100, currency: "INR", receipt: `receipt_kria_${Date.now()}` }) });
     if (!rzpResponse.ok) throw new Error(`Razorpay gateway error: ${await rzpResponse.text()}`);
     const rzpOrder: any = await rzpResponse.json();
-    saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: rzpOrder.id, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
-    return res.json({ orderId: rzpOrder.id, amount: rzpOrder.amount, currency: rzpOrder.currency, isMock: false, subtotal, deliveryCharge, bulkDiscount, grandTotal, razorpayKeyId: rzpKeyId });
+    saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: rzpOrder.id, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
+    return res.json({ orderId: rzpOrder.id, amount: rzpOrder.amount, currency: rzpOrder.currency, isMock: false, subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal, razorpayKeyId: rzpKeyId });
   } catch (error: any) { res.status(500).json({ error: error.message || "Failed to establish a secure transaction session." }); }
-});
+};
 
-app.post("/api/checkout/verify-payment", async (req, res) => {
+app.post("/api/checkout/create-order", createCheckoutOrderHandler);
+app.post("/api/razorpay/create-order", createCheckoutOrderHandler);
+
+const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.Response) => {
   try {
-    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, cart, shippingDetails, isMock, acceptedPolicies } = req.body;
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, cart, shippingDetails, isMock, acceptedPolicies, couponCode } = req.body;
     const cartError = validateCart(cart);
     if (cartError) return res.status(400).json({ error: cartError });
     const shippingError = validateShippingDetails(shippingDetails);
@@ -558,7 +561,7 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
       const generatedSignature = crypto.createHmac("sha256", rzpKeySecret).update(`${razorpay_order_id}|${razorpay_payment_id}`).digest("hex");
       if (generatedSignature !== razorpay_signature) return res.status(400).json({ error: "Cryptographic signature validation failed. Potential tampering." });
     }
-    const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(cart);
+    const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(cart, couponCode);
     const shiprocketToken = await getShiprocketToken();
     let trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
     let courierName = "Delhivery Surface";
@@ -622,7 +625,10 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
     const notification = await notifyCustomer(newOrder, "Order confirmed");
     return res.json({ success: true, transactionId: newOrder.transactionId, trackingNumber, courierName, deliveryEstimate: newOrder.deliveryEstimate, isMockCheckout: isMock, isRealShipment, notification, grandTotal });
   } catch (error: any) { res.status(500).json({ error: error.message || "Failed to process final order booking." }); }
-});
+};
+
+app.post("/api/checkout/verify-payment", verifyCheckoutPaymentHandler);
+app.post("/api/orders/confirm", verifyCheckoutPaymentHandler);
 
 app.post("/api/shiprocket/check-serviceability", async (req, res) => {
   const { pincode, orderValue, weight = 0.25 } = req.body;

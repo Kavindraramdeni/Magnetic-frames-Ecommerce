@@ -639,6 +639,11 @@ export default function Customizer({
       if (orderRes.isMock || !orderRes.razorpayKeyId) {
         setShowSimulatedGateway(true);
       } else {
+        if (typeof window === 'undefined' || !(window as any).Razorpay) {
+          setCheckoutError('Payment gateway script failed to load. Please refresh and try again, or use WhatsApp checkout.');
+          return;
+        }
+
         // Initialize Razorpay SDK
         const options = {
           key: orderRes.razorpayKeyId,
@@ -730,16 +735,8 @@ export default function Customizer({
 
       setCheckoutStep('success');
       setCart([]);
-    } catch (err) {
-      // Fallback: show success even if confirmation call fails (payment already captured)
-      setPlacedOrderDetails({
-        orderId,
-        trackingNumber: `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`,
-        courierName: 'Delhivery Surface Express',
-        deliveryEstimate: '3-4 Business Days'
-      });
-      setCheckoutStep('success');
-      setCart([]);
+    } catch (err: any) {
+      setCheckoutError(err?.message || 'Payment was received by the gateway, but order confirmation failed. Please contact support before retrying.');
     } finally {
       setIsPaymentLoading(false);
     }
