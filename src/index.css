@@ -153,11 +153,37 @@
     0 8px 32px rgba(17, 17, 17, 0.08);
 }
 
-/* Print Isolation for 1-Page Thermal Shipping Label & 4x6 Photo Sheet */
+/* Print Isolation for Photo, Shipping Label & Tax Invoice */
 @media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+  }
   body * {
     visibility: hidden !important;
   }
+
+  /* Pure Photo Print Isolation */
+  #print-photo-sheet-body, #print-photo-sheet-body * {
+    visibility: visible !important;
+  }
+  #print-photo-sheet-body {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    background: white !important;
+  }
+
+  /* Thermal Shipping Label Print Isolation */
   #print-shipping-label-body, #print-shipping-label-body * {
     visibility: visible !important;
   }
@@ -168,17 +194,21 @@
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: white !important;
   }
-  #print-photo-sheet-body, #print-photo-sheet-body * {
+
+  /* GST Tax Invoice Print Isolation */
+  #print-tax-invoice-body, #print-tax-invoice-body * {
     visibility: visible !important;
   }
-  #print-photo-sheet-body {
+  #print-tax-invoice-body {
     position: fixed !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 24px !important;
+    background: white !important;
   }
 }
 

@@ -3,7 +3,7 @@ import {
   ArrowLeft, RefreshCw, Printer, CheckCircle, 
   Trash2, ShieldCheck, Truck, ShoppingBag, 
   ExternalLink, Calendar, Phone, Mail, MapPin, 
-  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare
+  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText
 } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import { jsPDF } from 'jspdf';
@@ -24,6 +24,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [actionLog, setActionLog] = useState<string[]>([]);
   const [isPrintWorkOrderOpen, setIsPrintWorkOrderOpen] = useState<any | null>(null);
   const [isPrintShippingLabelOpen, setIsPrintShippingLabelOpen] = useState<any | null>(null);
+  const [isPrintTaxInvoiceOpen, setIsPrintTaxInvoiceOpen] = useState<any | null>(null);
 
   // Download fitted photo framed in its exact selected shape
   const handleDownloadFramedPhoto = (item: any) => {
@@ -591,10 +592,20 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                             e.stopPropagation();
                             setIsPrintWorkOrderOpen(order);
                           }}
-                          className="px-3 py-1 bg-neutral-900 hover:bg-black text-white rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 shadow-sm cursor-pointer"
+                          className="px-2.5 py-1 bg-neutral-900 hover:bg-black text-white rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 shadow-sm cursor-pointer"
                         >
                           <Printer className="h-2.5 w-2.5 text-[#E8DCCF]" />
-                          <span>Print Photo</span>
+                          <span>Photo</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsPrintTaxInvoiceOpen(order);
+                          }}
+                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <FileText className="h-2.5 w-2.5" />
+                          <span>Invoice</span>
                         </button>
                         <button
                           onClick={(e) => {
@@ -766,22 +777,30 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   </div>
                 </div>
 
-                {/* 2. Print Work Order and Label Triggers */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* 2. Dedicated 1-Click Print Operations Bar */}
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
-                    className="py-3 px-4 rounded-2xl bg-neutral-900 hover:bg-black text-white border border-neutral-900 text-xs font-mono tracking-wider font-bold uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
+                    className="py-2.5 px-2 rounded-xl bg-neutral-900 hover:bg-black text-white text-[10px] font-mono tracking-wider font-bold uppercase flex flex-col items-center justify-center gap-1 cursor-pointer transition-all shadow-sm"
                   >
                     <Printer className="h-4 w-4 text-[#E8DCCF]" />
-                    <span>🖨️ PRINT 4x6 PHOTO</span>
+                    <span>📷 Print Photo</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsPrintTaxInvoiceOpen(selectedOrder)}
+                    className="py-2.5 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[10px] font-mono tracking-wider font-bold uppercase flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
+                  >
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    <span>🧾 Tax Invoice</span>
                   </button>
 
                   <button
                     onClick={() => setIsPrintShippingLabelOpen(selectedOrder)}
-                    className="py-3 px-4 rounded-2xl bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 text-xs font-mono tracking-wider font-bold uppercase flex items-center justify-center gap-2 cursor-pointer transition-all"
+                    className="py-2.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-[10px] font-mono tracking-wider font-bold uppercase flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
                   >
                     <Truck className="h-4 w-4 text-emerald-600" />
-                    <span>🏷️ PRINT SHIPPING LABEL</span>
+                    <span>🏷️ Parcel Label</span>
                   </button>
                 </div>
 
@@ -969,8 +988,8 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             {/* Print Room Paper sheet layout */}
             <div className="p-8 overflow-y-auto bg-white grow space-y-8 select-all font-sans print:p-0" id="print-photo-sheet-body">
               
-              {/* Header block */}
-              <div className="flex justify-between items-start border-b-2 border-neutral-900 pb-4">
+              {/* Header block (hidden when printing on glossy photo paper) */}
+              <div className="flex justify-between items-start border-b-2 border-neutral-900 pb-4 print:hidden">
                 <div>
                   <h2 className="font-serif text-2xl font-bold tracking-tight text-neutral-900">
                     4x6 Photo Paper Print & Cut Sheet
@@ -1329,6 +1348,156 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* --- FORMAL GST TAX INVOICE POPUP --- */}
+      {isPrintTaxInvoiceOpen && (
+        <div className="fixed inset-0 z-50 bg-neutral-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl border border-neutral-300 shadow-2xl overflow-hidden text-left flex flex-col max-h-[90vh]">
+            
+            {/* Controls Header */}
+            <div className="bg-neutral-100 p-4 border-b border-neutral-200 flex justify-between items-center print:hidden">
+              <div>
+                <h4 className="font-mono text-xs font-bold text-neutral-800 uppercase tracking-widest">GST Tax Invoice / Bill of Supply</h4>
+                <p className="text-4xs font-mono text-neutral-500 uppercase tracking-widest mt-1">Order ID: {isPrintTaxInvoiceOpen.id}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white transition-all text-2xs font-mono rounded-lg flex items-center gap-1 cursor-pointer font-bold uppercase"
+                >
+                  <Printer className="h-3 w-3 text-white" />
+                  <span>Print Tax Invoice</span>
+                </button>
+                <button
+                  onClick={() => setIsPrintTaxInvoiceOpen(null)}
+                  className="p-1 hover:bg-neutral-200 rounded-full transition-colors cursor-pointer text-neutral-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Tax Invoice Document Container */}
+            <div className="p-8 bg-white font-sans text-neutral-900 select-all grow overflow-y-auto" id="print-tax-invoice-body">
+              
+              {/* Header Seller & Buyer Grid */}
+              <div className="border-b-2 border-neutral-900 pb-4 mb-4 flex justify-between items-start">
+                <div>
+                  <h2 className="font-serif text-2xl font-bold tracking-tight text-neutral-900">
+                    KRIA <span className="font-sans text-xs tracking-widest font-bold border border-neutral-900 px-2 py-0.5 rounded ml-1 bg-neutral-50">STUDIO PRINTS</span>
+                  </h2>
+                  <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest mt-1">GST Tax Invoice / Bill of Supply</p>
+                  <div className="text-[11px] font-mono text-neutral-600 mt-2 space-y-0.5">
+                    <p><strong>KRIA STUDIO PRIVATE LIMITED</strong></p>
+                    <p>Jubilee Tech District, Phase II, Hyderabad - 500085</p>
+                    <p>GSTIN: 36AAAFK7892P1Z0 | State: Telangana (36)</p>
+                    <p>Email: support@kriastudio.in | Phone: +91 7893194974</p>
+                  </div>
+                </div>
+                <div className="text-right space-y-1 font-mono text-[11px] bg-neutral-50 p-3 border border-neutral-200 rounded-xl">
+                  <p className="text-[10px] text-neutral-500 uppercase font-bold">INVOICE DETAILS</p>
+                  <p><strong>INVOICE NO:</strong> INV-{isPrintTaxInvoiceOpen.id.replace('KRIA-', '')}</p>
+                  <p><strong>DATE:</strong> {new Date().toLocaleDateString('en-IN')}</p>
+                  <p><strong>ORDER NO:</strong> {isPrintTaxInvoiceOpen.id}</p>
+                  <p className="text-emerald-700 font-bold uppercase pt-1">PAYMENT: PREPAID (ONLINE)</p>
+                </div>
+              </div>
+
+              {/* Bill To / Ship To Grid */}
+              <div className="grid grid-cols-2 gap-4 border border-neutral-200 p-4 rounded-xl bg-neutral-50/50 mb-6 font-mono text-[11px]">
+                <div>
+                  <p className="text-[10px] text-neutral-500 uppercase font-bold mb-1">BILLED & SHIPPED TO:</p>
+                  <p className="font-bold text-neutral-900 text-sm font-sans">{isPrintTaxInvoiceOpen.shippingDetails.fullName}</p>
+                  <p className="text-neutral-700 mt-1">{isPrintTaxInvoiceOpen.shippingDetails.address}</p>
+                  <p className="text-neutral-900 font-bold">{isPrintTaxInvoiceOpen.shippingDetails.city}, {isPrintTaxInvoiceOpen.shippingDetails.state} - {isPrintTaxInvoiceOpen.shippingDetails.pincode}</p>
+                  <p className="text-neutral-600 mt-1">Phone: <strong>{isPrintTaxInvoiceOpen.shippingDetails.phone}</strong></p>
+                </div>
+                <div className="text-right space-y-1">
+                  <p className="text-[10px] text-neutral-500 uppercase font-bold">LOGISTICS DETAILS</p>
+                  <p>Courier: <strong>{isPrintTaxInvoiceOpen.courierName}</strong></p>
+                  <p>AWB Tracking: <strong>{isPrintTaxInvoiceOpen.trackingNumber || 'Pending Sync'}</strong></p>
+                  <p>Place of Supply: <strong>{isPrintTaxInvoiceOpen.shippingDetails.state}</strong></p>
+                </div>
+              </div>
+
+              {/* Itemized Invoice Table */}
+              <div className="border border-neutral-300 rounded-xl overflow-hidden mb-6">
+                <table className="w-full text-left font-mono text-[11px] border-collapse">
+                  <thead className="bg-neutral-100 text-neutral-800 border-b border-neutral-300 font-bold">
+                    <tr>
+                      <th className="p-2.5">S.NO</th>
+                      <th className="p-2.5">ITEM DESCRIPTION</th>
+                      <th className="p-2.5 text-center">HSN/SAC</th>
+                      <th className="p-2.5 text-center">QTY</th>
+                      <th className="p-2.5 text-right">UNIT PRICE</th>
+                      <th className="p-2.5 text-right">AMOUNT</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-200">
+                    {(isPrintTaxInvoiceOpen.cart || []).map((item: any, idx: number) => {
+                      const itemTotal = item.price * item.quantity;
+                      return (
+                        <tr key={idx}>
+                          <td className="p-2.5">{idx + 1}</td>
+                          <td className="p-2.5 font-bold font-sans">{item.shapeName || "Custom Acrylic Magnet"} ({item.shapeId})</td>
+                          <td className="p-2.5 text-center font-mono text-neutral-600">39269099</td>
+                          <td className="p-2.5 text-center font-bold">{item.quantity}</td>
+                          <td className="p-2.5 text-right">₹{item.price}</td>
+                          <td className="p-2.5 text-right font-bold">₹{itemTotal}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Calculation & Tax Summary Footer */}
+              <div className="grid grid-cols-2 gap-6 items-start font-mono text-[11px]">
+                <div className="border border-neutral-200 p-3 rounded-xl bg-neutral-50 text-neutral-600 space-y-1">
+                  <p className="font-bold text-neutral-900 uppercase text-[10px]">TAX BREAKUP SUMMARY</p>
+                  <p>CGST (9%): ₹{Math.round((isPrintTaxInvoiceOpen.subtotal || isPrintTaxInvoiceOpen.grandTotal) * 0.09)}</p>
+                  <p>SGST (9%): ₹{Math.round((isPrintTaxInvoiceOpen.subtotal || isPrintTaxInvoiceOpen.grandTotal) * 0.09)}</p>
+                  <p className="text-[10px] text-neutral-500 pt-1 border-t border-neutral-200">All prices are inclusive of applicable GST taxes.</p>
+                </div>
+                <div className="space-y-2 text-right bg-neutral-50 p-4 border border-neutral-200 rounded-xl">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">SUBTOTAL:</span>
+                    <span className="font-bold">₹{isPrintTaxInvoiceOpen.subtotal || isPrintTaxInvoiceOpen.grandTotal}</span>
+                  </div>
+                  {isPrintTaxInvoiceOpen.bulkDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-700">
+                      <span>BULK DISCOUNT:</span>
+                      <span>-₹{isPrintTaxInvoiceOpen.bulkDiscount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">SHIPPING CHARGE:</span>
+                    <span>{isPrintTaxInvoiceOpen.deliveryCharge === 0 ? "FREE" : `₹${isPrintTaxInvoiceOpen.deliveryCharge}`}</span>
+                  </div>
+                  <div className="flex justify-between border-t-2 border-neutral-900 pt-2 text-sm font-bold text-neutral-950">
+                    <span>GRAND TOTAL PAID:</span>
+                    <span>₹{isPrintTaxInvoiceOpen.grandTotal}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Signature & Declaration */}
+              <div className="pt-8 mt-6 border-t border-neutral-200 grid grid-cols-2 gap-4 text-[10px] font-mono text-neutral-500">
+                <div>
+                  <p className="font-bold text-neutral-800 uppercase">Declaration:</p>
+                  <p>We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</p>
+                </div>
+                <div className="text-right space-y-4">
+                  <p className="font-bold text-neutral-900 uppercase">For KRIA STUDIO PRIVATE LIMITED</p>
+                  <div className="h-8" />
+                  <p className="text-4xs uppercase tracking-widest text-neutral-400">Authorized Signatory</p>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       )}
