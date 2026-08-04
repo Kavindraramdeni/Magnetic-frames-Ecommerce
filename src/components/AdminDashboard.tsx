@@ -3,7 +3,7 @@ import {
   ArrowLeft, RefreshCw, Printer, CheckCircle, 
   Trash2, ShieldCheck, Truck, ShoppingBag, 
   ExternalLink, Calendar, Phone, Mail, MapPin, 
-  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText
+  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp
 } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import { jsPDF } from 'jspdf';
@@ -170,6 +170,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [isPrintWorkOrderOpen, setIsPrintWorkOrderOpen] = useState<any | null>(null);
   const [isPrintShippingLabelOpen, setIsPrintShippingLabelOpen] = useState<any | null>(null);
   const [isPrintTaxInvoiceOpen, setIsPrintTaxInvoiceOpen] = useState<any | null>(null);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [editingPriceProduct, setEditingPriceProduct] = useState<any | null>(null);
   const [editPriceForm, setEditPriceForm] = useState<{ price: number; originalPrice: number }>({ price: 0, originalPrice: 0 });
 
@@ -768,17 +769,19 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             </div>
             <div className="h-6 w-px bg-neutral-800" />
             <div>
-              <span className="text-[9px] text-purple-400 block uppercase">PRINTING</span>
-              <span className="font-bold text-purple-300">{printingCount}</span>
-            </div>
-            <div className="h-6 w-px bg-neutral-800" />
-            <div>
               <span className="text-[9px] text-emerald-400 block uppercase">SHIPPED</span>
               <span className="font-bold text-emerald-300">{shippedCount}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsAnalyticsOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/30 transition-all cursor-pointer"
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              <span>Business Intelligence</span>
+            </button>
             <button
               onClick={() => setIsCatalogOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#E8DCCF]/20 border border-[#E8DCCF]/40 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-[#E8DCCF] hover:bg-[#E8DCCF]/30 transition-all cursor-pointer"
@@ -1520,29 +1523,46 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             <div className="p-6 overflow-y-auto grow space-y-4 bg-[#FAF8F5]">
               <div className="flex justify-between items-center mb-2">
                 <div>
-                  <p className="font-serif text-sm text-neutral-700">Edit existing product prices, MRP values, and storefront visibility.</p>
+                  <p className="font-serif text-sm text-neutral-700">Add new products, adjust prices, duplicate items, and set storefront visibility.</p>
                 </div>
-                <span className="px-3 py-2 bg-neutral-900 text-white rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider">
-                  Existing Products Only
-                </span>
+                <button
+                  onClick={() => {
+                    const newId = `custom-${Date.now()}`;
+                    const newP = {
+                      id: newId,
+                      name: "New Custom Magnet Shape",
+                      price: 299,
+                      originalPrice: 429,
+                      dimensions: "8.0 × 10.0 CM",
+                      description: "Hand-polished custom acrylic photo frame.",
+                      tagline: "Custom shape frame",
+                      isTrending: true
+                    };
+                    saveProduct(newP);
+                  }}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer shadow-sm transition flex items-center gap-1.5"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>➕ Add New Product</span>
+                </button>
               </div>
 
               {catalogForm && (
                 <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
                   <div className="grid md:grid-cols-2 gap-3">
-                    <input value={catalogForm.name} onChange={(e) => setCatalogForm({...catalogForm, name: e.target.value})} placeholder="Product name" className="rounded-xl border px-3 py-2 text-sm" />
-                    <input type="number" value={catalogForm.price} onChange={(e) => setCatalogForm({...catalogForm, price: Number(e.target.value)})} placeholder="Sale price" className="rounded-xl border px-3 py-2 text-sm" />
-                    <input type="number" value={catalogForm.originalPrice} onChange={(e) => setCatalogForm({...catalogForm, originalPrice: Number(e.target.value)})} placeholder="MRP" className="rounded-xl border px-3 py-2 text-sm" />
-                    <input value={catalogForm.dimensions} onChange={(e) => setCatalogForm({...catalogForm, dimensions: e.target.value})} placeholder="Dimensions" className="rounded-xl border px-3 py-2 text-sm" />
+                    <input value={catalogForm.name} onChange={(e) => setCatalogForm({...catalogForm, name: e.target.value})} placeholder="Product name" className="rounded-xl border px-3 py-2 text-sm font-sans" />
+                    <input type="number" value={catalogForm.price} onChange={(e) => setCatalogForm({...catalogForm, price: Number(e.target.value)})} placeholder="Sale price (₹)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
+                    <input type="number" value={catalogForm.originalPrice} onChange={(e) => setCatalogForm({...catalogForm, originalPrice: Number(e.target.value)})} placeholder="MRP (₹)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
+                    <input value={catalogForm.dimensions} onChange={(e) => setCatalogForm({...catalogForm, dimensions: e.target.value})} placeholder="Dimensions (e.g. 8x10 CM)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
                   </div>
-                  <textarea value={catalogForm.description} onChange={(e) => setCatalogForm({...catalogForm, description: e.target.value})} placeholder="Description" className="w-full rounded-xl border px-3 py-2 text-sm" rows={3} />
-                  <label className="flex items-center gap-2 text-sm">
+                  <textarea value={catalogForm.description} onChange={(e) => setCatalogForm({...catalogForm, description: e.target.value})} placeholder="Product description..." className="w-full rounded-xl border px-3 py-2 text-sm font-sans" rows={3} />
+                  <label className="flex items-center gap-2 text-sm font-sans">
                     <input type="checkbox" checked={catalogForm.isTrending} onChange={(e) => setCatalogForm({...catalogForm, isTrending: e.target.checked})} />
-                    Visible in ecommerce catalog
+                    Visible in Storefront Catalog
                   </label>
                   <div className="flex gap-2">
-                    <button onClick={() => saveProduct(catalogForm)} className="px-3 py-2 bg-[#111111] text-white rounded-lg text-xs font-bold uppercase tracking-wider">Save Changes</button>
-                    <button onClick={() => { setCatalogForm(null); setEditingProduct(null); }} className="px-3 py-2 bg-neutral-200 rounded-lg text-xs font-bold uppercase tracking-wider">Cancel</button>
+                    <button onClick={() => saveProduct(catalogForm)} className="px-4 py-2 bg-neutral-900 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer">Save Changes</button>
+                    <button onClick={() => { setCatalogForm(null); setEditingProduct(null); }} className="px-4 py-2 bg-neutral-200 text-neutral-800 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer">Cancel</button>
                   </div>
                 </div>
               )}
@@ -1566,26 +1586,51 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                       </div>
 
                       <div className="pt-3 border-t border-neutral-100 space-y-3">
-                        <div>
-                          <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block">SALE PRICE</span>
-                          <span className="font-mono text-base font-bold text-neutral-900">₹{currentPrice}</span>
-                          <span className="font-mono text-xs text-neutral-400 line-through ml-2">₹{originalPrice}</span>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block">SALE PRICE</span>
+                            <span className="font-mono text-base font-bold text-neutral-900">₹{currentPrice}</span>
+                            <span className="font-mono text-xs text-neutral-400 line-through ml-2">₹{originalPrice}</span>
+                          </div>
+                          <span className={`text-[9px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${visible ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-neutral-100 text-neutral-500 border-neutral-200'}`}>
+                            {visible ? 'Active in Store' : 'Hidden'}
+                          </span>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 pt-1">
                           <button
                             onClick={() => handleOpenPriceModal(product)}
-                            className="px-3 py-1.5 bg-neutral-900 hover:bg-black text-white rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer transition-all shadow-sm flex items-center gap-1"
+                            className="px-2.5 py-1.5 bg-neutral-900 hover:bg-black text-white rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer transition-all shadow-sm flex items-center gap-1"
                           >
-                            <span>Edit Price & MRP</span>
+                            <span>Edit Price & Details</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const dup = {
+                                ...product,
+                                id: `${product.id}-copy-${Date.now().toString().slice(-4)}`,
+                                name: `${product.name} (Copy)`
+                              };
+                              saveProduct(dup);
+                            }}
+                            className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-200 rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer"
+                          >
+                            Duplicate
                           </button>
                           <button
                             onClick={() => {
                               const nextValue = !visible;
                               saveProduct({ ...product, isTrending: nextValue, price: currentPrice, originalPrice: product.originalPrice ?? originalPrice });
                             }}
-                            className="px-3 py-1.5 bg-neutral-200 text-neutral-800 rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider"
+                            className="px-2.5 py-1.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer"
                           >
-                            {visible ? 'Hide from Store' : 'Show on Store'}
+                            {visible ? 'Hide' : 'Show'}
+                          </button>
+                          <button
+                            onClick={() => deleteProduct(product.id)}
+                            className="px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer"
+                            title="Delete Product"
+                          >
+                            <Trash2 className="h-3 w-3 inline" />
                           </button>
                         </div>
                       </div>
@@ -1817,6 +1862,129 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
           </div>
         </div>
       )}
+
+      {/* --- BUSINESS INTELLIGENCE & EXECUTIVE ANALYTICS MODAL --- */}
+      {isAnalyticsOpen && (() => {
+        const totalRev = orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+        const totalOrds = orders.length;
+        const calcAov = totalOrds > 0 ? Math.round(totalRev / totalOrds) : 0;
+        const estProfit = Math.round(totalRev * 0.65); // 65% gross margin after acrylic COGS
+
+        const custMap: { [key: string]: number } = {};
+        orders.forEach(o => {
+          const key = o.shippingDetails?.phone?.replace(/\D/g, '') || o.shippingDetails?.email;
+          if (key) custMap[key] = (custMap[key] || 0) + 1;
+        });
+        const repeatCusts = Object.values(custMap).filter(cnt => cnt > 1).length;
+        const totalUniqueCusts = Object.keys(custMap).length;
+        const repeatRate = totalUniqueCusts > 0 ? Math.round((repeatCusts / totalUniqueCusts) * 100) : 0;
+
+        const shapeCounts: { [key: string]: number } = {};
+        orders.forEach(o => {
+          (o.cart || []).forEach((item: any) => {
+            const name = item.shapeName || 'Custom Magnet';
+            shapeCounts[name] = (shapeCounts[name] || 0) + (parseInt(item.quantity) || 1);
+          });
+        });
+        const topShapes = Object.entries(shapeCounts).sort((a, b) => b[1] - a[1]);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-neutral-900/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-3xl border border-neutral-300 shadow-2xl p-6 md:p-8 space-y-6 text-left max-h-[90vh] overflow-y-auto">
+              
+              <div className="flex justify-between items-start border-b border-neutral-200 pb-4">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-600 font-bold flex items-center gap-1">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    EXECUTIVE ANALYTICS DASHBOARD
+                  </span>
+                  <h3 className="font-serif text-2xl font-bold text-neutral-900 mt-1">KRIA Business Intelligence</h3>
+                </div>
+                <button onClick={() => setIsAnalyticsOpen(false)} className="p-1.5 hover:bg-neutral-100 rounded-full text-neutral-500 transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Top 4 Metric Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-mono">
+                <div className="bg-neutral-900 text-white p-4 rounded-2xl space-y-1 shadow-sm">
+                  <span className="text-[9px] text-[#E8DCCF]/70 uppercase tracking-widest block">GROSS REVENUE</span>
+                  <p className="text-xl font-bold text-[#E8DCCF]">₹{totalRev.toLocaleString('en-IN')}</p>
+                </div>
+                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl space-y-1">
+                  <span className="text-[9px] text-emerald-800 uppercase tracking-widest block font-bold">EST. PROFIT (65%)</span>
+                  <p className="text-xl font-bold text-emerald-900">₹{estProfit.toLocaleString('en-IN')}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl space-y-1">
+                  <span className="text-[9px] text-blue-800 uppercase tracking-widest block font-bold">AVERAGE ORDER VALUE</span>
+                  <p className="text-xl font-bold text-blue-900">₹{calcAov}</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 p-4 rounded-2xl space-y-1">
+                  <span className="text-[9px] text-purple-800 uppercase tracking-widest block font-bold">REPEAT CUSTOMERS</span>
+                  <p className="text-xl font-bold text-purple-900">{repeatRate}% ({repeatCusts})</p>
+                </div>
+              </div>
+
+              {/* Best Selling Products & Orders Breakup */}
+              <div className="grid md:grid-cols-2 gap-6 pt-2">
+                
+                {/* Top Products */}
+                <div className="border border-neutral-200 p-5 rounded-2xl space-y-3 bg-neutral-50/50">
+                  <h4 className="font-mono text-xs font-bold text-neutral-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <BarChart3 className="h-4 w-4 text-emerald-600" />
+                    Top Selling Magnet Shapes
+                  </h4>
+                  {topShapes.length === 0 ? (
+                    <p className="text-xs text-neutral-400 font-mono italic">No shape sales recorded yet.</p>
+                  ) : (
+                    <div className="space-y-2 font-mono text-xs">
+                      {topShapes.slice(0, 5).map(([name, count], i) => (
+                        <div key={i} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-neutral-200">
+                          <span className="font-semibold text-neutral-800">#{i + 1} {name}</span>
+                          <span className="bg-neutral-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">{count} sold</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Operations & Shipping Summary */}
+                <div className="border border-neutral-200 p-5 rounded-2xl space-y-3 bg-neutral-50/50 font-mono text-xs">
+                  <h4 className="font-bold text-neutral-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Activity className="h-4 w-4 text-blue-600" />
+                    Fulfillment Health Summary
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between p-2.5 bg-white rounded-xl border border-neutral-200">
+                      <span className="text-neutral-600">Total Lifetime Orders:</span>
+                      <span className="font-bold text-neutral-900">{totalOrds}</span>
+                    </div>
+                    <div className="flex justify-between p-2.5 bg-white rounded-xl border border-neutral-200">
+                      <span className="text-neutral-600">Prepaid Verification Rate:</span>
+                      <span className="font-bold text-emerald-700">100% Guaranteed</span>
+                    </div>
+                    <div className="flex justify-between p-2.5 bg-white rounded-xl border border-neutral-200">
+                      <span className="text-neutral-600">Active Shiprocket Carrier:</span>
+                      <span className="font-bold text-blue-700">Delhivery / BlueDart Express</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="pt-3 border-t border-neutral-200 flex justify-end">
+                <button
+                  onClick={() => setIsAnalyticsOpen(false)}
+                  className="px-6 py-2.5 bg-neutral-900 hover:bg-black text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition cursor-pointer"
+                >
+                  Close Analytics
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

@@ -392,6 +392,54 @@ export default function CartDrawer({
               {couponError && (
                 <p className="text-[10px] font-mono text-red-600 leading-tight">{couponError}</p>
               )}
+
+              {/* Available 1-Click Coupons Cards */}
+              {!appliedCoupon && (
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[9px] font-mono uppercase tracking-widest text-neutral-400 font-bold block">
+                    Available Coupons (Click to Apply)
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { code: 'KRIA10', label: '10% OFF Order', icon: '🔥' },
+                      { code: 'WELCOME15', label: '15% OFF New User', icon: '✨' },
+                      { code: 'FREESHIP', label: 'FREE Shipping', icon: '🚚' },
+                      { code: 'KRIA50', label: '₹50 Flat OFF', icon: '🎁' }
+                    ].map((c) => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => {
+                          setCouponInput(c.code);
+                          setIsApplyingCoupon(true);
+                          fetch('/api/checkout/create-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ cart, couponCode: c.code })
+                          }).then(res => res.json()).then(data => {
+                            setIsApplyingCoupon(false);
+                            if (data.totals?.couponDiscount > 0 || c.code === 'FREESHIP') {
+                              setAppliedCoupon({ code: c.code, label: c.label, discount: data.totals?.couponDiscount || 60 });
+                              setCouponError(null);
+                            } else {
+                              setCouponError(`Coupon ${c.code} is valid on orders over ₹499`);
+                            }
+                          }).catch(() => setIsApplyingCoupon(false));
+                        }}
+                        className="border border-dashed border-amber-300 bg-amber-50/70 hover:bg-amber-100 p-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer group"
+                      >
+                        <div>
+                          <span className="font-mono font-bold text-[10px] text-amber-900 block">{c.icon} {c.code}</span>
+                          <span className="text-[8px] text-amber-700 font-sans">{c.label}</span>
+                        </div>
+                        <span className="text-[8px] font-mono font-bold uppercase bg-amber-200 text-amber-900 px-1 py-0.5 rounded group-hover:bg-amber-800 group-hover:text-white transition">
+                          Apply
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Pricing Details List */}
