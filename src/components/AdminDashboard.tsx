@@ -988,6 +988,27 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             {/* Print Room Paper sheet layout */}
             <div className="p-8 overflow-y-auto bg-white grow space-y-8 select-all font-sans print:p-0" id="print-photo-sheet-body">
               
+              {/* Embedded SVG ClipPath definitions required for browser print engine */}
+              <svg className="absolute w-0 h-0 pointer-events-none opacity-0 overflow-hidden" aria-hidden="true">
+                <defs>
+                  <clipPath id="arch-print-clip" clipPathUnits="objectBoundingBox">
+                    <path d="M 0,0.35 C 0,0.15 0.22,0 0.5,0 C 0.78,0 1,0.15 1,0.35 L 1,1 L 0,1 Z" />
+                  </clipPath>
+                  <clipPath id="heart-print-clip" clipPathUnits="objectBoundingBox">
+                    <path d="M 0.5,0.25 C 0.35,0.05 0.05,0.05 0.05,0.35 C 0.05,0.65 0.25,0.85 0.5,1 C 0.75,0.85 0.95,0.65 0.95,0.35 C 0.95,0.05 0.65,0.05 0.5,0.25 Z" />
+                  </clipPath>
+                  <clipPath id="hexagon-print-clip" clipPathUnits="objectBoundingBox">
+                    <path d="M 0.5,0 L 1,0.25 L 1,0.75 L 0.5,1 L 0,0.75 L 0,0.25 Z" />
+                  </clipPath>
+                  <clipPath id="crest-print-clip" clipPathUnits="objectBoundingBox">
+                    <path d="M 0,0 L 1,0 L 1,0.7 C 1,0.9 0.7,1 0.5,1 C 0.3,1 0,0.9 0,0.7 Z" />
+                  </clipPath>
+                  <clipPath id="cloud-print-clip" clipPathUnits="objectBoundingBox">
+                    <path d="M 0.2,0.4 C 0.1,0.4 0,0.5 0,0.65 C 0,0.8 0.1,0.9 0.25,0.9 L 0.75,0.9 C 0.9,0.9 1,0.8 1,0.65 C 1,0.5 0.9,0.4 0.8,0.4 C 0.8,0.2 0.65,0.1 0.5,0.1 C 0.35,0.1 0.2,0.2 0.2,0.4 Z" />
+                  </clipPath>
+                </defs>
+              </svg>
+              
               {/* Header block (hidden when printing on glossy photo paper) */}
               <div className="flex justify-between items-start border-b-2 border-neutral-900 pb-4 print:hidden">
                 <div>
@@ -1020,7 +1041,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                       outlineClass = "heart-outline-container";
                       sizeLabel = "Heart Frame Cut";
                     } else if (item.shapeId === 'arch') {
-                      clipStyle = { clipPath: 'url(#arch-print-clip)' };
+                      clipStyle = { borderRadius: '75px 75px 0 0', clipPath: 'url(#arch-print-clip)' };
                       outlineClass = "arch-outline-container";
                       sizeLabel = "Arch Frame Cut";
                     } else if (item.shapeId === 'hexagon') {
