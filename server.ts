@@ -346,9 +346,25 @@ async function getShiprocketToken(): Promise<string | null> {
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
+function generateOrderId(): string {
+  const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  return `KRIA-${dateStr}-${randomSuffix}`;
+}
+
 // CORS & Options preflight for Vercel / Render cross-origin & serverless proxy
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin;
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
+    : null;
+  
+  if (allowedOrigins && origin && allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Vary", "Origin");
+  } else if (!allowedOrigins) {
+    res.header("Access-Control-Allow-Origin", origin || "*");
+  }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
   if (req.method === "OPTIONS") {
@@ -472,7 +488,7 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
   if (existing) return existing;
   const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(session.cart);
   const order = {
-    id: `KRIA-ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+    id: generateOrderId(),
     status: "Paid",
     cart: session.cart,
     shippingDetails: session.shippingDetails,
@@ -590,7 +606,7 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
         }
       } catch (shipErr) { console.error("Shiprocket order failed", shipErr); }
     }
-    const newOrder = { id: `KRIA-ORD-${Math.floor(1000 + Math.random() * 9000)}`, status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId: isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
+    const newOrder = { id: generateOrderId(), status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId: isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
     saveOrder(newOrder);
     const notification = await notifyCustomer(newOrder, "Order confirmed");
     return res.json({ success: true, transactionId: newOrder.transactionId, trackingNumber, courierName, deliveryEstimate: newOrder.deliveryEstimate, isMockCheckout: isMock, isRealShipment, notification, grandTotal });
