@@ -693,19 +693,23 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Paid':
-        return 'bg-blue-50 text-blue-800 border-blue-200';
+      case 'Pending':
+        return 'bg-amber-50 text-amber-900 border-amber-300 font-bold';
       case 'Processing':
-        return 'bg-[#E8DCCF]/40 text-[#4E3629] border-[#E8DCCF]';
+        return 'bg-blue-50 text-blue-900 border-blue-300 font-bold';
       case 'Printing':
-        return 'bg-amber-50 text-amber-800 border-amber-200';
+        return 'bg-purple-50 text-purple-900 border-purple-300 font-bold';
       case 'Quality Check':
-        return 'bg-purple-50 text-purple-800 border-purple-200';
+        return 'bg-fuchsia-50 text-fuchsia-900 border-fuchsia-300 font-bold';
       case 'Packed':
-        return 'bg-orange-50 text-orange-800 border-orange-200';
       case 'Shipped':
-        return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+      case 'Delivered':
+        return 'bg-emerald-50 text-emerald-900 border-emerald-300 font-bold';
+      case 'Cancelled':
+      case 'Void':
+        return 'bg-rose-50 text-rose-900 border-rose-300 font-bold';
       default:
-        return 'bg-neutral-50 text-neutral-800 border-neutral-200';
+        return 'bg-neutral-100 text-neutral-800 border-neutral-300 font-bold';
     }
   };
 
@@ -714,6 +718,12 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     : activeFilter === 'Pending'
       ? orders.filter(o => o.status !== 'Shipped')
       : orders.filter(o => o.status === activeFilter);
+
+  const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString());
+  const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+  const pendingCount = orders.filter(o => o.status === 'Paid' || o.status === 'Processing').length;
+  const printingCount = orders.filter(o => o.status === 'Printing').length;
+  const shippedCount = orders.filter(o => o.status === 'Shipped').length;
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-neutral-900 flex flex-col font-sans antialiased pb-20 select-none">
@@ -735,8 +745,36 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 <h1 className="font-serif text-xl font-light text-white tracking-wide">
                   KRIA <span className="italic font-serif font-semibold text-[#E8DCCF]">Fulfillment CMS</span>
                 </h1>
-                <p className="text-[10px] font-mono text-neutral-400 tracking-widest uppercase">Factory & Print Operations Terminal</p>
+                <p className="text-[10px] font-mono text-neutral-400 tracking-widest uppercase">Factory Operations Terminal</p>
               </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="hidden xl:flex items-center gap-4 border-l border-r border-neutral-800 px-6 font-mono text-xs">
+            <div>
+              <span className="text-[9px] text-neutral-400 block uppercase">TODAY'S REVENUE</span>
+              <span className="font-bold text-[#E8DCCF]">₹{todayRevenue}</span>
+            </div>
+            <div className="h-6 w-px bg-neutral-800" />
+            <div>
+              <span className="text-[9px] text-neutral-400 block uppercase">ORDERS</span>
+              <span className="font-bold text-white">{todayOrders.length}</span>
+            </div>
+            <div className="h-6 w-px bg-neutral-800" />
+            <div>
+              <span className="text-[9px] text-amber-400 block uppercase">PENDING</span>
+              <span className="font-bold text-amber-300">{pendingCount}</span>
+            </div>
+            <div className="h-6 w-px bg-neutral-800" />
+            <div>
+              <span className="text-[9px] text-purple-400 block uppercase">PRINTING</span>
+              <span className="font-bold text-purple-300">{printingCount}</span>
+            </div>
+            <div className="h-6 w-px bg-neutral-800" />
+            <div>
+              <span className="text-[9px] text-emerald-400 block uppercase">SHIPPED</span>
+              <span className="font-bold text-emerald-300">{shippedCount}</span>
             </div>
           </div>
 
@@ -825,140 +863,111 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               filteredOrders.map((order) => {
                 const isSelected = selectedOrder && selectedOrder.id === order.id;
                 const itemQuantityTotal = order.cart.reduce((acc: number, item: any) => acc + (parseInt(item.quantity) || 1), 0);
+                const firstInitial = order.shippingDetails.fullName ? order.shippingDetails.fullName.charAt(0).toUpperCase() : 'C';
                 
                 return (
                   <div 
                     key={order.id}
                     onClick={() => setSelectedOrder(order)}
-                    className={`bg-white rounded-3xl border transition-all p-5 shadow-sm cursor-pointer hover:border-neutral-400 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
-                      isSelected ? 'ring-2 ring-black border-transparent' : 'border-neutral-200/60'
+                    className={`bg-white rounded-2xl border transition-all p-4 shadow-sm cursor-pointer hover:border-neutral-400 relative overflow-hidden flex flex-col space-y-3 ${
+                      isSelected ? 'ring-2 ring-black border-transparent bg-neutral-50/50' : 'border-neutral-200/80'
                     }`}
                   >
-                    <div className="space-y-2 max-w-sm">
+                    {/* Header: Customer Avatar + Order ID + Badges */}
+                    <div className="flex justify-between items-center gap-2">
                       <div className="flex items-center gap-2.5">
-                        <span className="font-mono text-xs font-bold text-neutral-900 select-all">{order.id}</span>
-                        <span className={`text-[9px] font-mono uppercase tracking-widest font-bold px-2 py-0.5 rounded border ${getStatusColor(order.status)}`}>
+                        <div className="h-8 w-8 rounded-full bg-neutral-900 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                          {firstInitial}
+                        </div>
+                        <div>
+                          <h4 className="font-sans font-bold text-xs text-neutral-900 leading-tight">
+                            {order.shippingDetails.fullName}
+                          </h4>
+                          <span className="font-mono text-[10px] text-neutral-400 select-all">{order.id}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-md">
+                          PREPAID
+                        </span>
+                        <span className={`text-[9px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${getStatusColor(order.status)}`}>
                           {order.status}
                         </span>
-                        {itemQuantityTotal >= 10 && (
-                          <span className="bg-emerald-50 text-emerald-800 border-emerald-100 text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded border">
-                            Bulk Discount 15%
-                          </span>
-                        )}
                       </div>
+                    </div>
 
-                      <div className="space-y-1">
-                        <h4 className="font-serif text-sm font-light text-neutral-800">
-                          Recipient: <span className="font-sans font-semibold text-neutral-900">{order.shippingDetails.fullName}</span>
-                        </h4>
-                        <p className="text-4xs font-mono text-neutral-400 uppercase tracking-widest">
-                          Created: {new Date(order.createdAt).toLocaleString('en-IN', { timeZone: 'IST', hour12: true })}
-                        </p>
-                      </div>
-
-                      {/* Items thumbnails list preview */}
-                      <div className="flex items-center gap-1.5 pt-1">
-                        {order.cart.slice(0, 4).map((item: any, idx: number) => (
-                          <div key={item.id || idx} className="h-7 w-7 rounded bg-neutral-100 overflow-hidden border border-neutral-200 shrink-0 relative group">
+                    {/* Middle: Thumbnails + Item Count + Grand Total */}
+                    <div className="flex items-center justify-between bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
+                      <div className="flex items-center gap-1.5">
+                        {order.cart.slice(0, 3).map((item: any, idx: number) => (
+                          <div key={item.id || idx} className="h-9 w-9 rounded-lg bg-white overflow-hidden border border-neutral-200 shrink-0 relative shadow-2xs">
                             <img src={item.previewUrl} alt="Thumbnail" className="h-full w-full object-cover" />
                             <span className="absolute bottom-0 right-0 bg-black/80 text-white text-[7px] px-0.5 font-mono">x{item.quantity}</span>
                           </div>
                         ))}
-                        {order.cart.length > 4 && (
-                          <span className="text-[10px] text-neutral-500 font-mono">+{order.cart.length - 4} more</span>
+                        {order.cart.length > 3 && (
+                          <span className="text-[10px] text-neutral-500 font-mono pl-1">+{order.cart.length - 3} more</span>
                         )}
                       </div>
 
-                      {/* Rapid status management bar */}
-                      <div className="flex flex-wrap gap-2 pt-2.5" onClick={(e) => e.stopPropagation()}>
-                        {order.status !== 'Processing' && order.status !== 'Shipped' && (
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'Processing', 'Fulfillment processing started.')}
-                            disabled={isUpdatingStatus === order.id}
-                            className="px-2.5 py-1 bg-[#E8DCCF]/40 hover:bg-[#E8DCCF]/60 text-[#4E3629] border border-[#d3c0ad] rounded-lg text-[9px] font-mono font-bold uppercase transition"
-                          >
-                            Mark Processing
-                          </button>
-                        )}
-                        {order.status !== 'Shipped' && (
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'Shipped', 'Custom magnet cast handed over to air express courier.')}
-                            disabled={isUpdatingStatus === order.id}
-                            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[9px] font-mono font-bold uppercase transition"
-                          >
-                            Mark Shipped
-                          </button>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsPrintWorkOrderOpen(order);
-                          }}
-                          className="px-2.5 py-1 bg-neutral-900 hover:bg-black text-white rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 shadow-sm cursor-pointer"
-                        >
-                          <Printer className="h-2.5 w-2.5 text-[#E8DCCF]" />
-                          <span>Photo</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsPrintTaxInvoiceOpen(order);
-                          }}
-                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
-                        >
-                          <FileText className="h-2.5 w-2.5" />
-                          <span>Invoice</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsPrintShippingLabelOpen(order);
-                          }}
-                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[9px] font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
-                        >
-                          <Truck className="h-2.5 w-2.5" />
-                          <span>Label</span>
-                        </button>
+                      <div className="text-right font-mono">
+                        <span className="text-[10px] text-neutral-400 block uppercase">{itemQuantityTotal} Item(s)</span>
+                        <span className="text-sm font-bold text-neutral-900">₹{order.grandTotal}</span>
                       </div>
                     </div>
 
-                    {/* Order action status summary */}
-                    <div className="text-left md:text-right space-y-2 md:self-stretch flex md:flex-col justify-between md:justify-center items-end shrink-0 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-neutral-100">
-                      <div>
-                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest block">GRAND TOTAL</span>
-                        <span className="font-mono text-sm font-bold text-neutral-900">₹{order.grandTotal}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
+                    {/* Footer: Primary Action Button + Icons */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 font-mono text-[10px]" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-neutral-400 text-[9px] uppercase">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        {order.status === 'Paid' && (
+                          <button
+                            onClick={() => handleUpdateStatus(order.id, 'Processing', 'Started UV printing & laser cutting.')}
+                            disabled={isUpdatingStatus === order.id}
+                            className="px-3 py-1 bg-neutral-900 hover:bg-black text-white rounded-lg font-bold uppercase tracking-wider shadow-sm transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>▶ Start Print</span>
+                          </button>
+                        )}
+                        {order.status === 'Processing' && (
+                          <button
+                            onClick={() => handleUpdateStatus(order.id, 'Shipped', 'Handed over to express courier.')}
+                            disabled={isUpdatingStatus === order.id}
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold uppercase tracking-wider shadow-sm transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>▶ Mark Shipped</span>
+                          </button>
+                        )}
+                        {order.status === 'Shipped' && (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            ✓ Shipped
+                          </span>
+                        )}
+
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsPrintWorkOrderOpen(order);
-                          }}
-                          className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-500 hover:text-neutral-900 transition-colors"
-                          title="Print Production Work Sheet"
+                          onClick={() => setIsPrintWorkOrderOpen(order)}
+                          className="p-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-200 rounded-lg transition cursor-pointer"
+                          title="Print 4x6 Photo Sheet"
                         >
-                          <Printer className="h-4 w-4" />
+                          <Printer className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsPrintShippingLabelOpen(order);
-                          }}
-                          className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-500 hover:text-neutral-900 transition-colors"
-                          title="Print Shipping Invoice Label"
+                          onClick={() => setIsPrintTaxInvoiceOpen(order)}
+                          className="p-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-200 rounded-lg transition cursor-pointer"
+                          title="Print GST Invoice"
                         >
-                          <Truck className="h-4 w-4" />
+                          <FileText className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleVoidOrder(order.id);
-                          }}
-                          className="p-1.5 hover:bg-red-50 rounded-lg text-neutral-400 hover:text-red-600 transition-colors"
-                          title="Void / Delete Order"
+                          onClick={() => setIsPrintShippingLabelOpen(order)}
+                          className="p-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-200 rounded-lg transition cursor-pointer"
+                          title="Print Shipping Label"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Truck className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
