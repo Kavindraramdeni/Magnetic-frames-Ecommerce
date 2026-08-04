@@ -272,6 +272,7 @@ export default function Customizer({
   const [acceptedPolicies, setAcceptedPolicies] = useState(false);
   const [showSimulatedGateway, setShowSimulatedGateway] = useState(false);
   const [razorpayOrderData, setRazorpayOrderData] = useState<any>(null);
+  const [pendingCheckoutItems, setPendingCheckoutItems] = useState<CartItem[] | null>(null);
   const [placedOrderDetails, setPlacedOrderDetails] = useState<any>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -518,11 +519,34 @@ export default function Customizer({
   // Cart pricing math
   const cartItemCount = cart.reduce((acc, x) => acc + x.quantity, 0);
   const cartSubtotal = cart.reduce((acc, x) => acc + (x.price * x.quantity), 0);
+  const serverBulkDiscount = cartItemCount >= 10 ? Math.round(cartSubtotal * 0.15) : 0;
   const couponDiscount = appliedCoupon?.discount ?? 0;
-  const effectiveSubtotal = Math.max(0, cartSubtotal - couponDiscount);
-  const bulkDiscount = couponDiscount;
+  const effectiveSubtotal = Math.max(0, cartSubtotal - serverBulkDiscount - couponDiscount);
+  const bulkDiscount = serverBulkDiscount;
   const deliveryCharge = cartSubtotal === 0 ? 0 : (cartSubtotal >= 699 ? 0 : 60);
   const grandTotal = effectiveSubtotal + deliveryCharge;
+  const checkoutSubtotal = cart.length > 0 ? cartSubtotal : currentItemSubtotal;
+  const checkoutItemCount = cart.length > 0 ? cartItemCount : quantity;
+  const checkoutBulkDiscount = checkoutItemCount >= 10 ? Math.round(checkoutSubtotal * 0.15) : 0;
+  const checkoutCouponDiscount = cart.length > 0 ? couponDiscount : 0;
+  const checkoutDeliveryCharge = checkoutSubtotal === 0 ? 0 : (checkoutSubtotal >= 699 ? 0 : 60);
+  const checkoutGrandTotal = Math.max(0, checkoutSubtotal - checkoutBulkDiscount - checkoutCouponDiscount + checkoutDeliveryCharge);
+
+  const persistCheckoutUploads = async (items: CartItem[]): Promise<CartItem[]> => {
+    return await Promise.all(items.map(async (item) => {
+      if (!item.previewUrl?.startsWith('data:image/')) return item;
+      const uploadResponse = await fetch('/api/uploads/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl: item.previewUrl, fileName: item.photoName || `${item.shapeId}-photo` })
+      });
+      const uploadData = await uploadResponse.json();
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData.error || `Could not upload ${item.photoName || 'customer photo'}.`);
+      }
+      return { ...item, previewUrl: uploadData.url, objectKey: uploadData.objectKey };
+    }));
+  };
 
   // Shiprocket Pincode Check
   const handlePincodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -590,7 +614,7 @@ export default function Customizer({
     setIsPaymentLoading(true);
     setCheckoutError(null);
 
-    const itemsToPay = cart.length > 0 ? cart : [{
+    const itemsToPay: CartItem[] = cart.length > 0 ? cart : [{
       id: 'single-custom-item',
       shapeId: activeShape.id,
       shapeName: activeShape.name,
@@ -604,17 +628,15 @@ export default function Customizer({
       price: activeShape.price
     }];
 
-    const baseSubtotal = cart.length > 0 ? cartSubtotal : currentItemSubtotal;
-    const finalSubtotal = Math.max(0, baseSubtotal - couponDiscount);
-    const finalDelivery = baseSubtotal === 0 ? 0 : (baseSubtotal >= 699 ? 0 : 60);
-    const finalGrandTotal = finalSubtotal + finalDelivery;
-
     try {
+      const persistedItemsToPay = await persistCheckoutUploads(itemsToPay);
+      setPendingCheckoutItems(persistedItemsToPay);
+
       const response = await fetch('/api/checkout/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cart: itemsToPay,
+          cart: persistedItemsToPay,
           shippingDetails,
           acceptedPolicies,
           couponCode: appliedCoupon?.code || null
@@ -688,21 +710,21 @@ export default function Customizer({
 
   const handlePaymentSuccess = async (paymentId: string, orderId: string, signature: string) => {
     setIsPaymentLoading(true);
-    const itemsToBook = cart.length > 0 ? cart : [{
-      id: 'single-custom-item',
-      shapeId: activeShape.id,
-      shapeName: activeShape.name,
-      quantity,
-      previewUrl: photoUrl,
-      photoName,
-      captionText: activeShape.id === 'polaroid' ? customCaption : '',
-      photoScale,
-      photoPanX,
-      photoPanY,
-      price: activeShape.price
-    }];
 
     try {
+      const itemsToBook: CartItem[] = pendingCheckoutItems || await persistCheckoutUploads(cart.length > 0 ? cart : [{
+        id: 'single-custom-item',
+        shapeId: activeShape.id,
+        shapeName: activeShape.name,
+        quantity,
+        previewUrl: photoUrl,
+        photoName,
+        captionText: activeShape.id === 'polaroid' ? customCaption : '',
+        photoScale,
+        photoPanX,
+        photoPanY,
+        price: activeShape.price
+      }]);
       const isMockPayment = orderId.startsWith('ORD-') || orderId.startsWith('order_mock_');
       const res = await fetch('/api/checkout/verify-payment', {
         method: 'POST',
@@ -1501,19 +1523,31 @@ export default function Customizer({
                       <div className="space-y-1 text-xs text-neutral-600 font-light">
                         <div className="flex justify-between">
                           <span>Subtotal:</span>
-                          <span className="font-mono text-neutral-900 font-medium">₹{cart.length > 0 ? cartSubtotal : currentItemSubtotal}</span>
+                          <span className="font-mono text-neutral-900 font-medium">₹{checkoutSubtotal}</span>
                         </div>
+                        {checkoutBulkDiscount > 0 && (
+                          <div className="flex justify-between text-[#6B1D2F] font-semibold">
+                            <span>Bulk Discount ({checkoutItemCount}+ items):</span>
+                            <span className="font-mono">-₹{checkoutBulkDiscount}</span>
+                          </div>
+                        )}
+                        {checkoutCouponDiscount > 0 && (
+                          <div className="flex justify-between text-emerald-700 font-semibold">
+                            <span>Coupon Discount:</span>
+                            <span className="font-mono">-₹{checkoutCouponDiscount}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
                           <span>Express Delivery:</span>
                           <span className="font-mono text-neutral-900 font-medium">
-                            ₹60
+                            {checkoutDeliveryCharge === 0 ? 'FREE' : `₹${checkoutDeliveryCharge}`}
                           </span>
                         </div>
                         <div className="h-[1px] bg-neutral-200 my-1" />
                         <div className="flex justify-between text-sm font-bold text-neutral-900">
                           <span className="font-serif italic font-medium">Grand Total:</span>
                           <span className="font-mono text-base text-neutral-900">
-                            ₹{(cart.length > 0 ? cartSubtotal : currentItemSubtotal) + 60}
+                            ₹{checkoutGrandTotal}
                           </span>
                         </div>
                       </div>

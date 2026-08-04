@@ -68,25 +68,27 @@ export default function CartDrawer({
   const handleCheckPincode = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanPin = pincode.trim();
-    if (cleanPin.length === 6 && /^\d+$/.test(cleanPin)) {
-      if (cleanPin.startsWith('50')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Hyderabad & Telangana Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('11')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Delhi NCR Local Express via Shiprocket — Estimated 1–2 Days`);
-      } else if (cleanPin.startsWith('56')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Bengaluru Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('40') || cleanPin.startsWith('41')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Mumbai & Maharashtra Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('60')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Chennai & Tamil Nadu Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else if (cleanPin.startsWith('70')) {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Kolkata & WB Air Express via Shiprocket — Estimated 2–3 Days`);
-      } else {
-        setPincodeMessage(`✅ Verified for ${cleanPin}: Standard National Air Express via Shiprocket — Estimated 2–4 Days`);
-      }
-    } else {
+    if (cleanPin.length !== 6 || !/^\d+$/.test(cleanPin)) {
       setPincodeMessage('⚠️ Please enter a valid 6-digit Indian pincode.');
+      return;
     }
+
+    setPincodeMessage('Checking live Shiprocket serviceability...');
+    fetch('/api/shiprocket/check-serviceability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pincode: cleanPin, orderValue: grandTotal, weight: 0.25 * Math.max(1, cart.length) })
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || data.serviceable === false) {
+          throw new Error(data.error || 'Currently not serviceable.');
+        }
+        setPincodeMessage(`✅ Verified for ${cleanPin}: ${data.courierName || 'Shiprocket'} — Estimated ${data.estimatedDays || 3} Days${data.isReal ? '' : ' (estimate)'}`);
+      })
+      .catch((err: any) => {
+        setPincodeMessage(`⚠️ ${err.message || 'Unable to verify pincode right now.'}`);
+      });
   };
 
   // Disable body scroll & add Escape key listener when open
@@ -116,11 +118,12 @@ export default function CartDrawer({
   // Pricing calculations
   const cartItemCount = cart.reduce((acc, x) => acc + x.quantity, 0);
   const cartSubtotal = cart.reduce((acc, x) => acc + (x.price * x.quantity), 0);
+  const bulkDiscount = cartItemCount >= 10 ? Math.round(cartSubtotal * 0.15) : 0;
   const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
   const deliveryCharge = cartSubtotal === 0 ? 0 : (cartSubtotal >= 699 ? 0 : 60);
   const amountNeededForFreeShipping = Math.max(0, 699 - cartSubtotal);
   const freeShippingProgress = Math.min(100, Math.round((cartSubtotal / 699) * 100));
-  const grandTotal = Math.max(0, cartSubtotal - couponDiscount + deliveryCharge);
+  const grandTotal = Math.max(0, cartSubtotal - bulkDiscount - couponDiscount + deliveryCharge);
 
   return createPortal(
     <div className="fixed inset-0 z-[150] flex justify-end overflow-hidden" role="dialog" aria-modal="true">
@@ -397,6 +400,13 @@ export default function CartDrawer({
                 <span>Subtotal:</span>
                 <span className="font-mono font-medium text-black">₹{cartSubtotal}</span>
               </div>
+
+              {bulkDiscount > 0 && (
+                <div className="flex justify-between text-[#6B1D2F] font-semibold">
+                  <span>Bulk discount ({cartItemCount}+ items):</span>
+                  <span className="font-mono">-₹{bulkDiscount}</span>
+                </div>
+              )}
 
               {appliedCoupon && (
                 <div className="flex justify-between text-emerald-800 font-semibold">

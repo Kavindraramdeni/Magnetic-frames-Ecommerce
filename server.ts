@@ -214,12 +214,15 @@ interface OrderTotals {
 
 function calculateOrderTotals(cart: any[], couponCode?: string): OrderTotals {
   let subtotal = 0;
+  let itemCount = 0;
   cart.forEach((item: any) => {
     const backendPrice = SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom;
     const qty = Math.max(1, Math.min(99, parseInt(item.quantity) || 1));
+    itemCount += qty;
     subtotal += backendPrice * qty;
   });
 
+  const bulkDiscount = itemCount >= 10 ? Math.round(subtotal * 0.15) : 0;
   let couponDiscount = 0;
   let forceFreeShipping = false;
 
@@ -228,9 +231,9 @@ function calculateOrderTotals(cart: any[], couponCode?: string): OrderTotals {
     const coupon = VALID_COUPONS[cleanCode];
     if (coupon) {
       if (coupon.type === "percent") {
-        couponDiscount = Math.round((subtotal * coupon.value) / 100);
+        couponDiscount = Math.round((Math.max(0, subtotal - bulkDiscount) * coupon.value) / 100);
       } else if (coupon.type === "flat") {
-        couponDiscount = Math.min(subtotal, coupon.value);
+        couponDiscount = Math.min(Math.max(0, subtotal - bulkDiscount), coupon.value);
       } else if (coupon.type === "free_shipping") {
         forceFreeShipping = true;
       }
@@ -238,9 +241,9 @@ function calculateOrderTotals(cart: any[], couponCode?: string): OrderTotals {
   }
 
   const deliveryCharge = (subtotal === 0) ? 0 : (forceFreeShipping || subtotal >= 699 ? 0 : 60);
-  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryCharge);
+  const grandTotal = Math.max(0, subtotal - bulkDiscount - couponDiscount + deliveryCharge);
   
-  return { subtotal, bulkDiscount: 0, couponDiscount, deliveryCharge, grandTotal };
+  return { subtotal, bulkDiscount, couponDiscount, deliveryCharge, grandTotal };
 }
 
 async function postNotificationWebhook(url: string, payload: any) {
@@ -794,13 +797,67 @@ app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
   saveOrder(order);
   res.json({ success: true, order, notificationLog: notification.message });
 });
-app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, (req, res) => {
+app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res) => {
   const order = getOrders().find((o: any) => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: "Order record not found." });
-  order.trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
-  order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Fresh AWB generated: ${order.trackingNumber}` });
-  saveOrder(order);
-  res.json({ success: true, order });
+  const shiprocketToken = await getShiprocketToken();
+  if (!shiprocketToken) return res.status(503).json({ error: "Shiprocket credentials are not configured." });
+
+  try {
+    const pickupLocRes = await fetch("https://apiv2.shiprocket.in/v1/external/settings/company/pickup", { headers: { Authorization: `Bearer ${shiprocketToken}` } });
+    let pickupName = process.env.SHIPROCKET_PICKUP_LOCATION || "Primary";
+    if (pickupLocRes.ok) {
+      const locData: any = await pickupLocRes.json();
+      if (locData.data?.shipping_address?.length > 0) {
+        pickupName = locData.data.shipping_address[0].pickup_location || pickupName;
+      }
+    }
+
+    const shipResponse = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+      body: JSON.stringify({
+        order_id: order.id.replace(/-/g, "_"),
+        order_date: new Date(order.createdAt || Date.now()).toISOString().replace("T", " ").substring(0, 16),
+        pickup_location: pickupName,
+        billing_customer_name: order.shippingDetails.fullName,
+        billing_last_name: "",
+        billing_address: order.shippingDetails.address,
+        billing_city: order.shippingDetails.city,
+        billing_pincode: order.shippingDetails.pincode,
+        billing_state: order.shippingDetails.state,
+        billing_country: "India",
+        billing_email: order.shippingDetails.email,
+        billing_phone: order.shippingDetails.phone,
+        shipping_is_billing: true,
+        order_items: order.cart.map((item: any) => ({
+          name: `${item.shapeName} Acrylic Magnet`,
+          sku: `KRIA-${item.shapeId}`,
+          units: item.quantity,
+          selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom
+        })),
+        payment_method: "Prepaid",
+        sub_total: order.subtotal,
+        length: 15,
+        breadth: 15,
+        height: 5,
+        weight: Number((0.15 * order.cart.length).toFixed(2))
+      })
+    });
+
+    const shipData: any = await shipResponse.json().catch(() => ({}));
+    if (!shipResponse.ok) {
+      return res.status(502).json({ error: "Shiprocket shipment creation failed.", details: shipData });
+    }
+
+    order.trackingNumber = shipData.awb_code || order.trackingNumber || `SR-${shipData.shipment_id || shipData.order_id}`;
+    order.courierName = shipData.courier_name || order.courierName || "Shiprocket";
+    order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Shiprocket shipment synced. AWB: ${order.trackingNumber}` });
+    saveOrder(order);
+    res.json({ success: true, order, shiprocket: shipData });
+  } catch (err: any) {
+    res.status(502).json({ error: err.message || "Shiprocket sync failed." });
+  }
 });
 app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
   db.prepare("DELETE FROM orders WHERE id = ?").run(req.params.id);
