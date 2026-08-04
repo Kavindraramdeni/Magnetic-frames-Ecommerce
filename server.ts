@@ -738,6 +738,30 @@ app.post("/api/webhooks/shiprocket", async (req, res) => {
   }
 });
 
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain");
+  res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: https://magnetic-frames-ecommerce.onrender.com/sitemap.xml`);
+});
+
+app.get("/sitemap.xml", (_req, res) => {
+  res.type("application/xml");
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://magnetic-frames-ecommerce.onrender.com/</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://magnetic-frames-ecommerce.onrender.com/tracking</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>`);
+});
+
 app.post("/api/orders/track", (req, res) => {
   const { orderId, emailOrPhone } = req.body || {};
   if (!orderId || !emailOrPhone) return res.status(400).json({ error: "Order ID and email/phone are required." });
