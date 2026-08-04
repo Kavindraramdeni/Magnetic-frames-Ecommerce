@@ -19,6 +19,10 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || (ADMIN_PASSWORD ? crypto.createHa
 const ENABLE_MOCK_CHECKOUT = process.env.ENABLE_MOCK_CHECKOUT === "true" && !isProduction;
 const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 120);
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 if (isProduction && !isVercel && (!ADMIN_PASSWORD && !process.env.ADMIN_TOKEN)) {
   throw new Error("ADMIN_PASSWORD or ADMIN_TOKEN is required in production.");
@@ -172,6 +176,18 @@ function savePaymentEvent(event: any) {
   ).run(event.id, event.provider, event.eventType, event.externalPaymentId, event.externalOrderId, JSON.stringify(event.payload), event.processedAt);
 }
 
+function generateOrderId(prefix = "KRIA"): string {
+  const now = new Date();
+  const datePart = now.toISOString().slice(2, 10).replace(/-/g, "");
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const randomPart = crypto.randomInt(1000, 10_000);
+    const orderId = `${prefix}-${datePart}-${randomPart}`;
+    const existing = db.prepare("SELECT id FROM orders WHERE id = ?").get(orderId);
+    if (!existing) return orderId;
+  }
+  return `${prefix}-${datePart}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+}
+
 function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
@@ -198,12 +214,15 @@ interface OrderTotals {
 
 function calculateOrderTotals(cart: any[], couponCode?: string): OrderTotals {
   let subtotal = 0;
+  let itemCount = 0;
   cart.forEach((item: any) => {
     const backendPrice = SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom;
     const qty = Math.max(1, Math.min(99, parseInt(item.quantity) || 1));
+    itemCount += qty;
     subtotal += backendPrice * qty;
   });
 
+  const bulkDiscount = itemCount >= 10 ? Math.round(subtotal * 0.15) : 0;
   let couponDiscount = 0;
   let forceFreeShipping = false;
 
@@ -212,9 +231,9 @@ function calculateOrderTotals(cart: any[], couponCode?: string): OrderTotals {
     const coupon = VALID_COUPONS[cleanCode];
     if (coupon) {
       if (coupon.type === "percent") {
-        couponDiscount = Math.round((subtotal * coupon.value) / 100);
+        couponDiscount = Math.round((Math.max(0, subtotal - bulkDiscount) * coupon.value) / 100);
       } else if (coupon.type === "flat") {
-        couponDiscount = Math.min(subtotal, coupon.value);
+        couponDiscount = Math.min(Math.max(0, subtotal - bulkDiscount), coupon.value);
       } else if (coupon.type === "free_shipping") {
         forceFreeShipping = true;
       }
@@ -222,9 +241,9 @@ function calculateOrderTotals(cart: any[], couponCode?: string): OrderTotals {
   }
 
   const deliveryCharge = (subtotal === 0) ? 0 : (forceFreeShipping || subtotal >= 699 ? 0 : 60);
-  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryCharge);
+  const grandTotal = Math.max(0, subtotal - bulkDiscount - couponDiscount + deliveryCharge);
   
-  return { subtotal, bulkDiscount: 0, couponDiscount, deliveryCharge, grandTotal };
+  return { subtotal, bulkDiscount, couponDiscount, deliveryCharge, grandTotal };
 }
 
 async function postNotificationWebhook(url: string, payload: any) {
@@ -346,27 +365,24 @@ async function getShiprocketToken(): Promise<string | null> {
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
-function generateOrderId(): string {
-  const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  return `KRIA-${dateStr}-${randomSuffix}`;
-}
-
 // CORS & Options preflight for Vercel / Render cross-origin & serverless proxy
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
-    : null;
-  
-  if (allowedOrigins && origin && allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-    res.header("Vary", "Origin");
-  } else if (!allowedOrigins) {
-    res.header("Access-Control-Allow-Origin", origin || "*");
+  const requestOrigin = req.headers.origin;
+  const fallbackToRequestOrigin = ALLOWED_ORIGINS.length === 0;
+  const isAllowedOrigin = typeof requestOrigin === "string" && (
+    ALLOWED_ORIGINS.includes(requestOrigin) || fallbackToRequestOrigin
+  );
+  if (isAllowedOrigin && requestOrigin) {
+    res.header("Access-Control-Allow-Origin", requestOrigin);
+  } else if (!requestOrigin || ALLOWED_ORIGINS.length === 0) {
+    res.header("Access-Control-Allow-Origin", requestOrigin || "*");
   }
+  res.header("Vary", "Origin");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  if (req.method === "OPTIONS" && requestOrigin && !isAllowedOrigin) {
+    return res.status(403).json({ error: "Origin is not allowed." });
+  }
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -488,7 +504,7 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
   if (existing) return existing;
   const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(session.cart);
   const order = {
-    id: generateOrderId(),
+    id: generateOrderId("KRIA-ORD"),
     status: "Paid",
     cart: session.cart,
     shippingDetails: session.shippingDetails,
@@ -507,34 +523,37 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
   return order;
 }
 
-app.post("/api/checkout/create-order", async (req, res) => {
+const createCheckoutOrderHandler = async (req: express.Request, res: express.Response) => {
   try {
-    const { cart, shippingDetails, acceptedPolicies = true } = req.body;
+    const { cart, shippingDetails, acceptedPolicies = true, couponCode } = req.body;
     const cartError = validateCart(cart);
     if (cartError) return res.status(400).json({ error: cartError });
     const shippingError = validateShippingDetails(shippingDetails);
     if (shippingError) return res.status(400).json({ error: shippingError });
-    const { grandTotal, subtotal, deliveryCharge, bulkDiscount } = calculateOrderTotals(cart);
+    const { grandTotal, subtotal, deliveryCharge, bulkDiscount, couponDiscount } = calculateOrderTotals(cart, couponCode);
     const rzpKeyId = (process.env.RAZORPAY_KEY_ID || "").trim().replace(/['"]/g, "");
     const rzpKeySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim().replace(/['"]/g, "");
     if (!rzpKeyId || !rzpKeySecret) {
       if (!ENABLE_MOCK_CHECKOUT) return res.status(503).json({ error: "Payment gateway is not configured. Mock checkout is disabled outside development." });
       const mockOrderId = `order_mock_${crypto.randomUUID()}`;
-      saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: mockOrderId, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
-      return res.json({ orderId: mockOrderId, amount: grandTotal * 100, currency: "INR", isMock: true, subtotal, deliveryCharge, bulkDiscount, grandTotal, razorpayKeyId: "rzp_test_mock_key_studio_kria" });
+      saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: mockOrderId, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
+      return res.json({ orderId: mockOrderId, amount: grandTotal * 100, currency: "INR", isMock: true, subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal, razorpayKeyId: "rzp_test_mock_key_studio_kria" });
     }
     const authString = Buffer.from(`${rzpKeyId}:${rzpKeySecret}`).toString("base64");
     const rzpResponse = await fetch("https://api.razorpay.com/v1/orders", { method: "POST", headers: { Authorization: `Basic ${authString}`, "Content-Type": "application/json" }, body: JSON.stringify({ amount: grandTotal * 100, currency: "INR", receipt: `receipt_kria_${Date.now()}` }) });
     if (!rzpResponse.ok) throw new Error(`Razorpay gateway error: ${await rzpResponse.text()}`);
     const rzpOrder: any = await rzpResponse.json();
-    saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: rzpOrder.id, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
-    return res.json({ orderId: rzpOrder.id, amount: rzpOrder.amount, currency: rzpOrder.currency, isMock: false, subtotal, deliveryCharge, bulkDiscount, grandTotal, razorpayKeyId: rzpKeyId });
+    saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: rzpOrder.id, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
+    return res.json({ orderId: rzpOrder.id, amount: rzpOrder.amount, currency: rzpOrder.currency, isMock: false, subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal, razorpayKeyId: rzpKeyId });
   } catch (error: any) { res.status(500).json({ error: error.message || "Failed to establish a secure transaction session." }); }
-});
+};
 
-app.post("/api/checkout/verify-payment", async (req, res) => {
+app.post("/api/checkout/create-order", createCheckoutOrderHandler);
+app.post("/api/razorpay/create-order", createCheckoutOrderHandler);
+
+const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.Response) => {
   try {
-    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, cart, shippingDetails, isMock, acceptedPolicies } = req.body;
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, cart, shippingDetails, isMock, acceptedPolicies, couponCode } = req.body;
     const cartError = validateCart(cart);
     if (cartError) return res.status(400).json({ error: cartError });
     const shippingError = validateShippingDetails(shippingDetails);
@@ -547,7 +566,7 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
       const generatedSignature = crypto.createHmac("sha256", rzpKeySecret).update(`${razorpay_order_id}|${razorpay_payment_id}`).digest("hex");
       if (generatedSignature !== razorpay_signature) return res.status(400).json({ error: "Cryptographic signature validation failed. Potential tampering." });
     }
-    const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(cart);
+    const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(cart, couponCode);
     const shiprocketToken = await getShiprocketToken();
     let trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
     let courierName = "Delhivery Surface";
@@ -566,7 +585,7 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
           body: JSON.stringify({
-            order_id: `KRIA_ORD_${Math.floor(1000 + Math.random() * 9000)}`,
+            order_id: generateOrderId("KRIA-ORD").replace(/-/g, "_"),
             order_date: new Date().toISOString().replace('T', ' ').substring(0, 16),
             pickup_location: pickupName,
             billing_customer_name: shippingDetails.fullName,
@@ -606,12 +625,15 @@ app.post("/api/checkout/verify-payment", async (req, res) => {
         }
       } catch (shipErr) { console.error("Shiprocket order failed", shipErr); }
     }
-    const newOrder = { id: generateOrderId(), status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId: isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
+    const newOrder = { id: generateOrderId("KRIA-ORD"), status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId: isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
     saveOrder(newOrder);
     const notification = await notifyCustomer(newOrder, "Order confirmed");
     return res.json({ success: true, transactionId: newOrder.transactionId, trackingNumber, courierName, deliveryEstimate: newOrder.deliveryEstimate, isMockCheckout: isMock, isRealShipment, notification, grandTotal });
   } catch (error: any) { res.status(500).json({ error: error.message || "Failed to process final order booking." }); }
-});
+};
+
+app.post("/api/checkout/verify-payment", verifyCheckoutPaymentHandler);
+app.post("/api/orders/confirm", verifyCheckoutPaymentHandler);
 
 app.post("/api/shiprocket/check-serviceability", async (req, res) => {
   const { pincode, orderValue, weight = 0.25 } = req.body;
@@ -792,12 +814,13 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
           pickupName = locData.data.shipping_address[0].pickup_location || pickupName;
         }
       }
+
       const shipResponse = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
         body: JSON.stringify({
-          order_id: order.id.replace(/-/g, '_'),
-          order_date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          order_id: order.id.replace(/-/g, "_"),
+          order_date: new Date(order.createdAt || Date.now()).toISOString().replace("T", " ").substring(0, 16),
           pickup_location: pickupName,
           billing_customer_name: order.shippingDetails.fullName,
           billing_last_name: "",
@@ -824,22 +847,20 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
         })
       });
 
-      if (shipResponse.ok) {
-        const shipData: any = await shipResponse.json();
-        if (shipData.awb_code || shipData.shipment_id || shipData.order_id) {
-          order.trackingNumber = shipData.awb_code || `SR-${shipData.shipment_id || shipData.order_id}`;
-          order.courierName = shipData.courier_name || order.courierName || "Delhivery Surface";
-          order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Live Shiprocket AWB synced: ${order.trackingNumber}` });
-          saveOrder(order);
-          return res.json({ success: true, order, isRealShipment: true });
-        }
+      const shipData: any = await shipResponse.json().catch(() => ({}));
+      if (shipResponse.ok && (shipData.awb_code || shipData.shipment_id || shipData.order_id)) {
+        order.trackingNumber = shipData.awb_code || order.trackingNumber || `SR-${shipData.shipment_id || shipData.order_id}`;
+        order.courierName = shipData.courier_name || order.courierName || "Shiprocket";
+        order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Live Shiprocket AWB synced: ${order.trackingNumber}` });
+        saveOrder(order);
+        return res.json({ success: true, order, isRealShipment: true, shiprocket: shipData });
       }
     } catch (shipErr) {
       console.error("Shiprocket sync error:", shipErr);
     }
   }
 
-  // Fallback AWB refresh
+  // Fallback AWB refresh if Shiprocket credentials missing or API fails
   order.trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
   order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Refreshed AWB tracking code: ${order.trackingNumber}` });
   saveOrder(order);

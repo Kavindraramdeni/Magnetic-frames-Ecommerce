@@ -172,6 +172,11 @@
   #print-photo-sheet-body, #print-photo-sheet-body * {
     visibility: visible !important;
   }
+  #print-photo-sheet-body .print\:hidden,
+  #print-photo-sheet-body .print\:hidden * {
+    display: none !important;
+    visibility: hidden !important;
+  }
   #print-photo-sheet-body {
     position: fixed !important;
     left: 0 !important;

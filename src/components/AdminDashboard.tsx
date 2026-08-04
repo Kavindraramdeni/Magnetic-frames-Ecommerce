@@ -1039,7 +1039,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
 
                     return (
                       <div key={idx} className="border-2 border-neutral-300 p-5 rounded-2xl space-y-4 bg-white print:border-none print:p-0">
-                        <div className="flex justify-between items-start font-mono text-[11px]">
+                        <div className="flex justify-between items-start font-mono text-[11px] print:hidden">
                           <div>
                             <p className="font-bold text-neutral-900 uppercase">Item #{idx + 1}: {item.shapeName}</p>
                             <p className="text-neutral-500 font-semibold">Qty: {item.quantity} Frame(s)</p>
