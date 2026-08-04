@@ -14,6 +14,151 @@ interface AdminDashboardProps {
   adminToken: string;
 }
 
+function ShapedPhotoCanvasPrint({ item }: { item: any }) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 4x6 Photo Paper Dimensions (600px x 900px high-resolution print canvas)
+    const W = 600;
+    const H = 900;
+    canvas.width = W;
+    canvas.height = H;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.clearRect(0, 0, W, H);
+
+      // Fill background clean white
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, W, H);
+
+      const centerX = W / 2;
+      const centerY = H / 2;
+
+      // Frame box size inside 4x6 sheet
+      let fw = 380;
+      let fh = 520;
+      if (item.shapeId === 'circle' || item.shapeId === 'circle-bloom') {
+        fw = 420;
+        fh = 420;
+      } else if (item.shapeId === 'square') {
+        fw = 420;
+        fh = 420;
+      } else if (item.shapeId === 'polaroid') {
+        fw = 380;
+        fh = 480;
+      }
+
+      const fx = centerX - fw / 2;
+      const fy = centerY - fh / 2;
+
+      ctx.save();
+
+      // Begin clipping path for the exact selected frame shape
+      ctx.beginPath();
+      if (item.shapeId === 'circle' || item.shapeId === 'circle-bloom') {
+        const radius = fw / 2;
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      } else if (item.shapeId === 'heart') {
+        // Sculpted Heart curve
+        const topCurveHeight = fh * 0.3;
+        ctx.moveTo(centerX, fy + topCurveHeight);
+        ctx.bezierCurveTo(centerX, fy, fx, fy, fx, fy + topCurveHeight);
+        ctx.bezierCurveTo(fx, fy + (fh + topCurveHeight) / 2, centerX - fw / 4, fy + fh * 0.8, centerX, fy + fh);
+        ctx.bezierCurveTo(centerX + fw / 4, fy + fh * 0.8, fx + fw, fy + (fh + topCurveHeight) / 2, fx + fw, fy + topCurveHeight);
+        ctx.bezierCurveTo(fx + fw, fy, centerX, fy, centerX, fy + topCurveHeight);
+      } else if (item.shapeId === 'arch') {
+        // Classic Arch: top rounded arch + vertical sides
+        const archRadius = fw / 2;
+        ctx.moveTo(fx, fy + archRadius);
+        ctx.arc(centerX, fy + archRadius, archRadius, Math.PI, 0, false);
+        ctx.lineTo(fx + fw, fy + fh);
+        ctx.lineTo(fx, fy + fh);
+        ctx.closePath();
+      } else if (item.shapeId === 'hexagon') {
+        // Modern Hexagon
+        ctx.moveTo(centerX, fy);
+        ctx.lineTo(fx + fw, fy + fh * 0.25);
+        ctx.lineTo(fx + fw, fy + fh * 0.75);
+        ctx.lineTo(centerX, fy + fh);
+        ctx.lineTo(fx, fy + fh * 0.75);
+        ctx.lineTo(fx, fy + fh * 0.25);
+        ctx.closePath();
+      } else if (item.shapeId === 'polaroid') {
+        // Polaroid photo container area
+        const photoH = fh - 70;
+        ctx.rect(fx + 15, fy + 15, fw - 30, photoH);
+      } else {
+        // Rounded rectangle / square default
+        const r = 28;
+        if (typeof (ctx as any).roundRect === 'function') {
+          (ctx as any).roundRect(fx, fy, fw, fh, r);
+        } else {
+          ctx.rect(fx, fy, fw, fh);
+        }
+      }
+      ctx.closePath();
+      ctx.clip();
+
+      // Draw Customer Photo with scale and pan offsets
+      const scale = item.photoScale || 1.0;
+      const panX = item.photoPanX || 0;
+      const panY = item.photoPanY || 0;
+
+      const imgRatio = img.width / img.height;
+      const frameRatio = fw / fh;
+      let drawW = fw;
+      let drawH = fh;
+      if (imgRatio > frameRatio) {
+        drawH = fh;
+        drawW = fh * imgRatio;
+      } else {
+        drawW = fw;
+        drawH = fw / imgRatio;
+      }
+
+      drawW *= scale;
+      drawH *= scale;
+
+      const imgX = centerX - drawW / 2 + (panX * 2.5);
+      const imgY = centerY - drawH / 2 + (panY * 2.5);
+
+      ctx.drawImage(img, imgX, imgY, drawW, drawH);
+      ctx.restore();
+
+      // If Polaroid shape, draw outer white card border & caption text
+      if (item.shapeId === 'polaroid') {
+        ctx.strokeStyle = '#111111';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(fx, fy, fw, fh);
+
+        if (item.captionText) {
+          ctx.fillStyle = '#111111';
+          ctx.font = 'bold 24px Cormorant Garamond, serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(item.captionText, centerX, fy + fh - 24);
+        }
+      }
+    };
+    img.src = item.previewUrl;
+  }, [item]);
+
+  return (
+    <div className="w-full flex flex-col items-center justify-center print-photo-page py-6 print:py-0">
+      <canvas 
+        ref={canvasRef} 
+        className="w-full max-w-[340px] h-auto shadow-md border border-neutral-200 block print:shadow-none print:border-none print:max-w-none print:w-[3.8in] print:h-[5.8in]"
+      />
+    </div>
+  );
+}
+
 export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashboardProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1024,93 +1169,31 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 </div>
               </div>
 
-              {/* 4x6 Photo Paper Print Grid */}
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {isPrintWorkOrderOpen.cart.map((item: any, idx: number) => {
-                    let clipStyle: React.CSSProperties = {};
-                    let outlineClass = "rounded-none";
-                    let sizeLabel = "Standard Cut Out";
-
-                    if (item.shapeId === 'circle') {
-                      clipStyle = { borderRadius: '50%' };
-                      outlineClass = "rounded-full";
-                      sizeLabel = "Circle Frame Cut";
-                    } else if (item.shapeId === 'heart') {
-                      clipStyle = { clipPath: 'url(#heart-print-clip)' };
-                      outlineClass = "heart-outline-container";
-                      sizeLabel = "Heart Frame Cut";
-                    } else if (item.shapeId === 'arch') {
-                      clipStyle = { borderRadius: '75px 75px 0 0', clipPath: 'url(#arch-print-clip)' };
-                      outlineClass = "arch-outline-container";
-                      sizeLabel = "Arch Frame Cut";
-                    } else if (item.shapeId === 'hexagon') {
-                      clipStyle = { clipPath: 'url(#hexagon-print-clip)' };
-                      outlineClass = "hexagon-outline-container";
-                      sizeLabel = "Hexagon Frame Cut";
-                    } else if (item.shapeId === 'polaroid') {
-                      clipStyle = {};
-                      outlineClass = "border-neutral-800 p-2.5 pb-8 bg-white border shadow-sm";
-                      sizeLabel = "Polaroid Frame Cut";
-                    } else if (item.shapeId === 'square') {
-                      clipStyle = { borderRadius: '12px' };
-                      outlineClass = "rounded-xl";
-                      sizeLabel = "Square Frame Cut";
-                    }
-
-                    return (
-                      <div key={idx} className="border-2 border-neutral-300 p-5 rounded-2xl space-y-4 bg-white print:border-none print:p-0">
-                        <div className="flex justify-between items-start font-mono text-[11px] print:hidden">
-                          <div>
-                            <p className="font-bold text-neutral-900 uppercase">Item #{idx + 1}: {item.shapeName}</p>
-                            <p className="text-neutral-500 font-semibold">Qty: {item.quantity} Frame(s)</p>
-                          </div>
-                          <span className="bg-black text-white font-bold px-2.5 py-1 rounded text-[9px] uppercase tracking-wider">
-                            {sizeLabel}
-                          </span>
-                        </div>
-
-                        {/* Clean 4x6 Photo Print Box */}
-                        <div className="flex flex-col items-center justify-center p-4 bg-white border border-neutral-200 rounded-xl print:bg-white print:border-none">
-                          <div 
-                            className={`relative flex items-center justify-center overflow-hidden transition-all shadow-md ${outlineClass}`}
-                            style={{ 
-                              width: item.shapeId === 'arch' ? '150px' : item.shapeId === 'polaroid' ? '150px' : '170px',
-                              height: item.shapeId === 'arch' ? '200px' : item.shapeId === 'polaroid' ? '190px' : '170px',
-                            }}
-                          >
-                            <img 
-                              src={item.previewUrl} 
-                              alt="Customer Photo Print Asset" 
-                              className="w-full h-full object-cover select-none"
-                              style={{
-                                ...clipStyle,
-                                transform: `scale(${item.photoScale || 1.0}) translate(${item.photoPanX || 0}px, ${item.photoPanY || 0}px)`
-                              }}
-                            />
-                            
-                            {item.shapeId === 'polaroid' && item.captionText && (
-                              <div className="absolute bottom-2 left-0 right-0 text-center font-serif text-[12px] font-bold text-neutral-900 tracking-wide select-none bg-white/90 py-1">
-                                {item.captionText}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="font-mono text-[11px] text-neutral-600 bg-neutral-100 p-3 rounded-xl flex flex-wrap justify-between items-center gap-2 print:hidden">
-                          <span>Frame Model: <strong>{item.shapeName}</strong> (Qty: {item.quantity})</span>
-                          <button
-                            onClick={() => handleDownloadFramedPhoto(item)}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-mono font-bold text-[10px] uppercase flex items-center gap-1.5 cursor-pointer shadow-sm transition"
-                          >
-                            <Download className="h-3 w-3" />
-                            <span>Download Fitted 4x6 Photo (PNG)</span>
-                          </button>
-                        </div>
+              {/* 4x6 Photo Paper Print Grid (1 Item Per 4x6 Sheet) */}
+              <div className="space-y-8 print:space-y-0">
+                {isPrintWorkOrderOpen.cart.map((item: any, idx: number) => (
+                  <div 
+                    key={idx} 
+                    className="border-2 border-neutral-300 p-5 rounded-2xl space-y-4 bg-white print:border-none print:p-0 print:m-0 print:h-screen print:flex print:flex-col print:justify-center print:items-center print-photo-page"
+                  >
+                    <div className="flex justify-between items-start font-mono text-[11px] print:hidden">
+                      <div>
+                        <p className="font-bold text-neutral-900 uppercase">Item #{idx + 1}: {item.shapeName}</p>
+                        <p className="text-neutral-500 font-semibold">Qty: {item.quantity} Frame(s)</p>
                       </div>
-                    );
-                  })}
-                </div>
+                      <button
+                        onClick={() => handleDownloadFramedPhoto(item)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-mono font-bold text-[10px] uppercase flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                      >
+                        <Download className="h-3 w-3" />
+                        <span>Download Fitted 4x6 Photo (PNG)</span>
+                      </button>
+                    </div>
+
+                    {/* Canvas High-Res Render Engine: Scaled, Panned & Clipped in Customer's Selected Frame Shape */}
+                    <ShapedPhotoCanvasPrint item={item} />
+                  </div>
+                ))}
               </div>
 
             </div>
