@@ -170,6 +170,26 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [isPrintWorkOrderOpen, setIsPrintWorkOrderOpen] = useState<any | null>(null);
   const [isPrintShippingLabelOpen, setIsPrintShippingLabelOpen] = useState<any | null>(null);
   const [isPrintTaxInvoiceOpen, setIsPrintTaxInvoiceOpen] = useState<any | null>(null);
+  const [editingPriceProduct, setEditingPriceProduct] = useState<any | null>(null);
+  const [editPriceForm, setEditPriceForm] = useState<{ price: number; originalPrice: number }>({ price: 0, originalPrice: 0 });
+
+  const handleOpenPriceModal = (product: any) => {
+    setEditingPriceProduct(product);
+    setEditPriceForm({
+      price: Number(product.price || 0),
+      originalPrice: Number(product.originalPrice || (product.price ? product.price + 100 : 349))
+    });
+  };
+
+  const handleSavePriceModal = () => {
+    if (!editingPriceProduct) return;
+    saveProduct({
+      ...editingPriceProduct,
+      price: editPriceForm.price,
+      originalPrice: editPriceForm.originalPrice
+    });
+    setEditingPriceProduct(null);
+  };
 
   // Print individual item framed photo cleanly on 4x6 photo paper
   const handlePrintSingleItemPhoto = (item: any) => {
@@ -1544,32 +1564,10 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <button
-                            onClick={() => {
-                              const newPriceStr = prompt(`Enter new Sale Price (₹) for "${product.name}":`, String(currentPrice));
-                              if (newPriceStr) {
-                                const newP = parseInt(newPriceStr);
-                                if (!isNaN(newP) && newP > 0) {
-                                  saveProduct({ ...product, price: newP, originalPrice: product.originalPrice ?? originalPrice });
-                                }
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-[#111111] hover:bg-neutral-800 text-white rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer transition-all"
+                            onClick={() => handleOpenPriceModal(product)}
+                            className="px-3 py-1.5 bg-neutral-900 hover:bg-black text-white rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer transition-all shadow-sm flex items-center gap-1"
                           >
-                            Edit Price
-                          </button>
-                          <button
-                            onClick={() => {
-                              const newMrpStr = prompt(`Enter new MRP (₹) for "${product.name}":`, String(originalPrice));
-                              if (newMrpStr) {
-                                const newMrp = parseInt(newMrpStr);
-                                if (!isNaN(newMrp) && newMrp >= 0) {
-                                  saveProduct({ ...product, originalPrice: newMrp, price: currentPrice });
-                                }
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider"
-                          >
-                            Edit MRP
+                            <span>Edit Price & MRP</span>
                           </button>
                           <button
                             onClick={() => {
@@ -1747,6 +1745,65 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- EDIT PRODUCT PRICE & MRP LUXURY MODAL --- */}
+      {editingPriceProduct && (
+        <div className="fixed inset-0 z-50 bg-neutral-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md border border-neutral-300 shadow-2xl p-6 space-y-5 text-left">
+            <div className="flex justify-between items-start border-b border-neutral-200 pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">PRODUCT PRICING MANAGER</span>
+                <h3 className="font-serif text-xl font-bold text-neutral-900">{editingPriceProduct.name}</h3>
+              </div>
+              <button onClick={() => setEditingPriceProduct(null)} className="p-1 hover:bg-neutral-100 rounded-full text-neutral-500">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-600 block mb-1">Sale Price (₹)</label>
+                <input 
+                  type="number" 
+                  value={editPriceForm.price} 
+                  onChange={(e) => setEditPriceForm({...editPriceForm, price: Number(e.target.value)})}
+                  className="w-full border-2 border-neutral-300 focus:border-neutral-900 rounded-xl px-4 py-2.5 font-mono text-lg font-bold text-neutral-900 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-600 block mb-1">MRP / Original Price (₹)</label>
+                <input 
+                  type="number" 
+                  value={editPriceForm.originalPrice} 
+                  onChange={(e) => setEditPriceForm({...editPriceForm, originalPrice: Number(e.target.value)})}
+                  className="w-full border-2 border-neutral-300 focus:border-neutral-900 rounded-xl px-4 py-2.5 font-mono text-base font-bold text-neutral-600 outline-none"
+                />
+              </div>
+              {editPriceForm.originalPrice > editPriceForm.price && editPriceForm.originalPrice > 0 && (
+                <div className="bg-emerald-50 text-emerald-800 text-xs font-mono font-bold px-3.5 py-2.5 rounded-xl border border-emerald-200 flex justify-between items-center">
+                  <span>Customer Discount:</span>
+                  <span className="text-sm">{Math.round(((editPriceForm.originalPrice - editPriceForm.price) / editPriceForm.originalPrice) * 100)}% OFF</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={handleSavePriceModal}
+                className="flex-1 bg-neutral-900 hover:bg-black text-white font-mono font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow-md transition cursor-pointer"
+              >
+                Save Prices
+              </button>
+              <button 
+                onClick={() => setEditingPriceProduct(null)}
+                className="px-5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-mono font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
