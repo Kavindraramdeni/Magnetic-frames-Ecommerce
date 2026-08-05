@@ -1,7 +1,7 @@
 {
-  "name": "react-example",
+  "name": "kria-studio-luxury-ecom",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "node --experimental-sqlite --import tsx server.ts",
