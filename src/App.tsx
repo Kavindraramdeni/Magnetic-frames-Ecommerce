@@ -13,6 +13,8 @@ import AdminDashboard from './components/AdminDashboard';
 import CartDrawer from './components/CartDrawer';
 import BulkCorporateModal from './components/BulkCorporateModal';
 import WhatsAppWidget from './components/WhatsAppWidget';
+import BlogSection from './components/BlogSection';
+import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem } from './types';
 import { BASE_SHAPES } from './data';
 import { MessageSquare, Sparkles, ShoppingBag } from 'lucide-react';
@@ -140,6 +142,11 @@ export default function App() {
   // Customizer preloaded image and name carrying over from Immersive Style Experience
   const [customizerPhotoUrl, setCustomizerPhotoUrl] = useState<string | null>(null);
   const [customizerPhotoName, setCustomizerPhotoName] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Initialize analytics event listener
+    initAnalytics(import.meta.env.VITE_META_PIXEL_ID, import.meta.env.VITE_GA_MEASUREMENT_ID);
+  }, []);
   const [customizerPhotoScale, setCustomizerPhotoScale] = useState<number>(1.0);
   const [customizerPhotoPanX, setCustomizerPhotoPanX] = useState<number>(0);
   const [customizerPhotoPanY, setCustomizerPhotoPanY] = useState<number>(0);
@@ -384,6 +391,9 @@ export default function App() {
           <LifestyleGallery />
         </SectionWrapper>
       </div>
+
+      {/* SEO Gifting & Design Guides */}
+      <BlogSection />
 
       {/* Reviews, trust seals and FAQs dropdowns */}
       <SectionWrapper 

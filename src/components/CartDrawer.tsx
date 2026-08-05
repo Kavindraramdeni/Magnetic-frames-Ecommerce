@@ -37,6 +37,10 @@ export default function CartDrawer({
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [showCouponInput, setShowCouponInput] = useState(false);
 
+  // Luxury Gift Wrap State
+  const [isGiftWrapApplied, setIsGiftWrapApplied] = useState(false);
+  const [giftCardNote, setGiftCardNote] = useState('');
+
   const handleApplyCouponCode = async (codeToApply: string) => {
     if (!codeToApply.trim()) return;
     setIsApplyingCoupon(true);
@@ -122,7 +126,8 @@ export default function CartDrawer({
   const bulkDiscount = cartItemCount >= 10 ? Math.round(cartSubtotal * 0.15) : 0;
   const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
   const deliveryCharge = cartSubtotal === 0 ? 0 : (cartSubtotal >= 699 ? 0 : 60);
-  const grandTotal = Math.max(0, cartSubtotal - bulkDiscount - couponDiscount + deliveryCharge);
+  const giftWrapFee = isGiftWrapApplied ? 49 : 0;
+  const grandTotal = Math.max(0, cartSubtotal - bulkDiscount - couponDiscount + deliveryCharge + giftWrapFee);
 
   return createPortal(
     <div className="fixed inset-0 z-[150] flex justify-end overflow-hidden" role="dialog" aria-modal="true">
@@ -324,6 +329,35 @@ export default function CartDrawer({
               )}
 
               {couponError && <p className="text-[10px] font-mono text-red-600">{couponError}</p>}
+            </div>
+
+            {/* Luxury Gift Packaging & Custom Card Option */}
+            <div className="bg-amber-50/70 border border-amber-200/80 p-3 rounded-2xl space-y-2">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={isGiftWrapApplied}
+                    onChange={(e) => setIsGiftWrapApplied(e.target.checked)}
+                    className="accent-amber-800 h-4 w-4 rounded"
+                  />
+                  <span className="font-serif font-bold text-xs text-amber-950">🎁 Add Luxury Gift Box & Gold-Foil Card</span>
+                </div>
+                <span className="font-mono text-[11px] font-bold text-amber-900">+₹49</span>
+              </label>
+
+              {isGiftWrapApplied && (
+                <div className="space-y-1.5 pt-1 animate-in fade-in duration-200">
+                  <input
+                    type="text"
+                    value={giftCardNote}
+                    onChange={(e) => setGiftCardNote(e.target.value)}
+                    placeholder="Custom Note (e.g., Happy 1st Anniversary My Love!)"
+                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-sans text-amber-950 placeholder:text-amber-700/50"
+                  />
+                  <p className="text-[9px] font-mono text-amber-800 italic">★ Hand-printed on gold-foil cards inside velvet box.</p>
+                </div>
+              )}
             </div>
 
             {/* Subtotal & Total Lines */}

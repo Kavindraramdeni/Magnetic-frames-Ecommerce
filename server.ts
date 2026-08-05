@@ -219,10 +219,11 @@ interface OrderTotals {
   bulkDiscount: number;
   couponDiscount: number;
   deliveryCharge: number;
+  giftWrapFee: number;
   grandTotal: number;
 }
 
-function calculateOrderTotals(cart: any[], couponCode?: string): OrderTotals {
+function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?: boolean): OrderTotals {
   let subtotal = 0;
   let itemCount = 0;
   cart.forEach((item: any) => {
@@ -251,9 +252,10 @@ function calculateOrderTotals(cart: any[], couponCode?: string): OrderTotals {
   }
 
   const deliveryCharge = (subtotal === 0) ? 0 : (forceFreeShipping || subtotal >= 699 ? 0 : 60);
-  const grandTotal = Math.max(0, subtotal - bulkDiscount - couponDiscount + deliveryCharge);
+  const giftWrapFee = giftWrapApplied ? 49 : 0;
+  const grandTotal = Math.max(0, subtotal - bulkDiscount - couponDiscount + deliveryCharge + giftWrapFee);
   
-  return { subtotal, bulkDiscount, couponDiscount, deliveryCharge, grandTotal };
+  return { subtotal, bulkDiscount, couponDiscount, deliveryCharge, giftWrapFee, grandTotal };
 }
 
 async function postNotificationWebhook(url: string, payload: any) {
