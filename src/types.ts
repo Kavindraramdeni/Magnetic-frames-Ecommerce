@@ -1,5 +1,11 @@
 export type MagnetShapeId = 'cloud' | 'circle' | 'arch' | 'polaroid' | 'filmstrip' | 'love' | 'custom' | 'landscape' | 'portrait' | 'portrait-wide' | 'grande' | 'circle-bloom' | 'hexagon' | 'crest' | 'oval' | 'scalloped-stand';
 
+export interface MagnetSizeOption {
+  label: string;
+  price: number;
+  originalPrice?: number;
+}
+
 export interface MagnetShape {
   id: MagnetShapeId;
   name: string;
@@ -12,6 +18,7 @@ export interface MagnetShape {
   tagline: string;
   isCustomSilhouette?: boolean;
   isTrending?: boolean;
+  sizeOptions?: MagnetSizeOption[];
 }
 
 export interface CustomOrder {

@@ -172,9 +172,12 @@ export default function App() {
   };
 
   // When user selects shape from collection card, redirect to style experience with that shape selected
-  const handleSelectShapeToCustomize = (id: MagnetShapeId) => {
+  const handleSelectShapeToCustomize = (id: MagnetShapeId, selectedSize?: string, selectedPrice?: number) => {
     setActiveWorkspaceShape(id);
-    setCurrentView('style-experience');
+    setCurrentView('home');
+    setTimeout(() => {
+      scrollToCustomizer();
+    }, 100);
   };
 
   // Transfer shape & photo from StyleCarousel to Customizer workspace

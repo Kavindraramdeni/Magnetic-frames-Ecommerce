@@ -3,104 +3,159 @@ import { SHAPE_PRICES } from './catalog';
 
 export const BASE_SHAPES: MagnetShape[] = [
   {
-    id: 'polaroid',
-    name: 'Classic Polaroid',
-    price: SHAPE_PRICES.polaroid,
-    dimensions: '7.0 × 7.0 cm',
-    description: 'The nostalgic white border with a glossy image container and custom modern handwritten-font captioning. Features an extra thick acrylic stand feel.',
-    shapeClass: 'shape-polaroid border border-white/50 bg-white/90 p-3 pt-3 pb-8 text-black shadow-md',
-    frameRatio: 'aspect-[4/5]',
-    tagline: 'Retro Nostalgia (K1)'
-  },
-  {
     id: 'landscape',
-    name: 'Horizontal Snapshot',
-    price: SHAPE_PRICES.landscape,
-    dimensions: '8.8 × 6.3 cm',
-    description: 'The classic wide-angle horizon snapshot. Perfect for memorable landscapes, beautiful sunsets, or large joyful group photos.',
+    name: 'Rectangle Magnet',
+    price: 190,
+    originalPrice: 290,
+    dimensions: '8x12"',
+    description: 'The classic rectangular snapshot frame. Perfect for memorable landscapes, family portraits, or large joyful group photos.',
     shapeClass: 'rounded-2xl border border-white/50',
     frameRatio: 'aspect-[1.4/1]',
-    tagline: 'Horizontal Classic (K2)'
+    tagline: 'Classic Rectangle',
+    sizeOptions: [
+      { label: '3.5x2.5"', price: 52, originalPrice: 99 },
+      { label: '4x3"', price: 99, originalPrice: 150 },
+      { label: '4x6"', price: 149, originalPrice: 220 },
+      { label: '8x12"', price: 190, originalPrice: 290 }
+    ]
+  },
+  {
+    id: 'circle',
+    name: 'Round Magnet',
+    price: 149,
+    originalPrice: 220,
+    dimensions: '4"',
+    description: 'Pure, modern round circle magnet. Strips away the noise to draw immediate focus to your favorite faces or memories.',
+    shapeClass: 'rounded-full border-2 border-white/40',
+    frameRatio: 'aspect-square',
+    tagline: 'Minimal Circle',
+    sizeOptions: [
+      { label: '2"', price: 52, originalPrice: 99 },
+      { label: '3"', price: 99, originalPrice: 150 },
+      { label: '4"', price: 149, originalPrice: 220 }
+    ]
+  },
+  {
+    id: 'grande',
+    name: 'Square Magnet',
+    price: 149,
+    originalPrice: 220,
+    dimensions: '4x4"',
+    description: 'Clean 1:1 symmetrical square acrylic magnet. Beautiful for Instagram feeds, close-up portraits, and landmark travel photos.',
+    shapeClass: 'rounded-2xl border-2 border-white/40',
+    frameRatio: 'aspect-square',
+    tagline: 'Symmetrical Square',
+    sizeOptions: [
+      { label: '2x2"', price: 52, originalPrice: 99 },
+      { label: '3x3"', price: 99, originalPrice: 150 },
+      { label: '4x4"', price: 149, originalPrice: 220 }
+    ]
+  },
+  {
+    id: 'love',
+    name: 'Heart Magnet',
+    price: 149,
+    originalPrice: 220,
+    dimensions: '4"',
+    description: 'A beautifully contoured, soft heart layout that looks like sculpted glass. Ideal for anniversaries, couples, and pet memories.',
+    shapeClass: 'shape-heart border border-white/40',
+    frameRatio: 'aspect-square',
+    tagline: 'Romantic Heart',
+    sizeOptions: [
+      { label: '2"', price: 52, originalPrice: 99 },
+      { label: '3"', price: 99, originalPrice: 150 },
+      { label: '4"', price: 149, originalPrice: 220 }
+    ]
+  },
+  {
+    id: 'polaroid',
+    name: 'Classic Polaroid Frame',
+    price: 149,
+    originalPrice: 220,
+    dimensions: '4x4"',
+    description: 'The nostalgic white border with a glossy image container and custom modern handwritten-font captioning.',
+    shapeClass: 'shape-polaroid border border-white/50 bg-white/90 p-3 pt-3 pb-8 text-black shadow-md',
+    frameRatio: 'aspect-[4/5]',
+    tagline: 'Retro Polaroid',
+    sizeOptions: [
+      { label: '2x2"', price: 52, originalPrice: 99 },
+      { label: '3x3"', price: 99, originalPrice: 150 },
+      { label: '4x4"', price: 149, originalPrice: 220 }
+    ]
   },
   {
     id: 'arch',
     name: 'The Arch Frame',
-    price: SHAPE_PRICES.arch,
-    dimensions: '7.5 × 10.0 cm',
-    description: 'An elegant, architectural shape that mimics high-end design trends. Perfectly captures portraits, vertical travel landscapes, and architecture shots.',
+    price: 299,
+    originalPrice: 429,
+    dimensions: '4x6"',
+    description: 'An elegant, architectural shape that mimics high-end design trends. Perfectly captures portraits and travel landscapes.',
     shapeClass: 'shape-arch border-2 border-white/40',
     frameRatio: 'aspect-[3/4]',
-    tagline: 'Architectural Dome (K6)'
+    tagline: 'Architectural Dome',
+    sizeOptions: [
+      { label: '3x4"', price: 149, originalPrice: 220 },
+      { label: '4x6"', price: 299, originalPrice: 429 }
+    ]
   },
   {
     id: 'filmstrip',
     name: 'Vintage Film Strip',
-    price: SHAPE_PRICES.filmstrip,
-    dimensions: '5.7 × 15.2 cm',
-    description: 'A narrative strip holding 3 of your snapshots sequentially. Perfect for storytelling: sunset phases, baby faces, or pet-run progression.',
+    price: 349,
+    originalPrice: 499,
+    dimensions: '3x9"',
+    description: 'A narrative strip holding 3 of your snapshots sequentially. Perfect for storytelling: baby faces, couples, or pet progression.',
     shapeClass: 'rounded-md border-2 border-slate-900 bg-slate-900 p-2 text-white',
     frameRatio: 'aspect-[1/3]',
-    tagline: 'Storytelling Storyboard (K7)'
-  },
-  {
-    id: 'scalloped-stand',
-    name: 'Premium Scalloped Stand',
-    price: SHAPE_PRICES['scalloped-stand'],
-    dimensions: '12.5 × 17.5 cm',
-    description: 'Our statement desk accessory. A beautiful scalloped-edge red border framing your photo, supported by a clear laser-cut acrylic stand. Perfect for office desks, bedside tables, or shelf decor.',
-    shapeClass: 'shape-scalloped border-4 border-[#8B0000] bg-white p-4',
-    frameRatio: 'aspect-[3/4]',
-    tagline: 'Elegant Desk Display (K8)'
-  },
-  {
-    id: 'grande',
-    name: 'Grande Portrait',
-    price: SHAPE_PRICES.grande,
-    dimensions: '10.0 × 15.0 cm',
-    description: 'Our flagship oversized vertical portrait. Perfect as a premium focal piece on your fridge or message board to display stunning detailed prints.',
-    shapeClass: 'rounded-[32px] border-2 border-white/40',
-    frameRatio: 'aspect-[2/3]',
-    tagline: 'Premium Centerpiece (K9)'
-  },
-  {
-    id: 'love',
-    name: 'Sculpted Heart',
-    price: SHAPE_PRICES.love,
-    dimensions: '10.0 × 10.0 cm',
-    description: 'A beautifully contoured, soft heart layout that looks like sculpted glass rather than a cliché. Ideal for anniversaries, couples, and pets.',
-    shapeClass: 'shape-heart border border-white/40',
-    frameRatio: 'aspect-square',
-    tagline: 'Romantic & Cozy (K10)'
-  },
-  {
-    id: 'circle',
-    name: 'Minimal Circle',
-    price: SHAPE_PRICES.circle,
-    dimensions: '7.5 cm Diameter',
-    description: 'Pure, modern, and perfectly balanced. Strips away the noise to draw immediate focus to your favorite faces or macro food and flower captures.',
-    shapeClass: 'rounded-full border-2 border-white/40',
-    frameRatio: 'aspect-square',
-    tagline: 'Timeless & Focused (K11)'
+    tagline: '3-Photo Storyboard',
+    sizeOptions: [
+      { label: '2x6"', price: 199, originalPrice: 299 },
+      { label: '3x9"', price: 349, originalPrice: 499 }
+    ]
   },
   {
     id: 'hexagon',
     name: 'Honeycomb Hexagon',
-    price: SHAPE_PRICES.hexagon,
-    dimensions: '10.0 × 8.6 cm',
-    description: 'A striking geometric hive structure. Order multiple hexagon magnets to connect and puzzle your favorite moments together on your memo board!',
+    price: 329,
+    originalPrice: 429,
+    dimensions: '4"',
+    description: 'A striking geometric hive structure. Order multiple hexagon magnets to connect and puzzle your favorite moments together.',
     shapeClass: 'shape-hexagon border border-white/40',
     frameRatio: 'aspect-[1.15/1]',
-    tagline: 'Geometric Hive'
+    tagline: 'Geometric Hive',
+    sizeOptions: [
+      { label: '3"', price: 149, originalPrice: 220 },
+      { label: '4"', price: 329, originalPrice: 429 }
+    ]
   },
   {
     id: 'oval',
     name: 'Timeless Oval',
-    price: SHAPE_PRICES.oval,
-    dimensions: '7.5 × 10.5 cm',
-    description: 'A classic portrait capsule profile that draws historical cameo elegance. Accents headshots, baby milestones, and macro florals beautifully.',
+    price: 299,
+    originalPrice: 429,
+    dimensions: '4x6"',
+    description: 'A classic portrait capsule profile that draws historical cameo elegance. Accents headshots, baby milestones, and florals beautifully.',
     shapeClass: 'shape-oval border-2 border-white/40',
     frameRatio: 'aspect-[2/3]',
-    tagline: 'Portrait Capsule'
+    tagline: 'Portrait Capsule',
+    sizeOptions: [
+      { label: '3x4"', price: 149, originalPrice: 220 },
+      { label: '4x6"', price: 299, originalPrice: 429 }
+    ]
+  },
+  {
+    id: 'scalloped-stand',
+    name: 'Premium Scalloped Stand',
+    price: 449,
+    originalPrice: 599,
+    dimensions: '5x7"',
+    description: 'Our statement desk accessory with a clear laser-cut acrylic stand. Perfect for office desks, bedside tables, or shelf decor.',
+    shapeClass: 'shape-scalloped border-4 border-[#8B0000] bg-white p-4',
+    frameRatio: 'aspect-[3/4]',
+    tagline: 'Elegant Desk Display',
+    sizeOptions: [
+      { label: '5x7"', price: 449, originalPrice: 599 }
+    ]
   }
 ];
 
