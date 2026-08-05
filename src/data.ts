@@ -23,36 +23,6 @@ export const BASE_SHAPES: MagnetShape[] = [
     tagline: 'Horizontal Classic (K2)'
   },
   {
-    id: 'portrait',
-    name: 'Classic Portrait',
-    price: SHAPE_PRICES.portrait,
-    dimensions: '7.5 × 10.0 cm',
-    description: 'A beautiful vertical rectangle with elegantly rounded borders. A definitive profile shape for singular faces, pet, and close-up portraits.',
-    shapeClass: 'rounded-2xl border-2 border-white/40',
-    frameRatio: 'aspect-[3/4]',
-    tagline: 'Portrait Standard (K3)'
-  },
-  {
-    id: 'portrait-wide',
-    name: 'Aesthetic Portrait Max',
-    price: SHAPE_PRICES['portrait-wide'],
-    dimensions: '8.8 × 10.8 cm',
-    description: 'A slightly wider, elegant portrait frame with perfect vertical proportions. Brilliant for family portraits, vacation sceneries, and detailed captures.',
-    shapeClass: 'rounded-2xl border-2 border-white/40',
-    frameRatio: 'aspect-[3.5/4.25]',
-    tagline: 'Wide Portrait Standard (K4)'
-  },
-  {
-    id: 'cloud',
-    name: 'Aesthetic Cloud',
-    price: SHAPE_PRICES.cloud,
-    dimensions: '10.5 × 12.5 cm',
-    description: 'A whimsical, soft-curved organic shape that adds a touch of dreaminess to any surface. Bestseller for baby pictures and sky backdrops.',
-    shapeClass: 'shape-cloud border border-white/50',
-    frameRatio: 'aspect-[1.4/1]',
-    tagline: 'Dreamy & Whimsical (K5)'
-  },
-  {
     id: 'arch',
     name: 'The Arch Frame',
     price: SHAPE_PRICES.arch,
@@ -113,16 +83,6 @@ export const BASE_SHAPES: MagnetShape[] = [
     tagline: 'Timeless & Focused (K11)'
   },
   {
-    id: 'circle-bloom',
-    name: 'Aesthetic Circle Cloud',
-    price: SHAPE_PRICES['circle-bloom'],
-    dimensions: '10.0 × 10.0 cm',
-    description: 'A circular shape with magical wavy edges resembling scalloped clouds or flower patterns. Perfect for artistic close-ups and elegant decor.',
-    shapeClass: 'shape-circle-cloud border border-white/50',
-    frameRatio: 'aspect-square',
-    tagline: 'Scalloped Bloom (K12)'
-  },
-  {
     id: 'hexagon',
     name: 'Honeycomb Hexagon',
     price: SHAPE_PRICES.hexagon,
@@ -133,16 +93,6 @@ export const BASE_SHAPES: MagnetShape[] = [
     tagline: 'Geometric Hive'
   },
   {
-    id: 'crest',
-    name: 'Royal Baroque Crest',
-    price: SHAPE_PRICES.crest,
-    dimensions: '10.0 × 10.0 cm',
-    description: 'An elegant vintage plaque featuring smooth curved corners. Ideal for royal styling, wedding keepsakes, and heirloom portraits.',
-    shapeClass: 'shape-crest border-2 border-white/40',
-    frameRatio: 'aspect-square',
-    tagline: 'Heirloom Plaque'
-  },
-  {
     id: 'oval',
     name: 'Timeless Oval',
     price: SHAPE_PRICES.oval,
@@ -151,16 +101,6 @@ export const BASE_SHAPES: MagnetShape[] = [
     shapeClass: 'shape-oval border-2 border-white/40',
     frameRatio: 'aspect-[2/3]',
     tagline: 'Portrait Capsule'
-  },
-  {
-    id: 'custom',
-    name: 'Custom Silhouette Outlines',
-    price: SHAPE_PRICES.custom,
-    dimensions: 'Up to 10.0 × 15.0 cm',
-    description: 'Individually trace-cut outlines that hug the contours of your photo subjects. Completely borderless 4mm structural acrylic casting.',
-    shapeClass: 'rounded-2xl border-2 border-dashed border-neutral-400',
-    frameRatio: 'aspect-[4/5]',
-    tagline: 'One-of-a-Kind Cut'
   }
 ];
 

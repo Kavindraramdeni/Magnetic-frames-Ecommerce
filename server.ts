@@ -1139,23 +1139,23 @@ app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
 });
 
 const DEFAULT_CATALOG_PRODUCTS = [
-  { id: "custom", name: "Custom Silhouette Outlines", price: 399, originalPrice: 539, dimensions: "Up to 10.0 × 15.0 CM", description: "Individually trace-cut outlines.", tagline: "Individually trace-cut outlines.", isTrending: 1 },
-  { id: "polaroid", name: "Classic Polaroid", price: 150, originalPrice: 500, dimensions: "7.0 × 7.0 CM", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
-  { id: "snapshot", name: "Horizontal Snapshot", price: 249, originalPrice: 369, dimensions: "8.8 × 6.3 CM", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
-  { id: "portrait", name: "Classic Portrait", price: 279, originalPrice: 399, dimensions: "7.5 × 10.0 CM", description: "A beautiful vertical rectangle with elegantly rounded borders.", tagline: "Elegantly rounded borders.", isTrending: 1 },
-  { id: "portrait-wide", name: "Aesthetic Portrait Max", price: 299, originalPrice: 419, dimensions: "8.8 × 10.8 CM", description: "A slightly wider, elegant portrait frame.", tagline: "Wider portrait frame.", isTrending: 1 },
-  { id: "cloud", name: "Aesthetic Cloud", price: 299, originalPrice: 429, dimensions: "10.5 × 12.5 CM", description: "A whimsical, soft-curved organic shape.", tagline: "Organic curved cloud shape.", isTrending: 1 },
-  { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "7.5 × 11.5 CM", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
-  { id: "heart", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "9.5 × 9.5 CM", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
-  { id: "hexagon", name: "Modern Hexagon", price: 299, originalPrice: 429, dimensions: "9.0 × 10.5 CM", description: "Geometric 6-sided acrylic frame.", tagline: "Geometric 6-sided frame.", isTrending: 1 },
-  { id: "crest", name: "Royal Crest", price: 299, originalPrice: 429, dimensions: "9.0 × 9.0 CM", description: "Ornate curved shield silhouette.", tagline: "Ornate curved shield silhouette.", isTrending: 1 },
-  { id: "oval", name: "Classic Oval", price: 299, originalPrice: 429, dimensions: "7.5 × 11.5 CM", description: "Smooth continuous oval curves.", tagline: "Smooth continuous oval curves.", isTrending: 1 },
-  { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "8.0 × 14.0 CM", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 },
-  { id: "square", name: "Classic Square", price: 249, originalPrice: 349, dimensions: "7.5 × 7.5 CM", description: "Clean 1:1 symmetrical square.", tagline: "Clean 1:1 symmetrical square.", isTrending: 1 }
+  { id: "polaroid", name: "Classic Polaroid", price: 299, originalPrice: 500, dimensions: "7.0 × 7.0 CM", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
+  { id: "landscape", name: "Horizontal Snapshot", price: 299, originalPrice: 369, dimensions: "8.8 × 6.3 CM", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
+  { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "7.5 × 10.0 CM", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
+  { id: "filmstrip", name: "Vintage Film Strip", price: 349, originalPrice: 499, dimensions: "5.7 × 15.2 CM", description: "A narrative strip holding 3 of your snapshots.", tagline: "3-photo narrative filmstrip.", isTrending: 1 },
+  { id: "scalloped-stand", name: "Scalloped Desk Stand", price: 449, originalPrice: 599, dimensions: "12.5 × 17.5 CM", description: "Luxury scalloped desktop frame with clear stand.", tagline: "Desktop display stand.", isTrending: 1 },
+  { id: "love", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "10.0 × 10.0 CM", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
+  { id: "hexagon", name: "Modern Hexagon", price: 299, originalPrice: 429, dimensions: "10.0 × 8.6 CM", description: "Geometric 6-sided acrylic frame.", tagline: "Geometric 6-sided frame.", isTrending: 1 },
+  { id: "oval", name: "Classic Oval", price: 299, originalPrice: 429, dimensions: "7.5 × 10.5 CM", description: "Smooth continuous oval curves.", tagline: "Smooth continuous oval curves.", isTrending: 1 },
+  { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "10.0 × 15.0 CM", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 },
+  { id: "circle", name: "Minimal Circle", price: 299, originalPrice: 399, dimensions: "7.5 CM Diameter", description: "Pure round 1:1 focus frame.", tagline: "Pure round focus frame.", isTrending: 1 }
 ];
 
 app.get("/api/products", (_req, res) => {
   try {
+    // Purge removed products from active SQLite table
+    db.prepare("DELETE FROM products WHERE id IN ('custom', 'portrait', 'portrait-wide', 'cloud', 'circle-bloom', 'crest')").run();
+
     let products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
     if (products.length === 0) {
       const stmt = db.prepare(`INSERT OR REPLACE INTO products
