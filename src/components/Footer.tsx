@@ -7,9 +7,10 @@ interface FooterProps {
   onOpenAdmin?: () => void;
   onOpenPolicies?: () => void;
   onOpenTracking?: () => void;
+  onOpenBlog?: () => void;
 }
 
-export default function Footer({ onOpenAdmin, onOpenPolicies, onOpenTracking }: FooterProps) {
+export default function Footer({ onOpenAdmin, onOpenPolicies, onOpenTracking, onOpenBlog }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -37,7 +38,17 @@ export default function Footer({ onOpenAdmin, onOpenPolicies, onOpenTracking }: 
           <div className="md:col-span-3 space-y-3.5">
             <h4 className="font-mono text-xs text-[#E8DCCF] tracking-widest uppercase">THE DETAILS</h4>
             <ul className="space-y-2 font-sans text-xs text-[#a1a1a1] font-light">
-              <li><a href="#blog" className="hover:text-white transition-colors text-emerald-400 font-mono text-[11px] font-bold uppercase">📖 SEO Gifting & Design Guides</a></li>
+              <li>
+                <button 
+                  onClick={() => {
+                    if (onOpenBlog) onOpenBlog();
+                    else window.location.hash = 'blog';
+                  }} 
+                  className="hover:text-white transition-colors text-emerald-400 font-mono text-[11px] font-bold uppercase cursor-pointer"
+                >
+                  📖 SEO Gifting & Design Guides
+                </button>
+              </li>
               <li>Extra-depth contour silhouette carving</li>
               <li>Individually cut to order</li>
               <li><button onClick={onOpenPolicies} className="hover:text-white transition-colors cursor-pointer">Terms, Privacy, Shipping & Returns</button></li>

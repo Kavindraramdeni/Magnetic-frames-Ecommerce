@@ -77,7 +77,7 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'policies' | 'tracking'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'policies' | 'tracking' | 'blog'>('home');
   const [adminToken, setAdminToken] = useState<string>('');
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
@@ -276,6 +276,28 @@ export default function App() {
     return <OrderTrackingView onBackToHome={() => setCurrentView('home')} />;
   }
 
+  if (currentView === 'blog') {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] text-neutral-900 px-4 py-10">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center justify-between bg-white border border-neutral-200 rounded-2xl px-6 py-4 shadow-2xs">
+            <button 
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setCurrentView('home');
+              }} 
+              className="text-xs font-mono uppercase tracking-widest text-neutral-600 hover:text-black font-bold flex items-center gap-2 cursor-pointer"
+            >
+              ← Back to Storefront
+            </button>
+            <span className="font-serif italic font-bold text-sm text-[#6B1D2F]">KRIA Studio Gifting Journal</span>
+          </div>
+          <BlogSection />
+        </div>
+      </div>
+    );
+  }
+
   if (currentView === 'policies') {
     return (
       <div className="min-h-screen bg-[#FAF8F5] text-neutral-900 px-4 py-10">
@@ -400,9 +422,6 @@ export default function App() {
         <FAQAndReviews />
       </SectionWrapper>
 
-      {/* Footer Area: SEO Gifting & Design Guides */}
-      <BlogSection />
-
       {/* Minimal Footer */}
       <Footer onOpenAdmin={async () => {
         const password = import.meta.env.DEV ? '7893' : window.prompt('Enter admin password');
@@ -419,7 +438,7 @@ export default function App() {
         const data = await response.json();
         setAdminToken(data.token);
         setCurrentView('admin');
-      }} onOpenPolicies={() => setCurrentView('policies')} onOpenTracking={() => setCurrentView('tracking')} />
+      }} onOpenPolicies={() => setCurrentView('policies')} onOpenTracking={() => setCurrentView('tracking')} onOpenBlog={() => setCurrentView('blog')} />
 
       {/* Floating Automated WhatsApp Support Widget */}
       <WhatsAppWidget
