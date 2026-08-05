@@ -724,12 +724,12 @@ app.post("/api/webhooks/razorpay", async (req, res) => {
   return res.json({ received: true });
 });
 
-// Shiprocket Webhook test ping handler (GET and POST)
-app.get("/api/webhooks/shiprocket", (_req, res) => {
-  return res.status(200).json({ success: true, message: "KRIA Shiprocket Webhook Endpoint Active." });
+// Clean, keyword-free webhook routes per official Shiprocket specification ("do not use keywords like shiprocket, kartrocket, sr, or kr in your webhook URL")
+app.get(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/webhooks/logistics-update"], (_req, res) => {
+  return res.status(200).json({ success: true, message: "KRIA Courier Webhook Endpoint Active." });
 });
 
-app.post("/api/webhooks/shiprocket", async (req, res) => {
+app.post(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/webhooks/logistics-update"], async (req, res) => {
   try {
     const { 
       awb, 
