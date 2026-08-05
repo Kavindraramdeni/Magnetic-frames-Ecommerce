@@ -516,6 +516,102 @@ app.post("/api/checkout/validate-coupon", (req, res) => {
   });
 });
 
+async function syncOrderToShiprocket(order: any) {
+  const shiprocketToken = await getShiprocketToken();
+  if (!shiprocketToken) {
+    console.log("Shiprocket credentials missing or invalid. Skipping automatic order sync.");
+    return false;
+  }
+
+  try {
+    const pickupLocRes = await fetch("https://apiv2.shiprocket.in/v1/external/settings/company/pickup", { 
+      headers: { Authorization: `Bearer ${shiprocketToken}` } 
+    });
+    let pickupName = process.env.SHIPROCKET_PICKUP_LOCATION || "Primary";
+    if (pickupLocRes.ok) {
+      const locData: any = await pickupLocRes.json();
+      if (locData.data?.shipping_address?.length > 0) {
+        pickupName = locData.data.shipping_address[0].pickup_location || pickupName;
+      }
+    }
+
+    const shipResponse = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+      body: JSON.stringify({
+        order_id: order.id.replace(/-/g, "_"),
+        order_date: new Date(order.createdAt || Date.now()).toISOString().replace("T", " ").substring(0, 16),
+        pickup_location: pickupName,
+        billing_customer_name: order.shippingDetails?.fullName || "Valued Customer",
+        billing_last_name: "",
+        billing_address: order.shippingDetails?.address || "Main Street",
+        billing_city: order.shippingDetails?.city || "Hyderabad",
+        billing_pincode: order.shippingDetails?.pincode || "500085",
+        billing_state: order.shippingDetails?.state || "Telangana",
+        billing_country: "India",
+        billing_email: order.shippingDetails?.email || "customer@kria.in",
+        billing_phone: order.shippingDetails?.phone || "9876543210",
+        shipping_is_billing: true,
+        order_items: (order.cart || []).map((item: any) => ({
+          name: `${item.shapeName || 'Custom'} Acrylic Magnet`,
+          sku: `KRIA-${item.shapeId || 'custom'}`,
+          units: item.quantity || 1,
+          selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom
+        })),
+        payment_method: "Prepaid",
+        sub_total: order.subtotal || order.grandTotal,
+        length: 15,
+        breadth: 15,
+        height: 5,
+        weight: Number((0.15 * Math.max(1, (order.cart || []).length)).toFixed(2))
+      })
+    });
+
+    const shipData: any = await shipResponse.json().catch(() => ({}));
+    if (shipResponse.ok && (shipData.shipment_id || shipData.order_id)) {
+      const shipmentId = shipData.shipment_id;
+      let finalAwb = shipData.awb_code || "";
+      let finalCourier = shipData.courier_name || "Express Air";
+
+      if (!finalAwb && shipmentId) {
+        try {
+          const awbRes = await fetch("https://apiv2.shiprocket.in/v1/external/courier/assign/awb", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+            body: JSON.stringify({ shipment_id: shipmentId })
+          });
+          if (awbRes.ok) {
+            const awbData: any = await awbRes.json();
+            if (awbData.response?.data?.awb_code) {
+              finalAwb = awbData.response.data.awb_code;
+              finalCourier = awbData.response.data.courier_name || finalCourier;
+            }
+          }
+        } catch (awbErr) {
+          console.error("Shiprocket assign AWB step failed:", awbErr);
+        }
+      }
+
+      order.trackingNumber = finalAwb || shipData.awb_code || order.trackingNumber || `SR-${shipmentId || shipData.order_id}`;
+      order.courierName = finalCourier;
+      order.shipmentId = shipmentId;
+      order.shiprocketOrderId = shipData.order_id;
+      order.history.push({ 
+        status: order.status, 
+        timestamp: new Date().toISOString(), 
+        note: `Shiprocket live shipment #${shipData.order_id} created automatically with AWB ${order.trackingNumber} (${finalCourier})` 
+      });
+      saveOrder(order);
+      return true;
+    } else {
+      console.error("Shiprocket adhoc order creation failed:", shipData);
+    }
+  } catch (err) {
+    console.error("Shiprocket order creation error:", err);
+  }
+  return false;
+}
+
 function createPaidOrderFromSession(session: any, paymentId: string, isMock = false) {
   const existing = getOrders().find((order: any) => order.transactionId === paymentId);
   if (existing) return existing;
@@ -526,8 +622,8 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
     cart: session.cart,
     shippingDetails: session.shippingDetails,
     trackingNumber: `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`,
-    courierName: "Delhivery Surface",
-    deliveryEstimate: "3-5 Business Days",
+    courierName: "Delhivery Air",
+    deliveryEstimate: "2-3 Business Days",
     transactionId: paymentId,
     createdAt: new Date().toISOString(),
     grandTotal,
@@ -537,6 +633,10 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
     history: [{ status: "Paid", timestamp: new Date().toISOString(), note: isMock ? "Development mock payment confirmed." : "Razorpay server-side payment confirmation captured." }]
   };
   saveOrder(order);
+
+  // Automatically create order in live Shiprocket dashboard upon payment!
+  syncOrderToShiprocket(order).catch((err) => console.error("Auto Shiprocket sync background error:", err));
+
   return order;
 }
 
