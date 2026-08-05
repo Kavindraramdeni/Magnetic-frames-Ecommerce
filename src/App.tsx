@@ -12,6 +12,7 @@ import SectionWrapper from './components/SectionWrapper';
 import AdminDashboard from './components/AdminDashboard';
 import CartDrawer from './components/CartDrawer';
 import BulkCorporateModal from './components/BulkCorporateModal';
+import WhatsAppWidget from './components/WhatsAppWidget';
 import { MagnetShapeId, CartItem } from './types';
 import { BASE_SHAPES } from './data';
 import { MessageSquare, Sparkles, ShoppingBag } from 'lucide-react';
@@ -410,19 +411,14 @@ export default function App() {
         setCurrentView('admin');
       }} onOpenPolicies={() => setCurrentView('policies')} onOpenTracking={() => setCurrentView('tracking')} />
 
-      {/* FLOATING ACTION BUTTONS: Left Corner WhatsApp, Right Corner Cart */}
-      <div className="fixed bottom-6 left-6 z-50">
-        <a 
-          href="https://wa.me/919392576792?text=Hi%20Kria%20Studio%20%E2%9C%A8%20I%20want%20to%20order%20custom%20acrylic%20magnets%20from%20my%20photos."
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Chat on WhatsApp"
-          className="w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white cursor-pointer group"
-          title="Chat on WhatsApp"
-        >
-          <MessageSquare className="h-6 w-6 fill-white text-white group-hover:scale-110 transition-transform" />
-        </a>
-      </div>
+      {/* Floating Automated WhatsApp Support Widget */}
+      <WhatsAppWidget
+        onOpenBulkModal={() => setIsBulkModalOpen(true)}
+        onOpenTracking={() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setCurrentView('tracking');
+        }}
+      />
 
       <div className="fixed bottom-6 right-6 z-50">
         <button
