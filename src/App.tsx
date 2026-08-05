@@ -449,16 +449,17 @@ export default function App() {
         }}
       />
 
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Floating Global Shopping Cart Trigger */}
+      <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-40">
         <button
           onClick={() => setIsCartOpen(true)}
           aria-label="Open Shopping Cart"
-          className="w-14 h-14 rounded-full bg-[#111111] hover:bg-neutral-800 text-white flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white cursor-pointer relative group"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#111111] hover:bg-neutral-800 text-white flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white cursor-pointer relative group"
           title="View Shopping Cart"
         >
-          <ShoppingBag className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
+          <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-white group-hover:scale-110 transition-transform" />
           {cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0) > 0 && (
-            <span className="absolute -top-1 -right-1 bg-[#6B1D2F] text-white text-[11px] font-mono font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in-50">
+            <span className="absolute -top-1 -right-1 bg-[#6B1D2F] text-white text-[10px] sm:text-[11px] font-mono font-bold w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in-50">
               {cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
             </span>
           )}

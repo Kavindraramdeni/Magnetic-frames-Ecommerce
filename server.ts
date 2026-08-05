@@ -711,7 +711,7 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
 
     const itemsText = cart.map((item: any) => `- ${item.shapeName || 'Custom Magnet'} (Qty: ${item.quantity || 1}, Price: ₹${(item.price || 299) * (item.quantity || 1)})`).join("\n");
     const waText = `Hi KRIA Studio! ✨ I want to place an instant WhatsApp order:\n\n*Order ID:* ${orderId}\n\n*Items Ordered:*\n${itemsText}\n\n*Grand Total:* ₹${grandTotal}\n*Customer Name:* ${shippingDetails.fullName || 'Customer'}\n*Phone:* ${shippingDetails.phone || 'N/A'}\n*Delivery Address:* ${shippingDetails.address || ''}, ${shippingDetails.city || 'India'} - ${shippingDetails.pincode || ''}\n\nPlease confirm print assets & payment link!`;
-    const whatsappUrl = `https://wa.me/917893922754?text=${encodeURIComponent(waText)}`;
+    const whatsappUrl = `https://wa.me/919392576792?text=${encodeURIComponent(waText)}`;
 
     return res.json({ success: true, orderId, whatsappUrl, grandTotal });
   } catch (err: any) {
@@ -1139,16 +1139,16 @@ app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
 });
 
 const DEFAULT_CATALOG_PRODUCTS = [
+  { id: "circle", name: "Minimal Circle", price: 299, originalPrice: 399, dimensions: "7.5 CM Diameter", description: "Pure round 1:1 focus frame.", tagline: "Pure round focus frame.", isTrending: 1 },
   { id: "polaroid", name: "Classic Polaroid", price: 299, originalPrice: 500, dimensions: "7.0 × 7.0 CM", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
-  { id: "landscape", name: "Horizontal Snapshot", price: 299, originalPrice: 369, dimensions: "8.8 × 6.3 CM", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
-  { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "7.5 × 10.0 CM", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
-  { id: "filmstrip", name: "Vintage Film Strip", price: 349, originalPrice: 499, dimensions: "5.7 × 15.2 CM", description: "A narrative strip holding 3 of your snapshots.", tagline: "3-photo narrative filmstrip.", isTrending: 1 },
-  { id: "scalloped-stand", name: "Scalloped Desk Stand", price: 449, originalPrice: 599, dimensions: "12.5 × 17.5 CM", description: "Luxury scalloped desktop frame with clear stand.", tagline: "Desktop display stand.", isTrending: 1 },
   { id: "love", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "10.0 × 10.0 CM", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
+  { id: "scalloped-stand", name: "Scalloped Desk Stand", price: 449, originalPrice: 599, dimensions: "12.5 × 17.5 CM", description: "Luxury scalloped desktop frame with clear stand.", tagline: "Desktop display stand.", isTrending: 1 },
+  { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "7.5 × 10.0 CM", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
+  { id: "landscape", name: "Horizontal Snapshot", price: 299, originalPrice: 369, dimensions: "8.8 × 6.3 CM", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
+  { id: "filmstrip", name: "Vintage Film Strip", price: 349, originalPrice: 499, dimensions: "5.7 × 15.2 CM", description: "A narrative strip holding 3 of your snapshots.", tagline: "3-photo narrative filmstrip.", isTrending: 1 },
   { id: "hexagon", name: "Modern Hexagon", price: 299, originalPrice: 429, dimensions: "10.0 × 8.6 CM", description: "Geometric 6-sided acrylic frame.", tagline: "Geometric 6-sided frame.", isTrending: 1 },
   { id: "oval", name: "Classic Oval", price: 299, originalPrice: 429, dimensions: "7.5 × 10.5 CM", description: "Smooth continuous oval curves.", tagline: "Smooth continuous oval curves.", isTrending: 1 },
-  { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "10.0 × 15.0 CM", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 },
-  { id: "circle", name: "Minimal Circle", price: 299, originalPrice: 399, dimensions: "7.5 CM Diameter", description: "Pure round 1:1 focus frame.", tagline: "Pure round focus frame.", isTrending: 1 }
+  { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "10.0 × 15.0 CM", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 }
 ];
 
 app.get("/api/products", (_req, res) => {

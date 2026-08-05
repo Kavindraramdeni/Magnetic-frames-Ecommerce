@@ -13,7 +13,7 @@ export default function BulkCorporateModal({ isOpen, onClose }: BulkCorporateMod
     const text = encodeURIComponent(
       `Hi KRIA Studio! 👋 I am interested in a Bulk / Corporate / Wholesale Order (100+ Pcs) for: ${useCase}. Please share your wholesale rate card and custom design catalog!`
     );
-    window.open(`https://wa.me/917893922754?text=${text}`, '_blank');
+    window.open(`https://wa.me/919392576792?text=${text}`, '_blank');
   };
 
   const useCases = [

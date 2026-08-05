@@ -9,7 +9,7 @@ interface WhatsAppWidgetProps {
 export default function WhatsAppWidget({ onOpenBulkModal, onOpenTracking }: WhatsAppWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [userQuery, setUserQuery] = useState('');
-  const phone = '917893922754';
+  const phone = '919392576792';
 
   const handleSendCustomMessage = (e: React.FormEvent) => {
     e.preventDefault();
