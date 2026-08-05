@@ -5,13 +5,11 @@ import { Sparkles, Check } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 
 interface ShapeShowcaseProps {
-  onSelectShape: (id: MagnetShapeId, selectedSize?: string, selectedPrice?: number) => void;
-  onAddBulkToCart?: (shapeId: MagnetShapeId, shapeName: string, selectedSize: string, price: number) => void;
+  onSelectShape: (id: MagnetShapeId) => void;
 }
 
-export default function ShapeShowcase({ onSelectShape, onAddBulkToCart }: ShapeShowcaseProps) {
+export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
   const [catalogShapes, setCatalogShapes] = useState<any[]>([]);
-  const [selectedSizeIndex, setSelectedSizeIndex] = useState<{ [shapeId: string]: number }>({});
 
   useEffect(() => {
     const loadCatalog = async () => {
@@ -29,21 +27,22 @@ export default function ShapeShowcase({ onSelectShape, onAddBulkToCart }: ShapeS
   }, []);
 
   const baseShapeLookup = new Map(BASE_SHAPES.map(shape => [shape.id, shape]));
+  const visibleCatalogShapes = catalogShapes.length > 0 ? catalogShapes : BASE_SHAPES.map((shape) => ({
+    id: shape.id,
+    name: shape.name,
+    price: shape.price,
+    originalPrice: shape.originalPrice,
+    dimensions: shape.dimensions,
+    description: shape.description,
+    shapeClass: shape.shapeClass,
+    frameRatio: shape.frameRatio,
+    tagline: shape.tagline,
+    isTrending: true
+  }));
   
-  // Use BASE_SHAPES order directly to strictly enforce: 1st Rectangle, 2nd Round, 3rd Square, 4th Heart, 5th Polaroid...
-  const visibleCatalogShapes = BASE_SHAPES.map((baseShape) => {
-    const dbShape = catalogShapes.find((p) => p.id === baseShape.id);
-    return {
-      ...baseShape,
-      ...(dbShape || {}),
-      price: dbShape?.price || baseShape.price,
-      originalPrice: dbShape?.originalPrice || baseShape.originalPrice,
-      sizeOptions: baseShape.sizeOptions || []
-    };
-  });
-
-  const shapeSampleImages: { [key in MagnetShapeId]?: string } = {
-    arch: '/images/shape_arch_magnet_1779653475722.png',
+  // Custom styled images for each showcases to look premium
+  const shapeSampleImages: { [key in MagnetShapeId]: string } = {
+    arch: '/images/shape_arch_magnet_1779653475722.png', // our high-quality generated dog arch photo
     cloud: '/images/shape_cloud_magnet_1780939383548.png',
     circle: '/images/shape_circle_magnet_1780939399489.png',
     polaroid: '/images/shape_polaroid_magnet_1780939416510.png',
@@ -62,7 +61,7 @@ export default function ShapeShowcase({ onSelectShape, onAddBulkToCart }: ShapeS
   };
 
   return (
-    <section id="shapes-showcase" className="select-none py-16 sm:py-20 font-sans">
+    <section id="shapes-showcase" className="select-none py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}
@@ -77,41 +76,50 @@ export default function ShapeShowcase({ onSelectShape, onAddBulkToCart }: ShapeS
         </div>
 
         {/* Shapes Grid Layout - Compact & Ultra Responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
           {visibleCatalogShapes.map((shape: any) => {
-            const baseShape = baseShapeLookup.get(shape.id) || shape;
-            const sampleImage = shapeSampleImages[shape.id as MagnetShapeId] || shapeSampleImages.arch;
-            const displayName = shape.name || baseShape.name;
-            const sizeOptions = shape.sizeOptions && shape.sizeOptions.length > 0 ? shape.sizeOptions : baseShape.sizeOptions || [];
+            const baseShape = baseShapeLookup.get(shape.id) || BASE_SHAPES.find((item) => item.id === shape.id);
+            const sampleImage = shapeSampleImages[shape.id as MagnetShapeId] || shapeSampleImages[baseShape?.id as MagnetShapeId] || shapeSampleImages.arch;
+            const displayName = shape.name || baseShape?.name || 'Custom Frame';
+            const displayPrice = Number(shape.price ?? baseShape?.price ?? 0);
+            const displayOriginalPrice = Number(shape.originalPrice ?? baseShape?.originalPrice ?? 0);
+            const displayDimensions = shape.dimensions || baseShape?.dimensions || 'Standard';
+            const displayDescription = shape.description || baseShape?.description || '';
+            const displayTagline = shape.tagline || baseShape?.tagline || 'Custom Product';
+            const isTrending = Boolean(shape.isTrending ?? true);
             
-            const activeIdx = selectedSizeIndex[shape.id] ?? 0;
-            const activeSizeOpt = sizeOptions[activeIdx] || { label: shape.dimensions || baseShape.dimensions, price: shape.price || baseShape.price, originalPrice: shape.originalPrice || baseShape.originalPrice };
-
-            const displayPrice = activeSizeOpt.price;
-            const displayOriginalPrice = activeSizeOpt.originalPrice || (displayPrice > 0 ? Math.round(displayPrice * 1.5) : 0);
-
             return (
               <div
                 key={shape.id}
-                className="group bg-white rounded-3xl p-4 border border-neutral-200/80 transition-all duration-300 hover:shadow-xl hover:border-neutral-300 hover:-translate-y-1 flex flex-col justify-between"
+                className="group bg-white rounded-2xl p-3 sm:p-4 border border-neutral-200/60 transition-all duration-300 hover:shadow-lg hover:border-neutral-300 hover:-translate-y-1 flex flex-col justify-between"
               >
+                {/* Image Container with Custom Stencils */}
                 <div>
-                  {/* Floating Magnet Preview Container */}
-                  <div className="relative w-full aspect-[4/3] bg-[#FAF8F5] rounded-2xl overflow-hidden mb-4 flex items-center justify-center p-3 border border-neutral-100">
-                    <div className={`relative ${shape.frameRatio || 'aspect-[4/5]'} w-[70%] max-w-[130px] select-none group-hover:scale-105 transition-all duration-300`}>
-                      <div className={`w-full h-full bg-white p-1 shadow-md ring-1 ring-black/5 overflow-hidden relative ${
+                  <div className="relative w-full aspect-[4/3] bg-neutral-100/80 rounded-xl overflow-hidden mb-3 flex items-center justify-center p-2">
+                    
+                    {/* Background Subtle Room Blur */}
+                    <div className="absolute inset-0 bg-neutral-200/30" />
+
+                    {/* Styled Floating Magnet Preview */}
+                    <div className={`relative ${shape.frameRatio || baseShape?.frameRatio || 'aspect-[4/5]'} w-[70%] sm:w-[60%] max-w-[120px] select-none group-hover:scale-105 transition-all duration-300`}>
+                      <div className={`w-full h-full bg-[#FAF8F5] p-1 shadow-sm sm:shadow-md ring-1 ring-white/40 overflow-hidden relative ${
                         shape.id === 'arch' ? 'shape-arch' :
+                        shape.id === 'cloud' ? 'shape-cloud' :
                         shape.id === 'circle' ? 'rounded-full' :
-                        shape.id === 'polaroid' ? 'shape-polaroid bg-white pb-4 pt-1 px-1 shadow-sm' :
+                        shape.id === 'polaroid' ? 'shape-polaroid bg-white pb-3 sm:pb-4 pt-1 px-1 shadow-inner' :
                         shape.id === 'love' ? 'shape-heart text-clip' :
                         shape.id === 'filmstrip' ? 'bg-zinc-950 p-[2px] rounded' :
                         shape.id === 'scalloped-stand' ? 'shape-scalloped border-2 border-[#8B0000] p-1' :
+                        shape.id === 'circle-bloom' ? 'shape-circle-cloud' :
                         shape.id === 'hexagon' ? 'shape-hexagon' :
-                        shape.id === 'oval' ? 'shape-oval' : 'rounded-2xl'
+                        shape.id === 'crest' ? 'shape-crest' :
+                        shape.id === 'oval' ? 'shape-oval' : 'rounded-xl'
                       }`}>
                         
-                        <div className="w-full h-full overflow-hidden rounded-xs relative">
+                        {/* Acrylic border shimmer wrapper */}
+                        <div className="w-full h-full overflow-hidden rounded-xs sm:rounded-sm relative">
                           {shape.id === 'filmstrip' ? (
+                            // Strip layout
                             <div className="grid grid-rows-3 h-full gap-0.5 p-[1px]">
                               <div className="bg-zinc-800 rounded-xs overflow-hidden"><img src={sampleImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" /></div>
                               <div className="bg-zinc-800 rounded-xs overflow-hidden"><img src="/images/couple_portrait_sample_1782458143228.jpg" className="w-full h-full object-cover" referrerPolicy="no-referrer" /></div>
@@ -121,16 +129,18 @@ export default function ShapeShowcase({ onSelectShape, onAddBulkToCart }: ShapeS
                             <img
                               src={sampleImage}
                               alt={displayName}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110`}
                               referrerPolicy="no-referrer"
                             />
                           )}
 
-                          <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 opacity-40 mix-blend-overlay shine-effect pointer-events-none" />
+                          {/* Gloss Acrylic Overlay Shine */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/50 to-white/0 opacity-40 mix-blend-overlay shine-effect pointer-events-none" />
                         </div>
 
+                        {/* Polaroid text placeholder */}
                         {shape.id === 'polaroid' && (
-                          <div className="absolute bottom-1 left-0 w-full text-center text-[6px] font-serif italic text-stone-500">
+                          <div className="absolute bottom-0.5 left-0 w-full text-center text-[5px] sm:text-[6px] font-serif italic text-stone-500">
                             Paris Sunshine
                           </div>
                         )}
@@ -138,79 +148,52 @@ export default function ShapeShowcase({ onSelectShape, onAddBulkToCart }: ShapeS
                     </div>
                   </div>
 
-                  {/* Title & Price Header */}
-                  <div className="space-y-2">
+                    {/* Pricing and Details */}
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between gap-1">
-                      <h3 className="font-serif text-base font-bold text-[#111111] group-hover:text-[#6B1D2F] transition-colors leading-snug">
-                        {displayName}
-                      </h3>
-                      <div className="flex items-baseline gap-1 shrink-0 font-mono">
+                      <div className="flex items-center gap-1 overflow-hidden">
+                        <span className="font-mono text-[9px] uppercase tracking-wider text-[#888888] truncate">
+                          {displayTagline}
+                        </span>
+                        {(isTrending || shape.id === 'polaroid' || shape.id === 'arch') && (
+                          <span className="bg-amber-100 text-amber-900 font-mono text-[8px] font-bold px-1.5 py-0.2 rounded uppercase tracking-widest shrink-0">
+                            🔥 TRENDING
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
                         {displayOriginalPrice > 0 && displayOriginalPrice > displayPrice && (
-                          <span className="text-[10px] text-neutral-400 line-through">
+                          <span className="font-mono text-[10px] text-neutral-400 line-through">
                             ₹{displayOriginalPrice}
                           </span>
                         )}
-                        <span className="text-xs font-extrabold text-[#111111] bg-neutral-100 px-2 py-0.5 rounded-full">
-                          ₹{displayPrice} <span className="text-[8px] font-normal text-neutral-500">/ pc</span>
+                        <span className="font-mono text-[10px] sm:text-xs font-bold text-[#111111] bg-neutral-100 px-2 py-0.5 rounded-full">
+                          ₹{displayPrice}
                         </span>
                       </div>
                     </div>
 
-                    <p className="font-sans text-xs text-[#666666] leading-relaxed line-clamp-2 font-light">
-                      {shape.description || baseShape.description}
+                    <h3 className="font-serif text-sm sm:text-base font-semibold text-[#111111] group-hover:text-amber-800 transition-colors leading-snug">
+                      {displayName}
+                    </h3>
+                    
+                    <p className="font-sans text-[11px] text-[#666666] leading-snug line-clamp-2">
+                      {displayDescription}
                     </p>
 
-                    {/* Interactive Multi-Size Selector Pills */}
-                    {sizeOptions.length > 0 && (
-                      <div className="pt-2.5 border-t border-neutral-100">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 font-bold uppercase mb-1.5">
-                          <span>Available Sizes:</span>
-                          <span className="text-neutral-700">{sizeOptions.length} Sizes</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap font-mono text-[10px]">
-                          {sizeOptions.map((opt: any, idx: number) => {
-                            const isSelected = activeIdx === idx;
-                            return (
-                              <button
-                                key={opt.label}
-                                type="button"
-                                onClick={() => setSelectedSizeIndex({ ...selectedSizeIndex, [shape.id]: idx })}
-                                className={`px-2.5 py-1 rounded-lg transition-all font-bold cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-[#111111] text-white shadow-xs scale-105'
-                                    : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700 border border-neutral-200/80'
-                                }`}
-                              >
-                                {opt.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                    <div className="font-mono text-[9px] text-neutral-400">
+                      SIZE: {displayDimensions}
+                    </div>
                   </div>
                 </div>
 
-                {/* Action Buttons: 1-pc Photo Customizer vs 5-pc Bulk Order */}
-                <div className="mt-4 space-y-1.5">
-                  <button
-                    onClick={() => onSelectShape(shape.id, activeSizeOpt.label, activeSizeOpt.price)}
-                    className="w-full cursor-pointer bg-[#111111] hover:bg-black text-white transition-all py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
-                  >
-                    <span>🎨 Customize Photo ({activeSizeOpt.label})</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      if (onAddBulkToCart) {
-                        onAddBulkToCart(shape.id, displayName, activeSizeOpt.label, activeSizeOpt.price);
-                      }
-                    }}
-                    className="w-full cursor-pointer bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-300 transition-all py-2 rounded-xl text-[10px] font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1"
-                  >
-                    <span>📦 Quick Bulk Order (5 Pcs)</span>
-                  </button>
-                </div>
+                {/* Order Now Trigger Button */}
+                <button
+                  onClick={() => onSelectShape(shape.id)}
+                  className="mt-3 w-full cursor-pointer bg-neutral-100/80 hover:bg-[#111111] text-[#111111] hover:text-white transition-all py-2 rounded-xl text-[10px] sm:text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1 group-hover:bg-[#111111] group-hover:text-white"
+                >
+                  Order Now
+                </button>
 
               </div>
             );

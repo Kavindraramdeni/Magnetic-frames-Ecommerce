@@ -172,12 +172,9 @@ export default function App() {
   };
 
   // When user selects shape from collection card, redirect to style experience with that shape selected
-  const handleSelectShapeToCustomize = (id: MagnetShapeId, selectedSize?: string, selectedPrice?: number) => {
+  const handleSelectShapeToCustomize = (id: MagnetShapeId) => {
     setActiveWorkspaceShape(id);
-    setCurrentView('home');
-    setTimeout(() => {
-      scrollToCustomizer();
-    }, 100);
+    setCurrentView('style-experience');
   };
 
   // Transfer shape & photo from StyleCarousel to Customizer workspace
@@ -358,29 +355,7 @@ export default function App() {
           backgroundImage="/images/luxury_living_room_bg_1782458094193.jpg"
           overlayColor="rgba(250, 248, 245, 0.85)"
         >
-          <ShapeShowcase 
-            onSelectShape={handleSelectShapeToCustomize} 
-            onAddBulkToCart={(shapeId, shapeName, selectedSize, price) => {
-              const uniqueId = `bulk-${Date.now()}`;
-              const newCartItem: CartItem = {
-                id: uniqueId,
-                shapeId,
-                shapeName,
-                quantity: 5,
-                previewUrl: '/images/shape_arch_magnet_1779653475722.png',
-                photoName: `Bulk ${shapeName} Order (${selectedSize})`,
-                captionText: '',
-                photoScale: 1.0,
-                photoPanX: 0,
-                photoPanY: 0,
-                price,
-                selectedSize,
-                isBulkOrder: true
-              };
-              setCart(prev => [...prev, newCartItem]);
-              setIsCartOpen(true);
-            }}
-          />
+          <ShapeShowcase onSelectShape={handleSelectShapeToCustomize} />
         </SectionWrapper>
       </div>
 
