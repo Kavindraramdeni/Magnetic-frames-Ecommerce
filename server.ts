@@ -731,15 +731,32 @@ app.get("/api/webhooks/shiprocket", (_req, res) => {
 
 app.post("/api/webhooks/shiprocket", async (req, res) => {
   try {
-    const { awb, current_status, courier_name, order_id, test } = req.body || {};
+    const { 
+      awb, 
+      current_status, 
+      shipment_status, 
+      courier_name, 
+      order_id, 
+      channel_order_id, 
+      scans, 
+      test 
+    } = req.body || {};
+
+    const cleanAwb = awb ? String(awb) : "";
+    const statusText = current_status || shipment_status || "";
+    const cleanOrderId = channel_order_id || order_id || "";
 
     // Handle Shiprocket Test Webhook Ping button (which sends empty body or test flag)
-    if (test || (!awb && !order_id)) {
+    if (test || (!cleanAwb && !cleanOrderId)) {
       return res.status(200).json({ success: true, message: "KRIA Shiprocket Test Webhook Connection Verified Successfully!" });
     }
 
     const orders = getOrders();
-    const order = orders.find((o: any) => o.trackingNumber === awb || o.id === order_id || o.id === String(order_id).replace(/_/g, '-'));
+    const order = orders.find((o: any) => 
+      (cleanAwb && String(o.trackingNumber || '') === cleanAwb) || 
+      (cleanOrderId && (o.id === cleanOrderId || o.id === String(cleanOrderId).replace(/_/g, '-')))
+    );
+
     if (order) {
       const statusMap: { [key: string]: string } = {
         "PICKED UP": "Processing",
@@ -747,17 +764,25 @@ app.post("/api/webhooks/shiprocket", async (req, res) => {
         "OUT FOR DELIVERY": "Out For Delivery",
         "DELIVERED": "Delivered",
         "RTO IN TRANSIT": "RTO Returned",
+        "RTO DELIVERED": "RTO Returned"
       };
-      const newStatus = statusMap[String(current_status).toUpperCase()] || order.status;
+
+      const upperStatus = String(statusText).toUpperCase();
+      const newStatus = statusMap[upperStatus] || order.status;
       order.status = newStatus;
-      if (courier_name) order.courierName = courier_name;
+      if (courier_name && courier_name !== "enter courier_name") order.courierName = courier_name;
+
+      const latestScan = Array.isArray(scans) && scans.length > 0 ? scans[0] : null;
+      const scanNote = latestScan ? ` Location: ${latestScan.location} (${latestScan.activity})` : "";
+
       order.history.push({
         status: newStatus,
         timestamp: new Date().toISOString(),
-        note: `Shiprocket webhook: Courier status updated to "${current_status}" (${courier_name || 'Express Courier'}).`
+        note: `Shiprocket scan update: "${statusText}".${scanNote}`
       });
+
       saveOrder(order);
-      await notifyCustomer(order, `Courier Tracking Update: ${current_status}`);
+      await notifyCustomer(order, `Courier Tracking Update: ${statusText}`);
     }
 
     return res.status(200).json({ success: true, received: true });
