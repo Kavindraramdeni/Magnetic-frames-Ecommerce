@@ -889,12 +889,50 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
       });
 
       const shipData: any = await shipResponse.json().catch(() => ({}));
-      if (shipResponse.ok && (shipData.awb_code || shipData.shipment_id || shipData.order_id)) {
-        order.trackingNumber = shipData.awb_code || order.trackingNumber || `SR-${shipData.shipment_id || shipData.order_id}`;
-        order.courierName = shipData.courier_name || order.courierName || "Shiprocket";
-        order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Live Shiprocket AWB synced: ${order.trackingNumber}` });
+      if (shipResponse.ok && (shipData.shipment_id || shipData.order_id)) {
+        const shipmentId = shipData.shipment_id;
+        let finalAwb = shipData.awb_code || "";
+        let finalCourier = shipData.courier_name || "Express Air";
+
+        // Step 5 from Helpsheet: Call assign/awb to get exact AWB code and Courier Name
+        if (!finalAwb && shipmentId) {
+          try {
+            const awbRes = await fetch("https://apiv2.shiprocket.in/v1/external/courier/assign/awb", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+              body: JSON.stringify({ shipment_id: shipmentId })
+            });
+            if (awbRes.ok) {
+              const awbData: any = await awbRes.json();
+              if (awbData.response?.data?.awb_code) {
+                finalAwb = awbData.response.data.awb_code;
+                finalCourier = awbData.response.data.courier_name || finalCourier;
+              }
+            }
+          } catch (awbErr) {
+            console.error("Shiprocket assign AWB step failed:", awbErr);
+          }
+        }
+
+        // Step 6 from Helpsheet: Call courier/generate/pickup to schedule courier pickup
+        if (shipmentId) {
+          try {
+            await fetch("https://apiv2.shiprocket.in/v1/external/courier/generate/pickup", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+              body: JSON.stringify({ shipment_id: [shipmentId] })
+            });
+          } catch (pickupErr) {
+            console.error("Shiprocket pickup schedule step failed:", pickupErr);
+          }
+        }
+
+        order.trackingNumber = finalAwb || shipData.awb_code || order.trackingNumber || `SR-${shipmentId || shipData.order_id}`;
+        order.courierName = finalCourier;
+        order.shipmentId = shipmentId;
+        order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Live Shiprocket AWB ${order.trackingNumber} assigned via ${finalCourier}` });
         saveOrder(order);
-        return res.json({ success: true, order, isRealShipment: true, shiprocket: shipData });
+        return res.json({ success: true, order, isRealShipment: true, shiprocket: { ...shipData, awb_code: order.trackingNumber, courier_name: finalCourier } });
       }
     } catch (shipErr) {
       console.error("Shiprocket sync error:", shipErr);
