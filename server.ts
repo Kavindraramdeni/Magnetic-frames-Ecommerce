@@ -552,9 +552,9 @@ async function syncOrderToShiprocket(order: any) {
         billing_email: order.shippingDetails?.email || "customer@kria.in",
         billing_phone: order.shippingDetails?.phone || "9876543210",
         shipping_is_billing: true,
-        order_items: (order.cart || []).map((item: any) => ({
+        order_items: (order.cart || []).map((item: any, idx: number) => ({
           name: `${item.shapeName || 'Custom'} Acrylic Magnet`,
-          sku: `KRIA-${item.shapeId || 'custom'}`,
+          sku: `KRIA-${item.shapeId || 'custom'}-${idx + 1}`,
           units: item.quantity || 1,
           selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom
         })),
@@ -1010,10 +1010,10 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
           billing_email: order.shippingDetails.email,
           billing_phone: order.shippingDetails.phone,
           shipping_is_billing: true,
-          order_items: order.cart.map((item: any) => ({
-            name: `${item.shapeName} Acrylic Magnet`,
-            sku: `KRIA-${item.shapeId}`,
-            units: item.quantity,
+          order_items: (order.cart || []).map((item: any, idx: number) => ({
+            name: `${item.shapeName || 'Custom'} Acrylic Magnet`,
+            sku: `KRIA-${item.shapeId || 'custom'}-${idx + 1}`,
+            units: item.quantity || 1,
             selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom
           })),
           payment_method: "Prepaid",
