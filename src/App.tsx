@@ -392,9 +392,6 @@ export default function App() {
         </SectionWrapper>
       </div>
 
-      {/* SEO Gifting & Design Guides */}
-      <BlogSection />
-
       {/* Reviews, trust seals and FAQs dropdowns */}
       <SectionWrapper 
         backgroundImage="/images/soft_abstract_bg_1782458126047.jpg"
@@ -402,6 +399,9 @@ export default function App() {
       >
         <FAQAndReviews />
       </SectionWrapper>
+
+      {/* Footer Area: SEO Gifting & Design Guides */}
+      <BlogSection />
 
       {/* Minimal Footer */}
       <Footer onOpenAdmin={async () => {
