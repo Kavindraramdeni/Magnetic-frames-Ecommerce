@@ -65,22 +65,18 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 pb-4 border-b border-neutral-200/80 gap-4">
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase font-bold">
-              PREMIUM ACRYLIC SELECTION
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-normal text-[#111111] tracking-tight">
-              Product <span className="italic font-serif font-light">Catalog</span>
-            </h2>
-          </div>
-          <p className="text-xs font-mono text-neutral-500 max-w-md leading-relaxed">
-            13 shapes · multi-size options per shape · 3–5mm ultra-clear acrylic · custom logo & text printing available
-          </p>
+        <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
+          <span className="text-xs font-mono tracking-widest text-neutral-400 uppercase font-semibold">
+            DISTINCTIVE ACRYLIC SHAPES
+          </span>
+          <h2 className="font-serif text-4xl sm:text-5xl font-light text-[#111111] tracking-tight">
+            Curate Your Wall in <span className="italic font-serif font-medium">Distinctive Shapes</span>
+          </h2>
+          <div className="w-12 h-[1px] bg-neutral-400 mx-auto my-3"></div>
         </div>
 
-        {/* Shapes Grid Layout - Multi-Size Pills & SKU Badges */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {/* Shapes Grid Layout - Compact & Ultra Responsive */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
           {visibleCatalogShapes.map((shape: any) => {
             const baseShape = baseShapeLookup.get(shape.id) || BASE_SHAPES.find((item) => item.id === shape.id);
             const sampleImage = shapeSampleImages[shape.id as MagnetShapeId] || shapeSampleImages[baseShape?.id as MagnetShapeId] || shapeSampleImages.arch;
@@ -89,38 +85,24 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
             const displayOriginalPrice = Number(shape.originalPrice ?? baseShape?.originalPrice ?? 0);
             const displayDimensions = shape.dimensions || baseShape?.dimensions || 'Standard';
             const displayDescription = shape.description || baseShape?.description || '';
+            const displayTagline = shape.tagline || baseShape?.tagline || 'Custom Product';
             const isTrending = Boolean(shape.isTrending ?? true);
-            const skuBadge = `KRIA-${String(shape.id).toUpperCase()}`;
-
+            
             return (
               <div
                 key={shape.id}
-                className="group bg-white rounded-2xl p-3.5 sm:p-4 border border-neutral-200 transition-all duration-300 hover:shadow-xl hover:border-neutral-400 hover:-translate-y-1 flex flex-col justify-between"
+                className="group bg-white rounded-2xl p-3 sm:p-4 border border-neutral-200/60 transition-all duration-300 hover:shadow-lg hover:border-neutral-300 hover:-translate-y-1 flex flex-col justify-between"
               >
-                {/* Image Container with SKU Badge & Metallic Corner Studs */}
+                {/* Image Container with Custom Stencils */}
                 <div>
-                  <div className="relative w-full aspect-[4/3] bg-[#FAF8F5] rounded-xl overflow-hidden mb-3 flex items-center justify-center p-3 border border-neutral-100">
+                  <div className="relative w-full aspect-[4/3] bg-neutral-100/80 rounded-xl overflow-hidden mb-3 flex items-center justify-center p-2">
                     
-                    {/* SKU Pill Badge at Top-Left */}
-                    <div className="absolute top-2 left-2 z-20 bg-neutral-900/80 backdrop-blur-xs text-white text-[8px] font-mono px-2 py-0.5 rounded font-semibold uppercase tracking-wider">
-                      {skuBadge}
-                    </div>
-
-                    {/* MOQ Badge at Top-Right */}
-                    <div className="absolute top-2 right-2 z-20 bg-emerald-50 text-emerald-800 text-[8px] font-mono px-1.5 py-0.5 rounded border border-emerald-200 font-bold uppercase">
-                      MOQ 1
-                    </div>
+                    {/* Background Subtle Room Blur */}
+                    <div className="absolute inset-0 bg-neutral-200/30" />
 
                     {/* Styled Floating Magnet Preview */}
-                    <div className={`relative ${shape.frameRatio || baseShape?.frameRatio || 'aspect-[4/5]'} w-[70%] sm:w-[60%] max-w-[120px] select-none group-hover:scale-105 transition-all duration-300 shadow-lg`}>
-                      
-                      {/* 4 Corner Silver Metallic Stud Accents */}
-                      <div className="absolute top-1 left-1 z-30 w-1.5 h-1.5 rounded-full bg-gradient-to-tr from-neutral-400 via-white to-neutral-300 border border-neutral-500 shadow-xs" />
-                      <div className="absolute top-1 right-1 z-30 w-1.5 h-1.5 rounded-full bg-gradient-to-tr from-neutral-400 via-white to-neutral-300 border border-neutral-500 shadow-xs" />
-                      <div className="absolute bottom-1 left-1 z-30 w-1.5 h-1.5 rounded-full bg-gradient-to-tr from-neutral-400 via-white to-neutral-300 border border-neutral-500 shadow-xs" />
-                      <div className="absolute bottom-1 right-1 z-30 w-1.5 h-1.5 rounded-full bg-gradient-to-tr from-neutral-400 via-white to-neutral-300 border border-neutral-500 shadow-xs" />
-
-                      <div className={`w-full h-full bg-white p-1 ring-1 ring-neutral-200 overflow-hidden relative ${
+                    <div className={`relative ${shape.frameRatio || baseShape?.frameRatio || 'aspect-[4/5]'} w-[70%] sm:w-[60%] max-w-[120px] select-none group-hover:scale-105 transition-all duration-300`}>
+                      <div className={`w-full h-full bg-[#FAF8F5] p-1 shadow-sm sm:shadow-md ring-1 ring-white/40 overflow-hidden relative ${
                         shape.id === 'arch' ? 'shape-arch' :
                         shape.id === 'cloud' ? 'shape-cloud' :
                         shape.id === 'circle' ? 'rounded-full' :
@@ -134,60 +116,83 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
                         shape.id === 'oval' ? 'shape-oval' : 'rounded-xl'
                       }`}>
                         
+                        {/* Acrylic border shimmer wrapper */}
                         <div className="w-full h-full overflow-hidden rounded-xs sm:rounded-sm relative">
-                          <img
-                            src={sampleImage}
-                            alt={displayName}
-                            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110`}
-                            referrerPolicy="no-referrer"
-                          />
-                          {/* 3D Gloss Acrylic Reflection */}
-                          <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/50 to-white/0 opacity-40 mix-blend-overlay pointer-events-none" />
+                          {shape.id === 'filmstrip' ? (
+                            // Strip layout
+                            <div className="grid grid-rows-3 h-full gap-0.5 p-[1px]">
+                              <div className="bg-zinc-800 rounded-xs overflow-hidden"><img src={sampleImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" /></div>
+                              <div className="bg-zinc-800 rounded-xs overflow-hidden"><img src="/images/couple_portrait_sample_1782458143228.jpg" className="w-full h-full object-cover" referrerPolicy="no-referrer" /></div>
+                              <div className="bg-zinc-800 rounded-xs overflow-hidden"><img src="/images/scenic_landscape_sample_1782458156606.jpg" className="w-full h-full object-cover" referrerPolicy="no-referrer" /></div>
+                            </div>
+                          ) : (
+                            <img
+                              src={sampleImage}
+                              alt={displayName}
+                              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110`}
+                              referrerPolicy="no-referrer"
+                            />
+                          )}
+
+                          {/* Gloss Acrylic Overlay Shine */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/50 to-white/0 opacity-40 mix-blend-overlay shine-effect pointer-events-none" />
                         </div>
+
+                        {/* Polaroid text placeholder */}
+                        {shape.id === 'polaroid' && (
+                          <div className="absolute bottom-0.5 left-0 w-full text-center text-[5px] sm:text-[6px] font-serif italic text-stone-500">
+                            Paris Sunshine
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Pricing and Details */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-serif text-base font-bold text-[#111111]">
-                        {displayName}
-                      </h3>
-                      <div className="flex items-center gap-1">
+                    {/* Pricing and Details */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1 overflow-hidden">
+                        <span className="font-mono text-[9px] uppercase tracking-wider text-[#888888] truncate">
+                          {displayTagline}
+                        </span>
+                        {(isTrending || shape.id === 'polaroid' || shape.id === 'arch') && (
+                          <span className="bg-amber-100 text-amber-900 font-mono text-[8px] font-bold px-1.5 py-0.2 rounded uppercase tracking-widest shrink-0">
+                            🔥 TRENDING
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
                         {displayOriginalPrice > 0 && displayOriginalPrice > displayPrice && (
                           <span className="font-mono text-[10px] text-neutral-400 line-through">
                             ₹{displayOriginalPrice}
                           </span>
                         )}
-                        <span className="font-mono text-sm font-extrabold text-[#111111]">
+                        <span className="font-mono text-[10px] sm:text-xs font-bold text-[#111111] bg-neutral-100 px-2 py-0.5 rounded-full">
                           ₹{displayPrice}
                         </span>
                       </div>
                     </div>
+
+                    <h3 className="font-serif text-sm sm:text-base font-semibold text-[#111111] group-hover:text-amber-800 transition-colors leading-snug">
+                      {displayName}
+                    </h3>
                     
-                    <p className="font-sans text-[11px] text-[#666666] leading-snug line-clamp-2 font-light">
+                    <p className="font-sans text-[11px] text-[#666666] leading-snug line-clamp-2">
                       {displayDescription}
                     </p>
 
-                    {/* Multi-Size Selection Pills */}
-                    <div className="pt-2">
-                      <span className="text-[9px] font-mono text-neutral-400 block mb-1 uppercase font-bold">Available Sizes:</span>
-                      <div className="flex items-center gap-1 flex-wrap font-mono text-[9px]">
-                        <span className="px-2 py-0.5 bg-neutral-900 text-white rounded font-bold">{displayDimensions}</span>
-                        <span className="px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded border border-neutral-200">3×3"</span>
-                        <span className="px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded border border-neutral-200">4×6"</span>
-                      </div>
+                    <div className="font-mono text-[9px] text-neutral-400">
+                      SIZE: {displayDimensions}
                     </div>
                   </div>
                 </div>
 
-                {/* Customize & Order Trigger Button */}
+                {/* Order Now Trigger Button */}
                 <button
                   onClick={() => onSelectShape(shape.id)}
-                  className="mt-4 w-full cursor-pointer bg-[#111111] hover:bg-black text-white transition-all py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1 shadow-xs active:scale-98"
+                  className="mt-3 w-full cursor-pointer bg-neutral-100/80 hover:bg-[#111111] text-[#111111] hover:text-white transition-all py-2 rounded-xl text-[10px] sm:text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1 group-hover:bg-[#111111] group-hover:text-white"
                 >
-                  Select & Customize
+                  Order Now
                 </button>
 
               </div>
