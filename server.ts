@@ -724,12 +724,22 @@ app.post("/api/webhooks/razorpay", async (req, res) => {
   return res.json({ received: true });
 });
 
+// Shiprocket Webhook test ping handler (GET and POST)
+app.get("/api/webhooks/shiprocket", (_req, res) => {
+  return res.status(200).json({ success: true, message: "KRIA Shiprocket Webhook Endpoint Active." });
+});
+
 app.post("/api/webhooks/shiprocket", async (req, res) => {
   try {
-    const { awb, current_status, courier_name, order_id } = req.body || {};
-    if (!awb && !order_id) return res.status(400).json({ error: "Missing tracking payload." });
+    const { awb, current_status, courier_name, order_id, test } = req.body || {};
+
+    // Handle Shiprocket Test Webhook Ping button (which sends empty body or test flag)
+    if (test || (!awb && !order_id)) {
+      return res.status(200).json({ success: true, message: "KRIA Shiprocket Test Webhook Connection Verified Successfully!" });
+    }
+
     const orders = getOrders();
-    const order = orders.find((o: any) => o.trackingNumber === awb || o.id === order_id);
+    const order = orders.find((o: any) => o.trackingNumber === awb || o.id === order_id || o.id === String(order_id).replace(/_/g, '-'));
     if (order) {
       const statusMap: { [key: string]: string } = {
         "PICKED UP": "Processing",
@@ -738,20 +748,22 @@ app.post("/api/webhooks/shiprocket", async (req, res) => {
         "DELIVERED": "Delivered",
         "RTO IN TRANSIT": "RTO Returned",
       };
-      const nextStatus = statusMap[String(current_status).toUpperCase()] || current_status || "Shipped";
-      order.status = nextStatus;
+      const newStatus = statusMap[String(current_status).toUpperCase()] || order.status;
+      order.status = newStatus;
       if (courier_name) order.courierName = courier_name;
       order.history.push({
-        status: nextStatus,
+        status: newStatus,
         timestamp: new Date().toISOString(),
-        note: `Shiprocket live tracking scan: ${current_status} (Courier: ${courier_name || order.courierName})`
+        note: `Shiprocket webhook: Courier status updated to "${current_status}" (${courier_name || 'Express Courier'}).`
       });
       saveOrder(order);
-      await notifyCustomer(order, `Logistics update: ${nextStatus}`);
+      await notifyCustomer(order, `Courier Tracking Update: ${current_status}`);
     }
-    return res.json({ success: true, processed: Boolean(order) });
+
+    return res.status(200).json({ success: true, received: true });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    console.error("Shiprocket webhook processing error:", err);
+    return res.status(200).json({ success: true, message: "Webhook acknowledged with error handling." });
   }
 });
 
