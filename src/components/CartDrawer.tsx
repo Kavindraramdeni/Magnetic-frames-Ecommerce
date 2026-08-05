@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, Trash2, Plus, Minus, Lock, ShoppingBag, 
-  Sparkles, Truck, ArrowRight, Check 
+  Sparkles, Truck, ArrowRight, Check, MessageSquare 
 } from 'lucide-react';
 import { CartItem } from '../types';
 
@@ -356,16 +356,38 @@ export default function CartDrawer({
             </div>
 
             {/* Sticky Bottom CTA: Always Visible without Scrolling */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <button
                 onClick={() => onProceedToCheckout(appliedCoupon)}
-                className="w-full bg-[#111111] hover:bg-black text-[#FAF8F5] transition-all py-4 rounded-full text-xs font-sans tracking-widest font-bold uppercase flex items-center justify-between px-6 cursor-pointer shadow-lg hover:scale-[1.01] active:scale-[0.98]"
+                className="w-full bg-[#111111] hover:bg-black text-[#FAF8F5] transition-all py-3.5 rounded-full text-xs font-sans tracking-widest font-bold uppercase flex items-center justify-between px-6 cursor-pointer shadow-lg hover:scale-[1.01] active:scale-[0.98]"
               >
                 <span className="font-serif italic font-normal text-sm">₹{grandTotal}</span>
                 <span className="flex items-center gap-2 font-sans text-xs tracking-widest font-extrabold uppercase">
                   <span>Proceed to Checkout</span>
                   <ArrowRight className="h-4 w-4" />
                 </span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/checkout/whatsapp-order', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ cart, shippingDetails: { pincode }, couponCode: appliedCoupon?.code })
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.whatsappUrl) {
+                      window.open(data.whatsappUrl, '_blank');
+                    }
+                  } catch (e) {
+                    console.error('Fast-track WhatsApp order error', e);
+                  }
+                }}
+                className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white transition-all py-2.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md hover:scale-[1.01] active:scale-[0.98]"
+              >
+                <MessageSquare className="h-4 w-4 fill-white" />
+                <span>1-Click Order via WhatsApp</span>
               </button>
             </div>
 

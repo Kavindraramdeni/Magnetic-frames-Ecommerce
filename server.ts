@@ -678,6 +678,45 @@ const createCheckoutOrderHandler = async (req: express.Request, res: express.Res
 app.post("/api/checkout/create-order", createCheckoutOrderHandler);
 app.post("/api/razorpay/create-order", createCheckoutOrderHandler);
 
+app.post("/api/checkout/whatsapp-order", async (req, res) => {
+  try {
+    const { cart = [], shippingDetails = {}, couponCode } = req.body || {};
+    const cartError = validateCart(cart);
+    if (cartError) return res.status(400).json({ error: cartError });
+
+    const { grandTotal, subtotal, bulkDiscount, deliveryCharge, couponDiscount } = calculateOrderTotals(cart, couponCode);
+    const orderId = generateOrderId("KRIA-WA");
+
+    const order = {
+      id: orderId,
+      status: "WhatsApp Order",
+      cart,
+      shippingDetails,
+      trackingNumber: `WA-${Math.floor(100000 + Math.random() * 900000)}`,
+      courierName: "Delhivery Air",
+      deliveryEstimate: "2-3 Business Days",
+      transactionId: `WA_DIRECT_${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      grandTotal,
+      subtotal,
+      bulkDiscount,
+      deliveryCharge,
+      couponDiscount,
+      history: [{ status: "WhatsApp Order", timestamp: new Date().toISOString(), note: "1-Click Direct WhatsApp order initiated by customer." }]
+    };
+
+    saveOrder(order);
+
+    const itemsText = cart.map((item: any) => `- ${item.shapeName || 'Custom Magnet'} (Qty: ${item.quantity || 1}, Price: ₹${(item.price || 299) * (item.quantity || 1)})`).join("\n");
+    const waText = `Hi KRIA Studio! ✨ I want to place an instant WhatsApp order:\n\n*Order ID:* ${orderId}\n\n*Items Ordered:*\n${itemsText}\n\n*Grand Total:* ₹${grandTotal}\n*Customer Name:* ${shippingDetails.fullName || 'Customer'}\n*Phone:* ${shippingDetails.phone || 'N/A'}\n*Delivery Address:* ${shippingDetails.address || ''}, ${shippingDetails.city || 'India'} - ${shippingDetails.pincode || ''}\n\nPlease confirm print assets & payment link!`;
+    const whatsappUrl = `https://wa.me/917893922754?text=${encodeURIComponent(waText)}`;
+
+    return res.json({ success: true, orderId, whatsappUrl, grandTotal });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.Response) => {
   try {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature, cart, shippingDetails, isMock, acceptedPolicies, couponCode } = req.body;
