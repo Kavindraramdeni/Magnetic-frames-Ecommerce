@@ -253,3 +253,24 @@ export const FAQS: FAQItem[] = [
     answer: 'No. We print with premium fade-proof UV inks printed directly underneath the thick glossy top-face of the acrylic shield. This protects the image entirely from humidity, cooking steam, or UV light, meaning your memories will look stellar forever.'
   }
 ];
+
+export async function fetchLiveCatalogShapes(): Promise<MagnetShape[]> {
+  try {
+    const res = await fetch('/api/products');
+    if (!res.ok) return BASE_SHAPES;
+    const data = await res.json();
+    if (!data.products || !Array.isArray(data.products)) return BASE_SHAPES;
+    
+    const priceMap = new Map<string, number>();
+    for (const p of data.products) {
+      priceMap.set(p.id, Number(p.price));
+    }
+
+    return BASE_SHAPES.map(shape => ({
+      ...shape,
+      price: priceMap.has(shape.id) ? (priceMap.get(shape.id) as number) : shape.price
+    }));
+  } catch (err) {
+    return BASE_SHAPES;
+  }
+}

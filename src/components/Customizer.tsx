@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BASE_SHAPES, PRESET_PHOTOS } from '../data';
-import { MagnetShapeId, CustomOrder, CartItem } from '../types';
+import { BASE_SHAPES, PRESET_PHOTOS, fetchLiveCatalogShapes } from '../data';
+import { MagnetShapeId, CustomOrder, CartItem, MagnetShape } from '../types';
 import BrandLogo from './BrandLogo';
 import { 
   Upload, Sparkles, MessageSquare, RotateCcw, 
@@ -40,7 +40,7 @@ export default function Customizer({
   initialShapeId = 'arch',
   initialPhotoUrl,
   initialPhotoName,
-  initialScale = 1,
+  initialScale = 1.0,
   initialPanX = 0,
   initialPanY = 0,
   cart: passedCart,
@@ -50,6 +50,15 @@ export default function Customizer({
   onOpenCart,
   appliedCoupon
 }: CustomizerProps) {
+  // Live Shapes State
+  const [shapesCatalog, setShapesCatalog] = useState<MagnetShape[]>(BASE_SHAPES);
+
+  useEffect(() => {
+    fetchLiveCatalogShapes().then(shapes => {
+      if (shapes && shapes.length > 0) setShapesCatalog(shapes);
+    });
+  }, []);
+
   // Primary shape selection
   const [selectedShapeId, setSelectedShapeId] = useState<MagnetShapeId>(initialShapeId);
   const [isShapeDropdownOpen, setIsShapeDropdownOpen] = useState<boolean>(false);
@@ -57,15 +66,15 @@ export default function Customizer({
   const [customCaption, setCustomCaption] = useState<string>('Precious Moments');
 
   const handlePrevShape = () => {
-    const currentIndex = BASE_SHAPES.findIndex(s => s.id === selectedShapeId);
-    const prevIndex = (currentIndex - 1 + BASE_SHAPES.length) % BASE_SHAPES.length;
-    setSelectedShapeId(BASE_SHAPES[prevIndex].id);
+    const currentIndex = shapesCatalog.findIndex(s => s.id === selectedShapeId);
+    const prevIndex = (currentIndex - 1 + shapesCatalog.length) % shapesCatalog.length;
+    setSelectedShapeId(shapesCatalog[prevIndex].id);
   };
 
   const handleNextShape = () => {
-    const currentIndex = BASE_SHAPES.findIndex(s => s.id === selectedShapeId);
-    const nextIndex = (currentIndex + 1) % BASE_SHAPES.length;
-    setSelectedShapeId(BASE_SHAPES[nextIndex].id);
+    const currentIndex = shapesCatalog.findIndex(s => s.id === selectedShapeId);
+    const nextIndex = (currentIndex + 1) % shapesCatalog.length;
+    setSelectedShapeId(shapesCatalog[nextIndex].id);
   };
   
   // Workspace Photo Adjustment States
@@ -450,12 +459,12 @@ export default function Customizer({
     return () => container.removeEventListener('wheel', handleWheelNative);
   }, []);
 
-  const activeShape = BASE_SHAPES.find((s) => s.id === selectedShapeId) || BASE_SHAPES[0];
-  const currentShapeIndex = BASE_SHAPES.findIndex(s => s.id === selectedShapeId);
-  const prevShapeIndex = (currentShapeIndex - 1 + BASE_SHAPES.length) % BASE_SHAPES.length;
-  const nextShapeIndex = (currentShapeIndex + 1) % BASE_SHAPES.length;
-  const prevShape = BASE_SHAPES[prevShapeIndex];
-  const nextShape = BASE_SHAPES[nextShapeIndex];
+  const activeShape = shapesCatalog.find((s) => s.id === selectedShapeId) || shapesCatalog[0] || BASE_SHAPES[0];
+  const currentShapeIndex = shapesCatalog.findIndex(s => s.id === selectedShapeId);
+  const prevShapeIndex = (currentShapeIndex - 1 + shapesCatalog.length) % shapesCatalog.length;
+  const nextShapeIndex = (currentShapeIndex + 1) % shapesCatalog.length;
+  const prevShape = shapesCatalog[prevShapeIndex] || BASE_SHAPES[0];
+  const nextShape = shapesCatalog[nextShapeIndex] || BASE_SHAPES[0];
 
   const baseShapePrice = activeShape.price;
   const currentItemSubtotal = baseShapePrice * quantity;
