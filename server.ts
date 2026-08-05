@@ -101,6 +101,16 @@ db.exec(`
     is_trending INTEGER DEFAULT 0,
     created_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS reviews (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    location TEXT NOT NULL,
+    rating INTEGER NOT NULL,
+    comment TEXT NOT NULL,
+    photo_url TEXT,
+    is_approved INTEGER DEFAULT 1,
+    created_at TEXT NOT NULL
+  );
 `);
 
 const serializeOrder = (order: any) => ({
@@ -1152,6 +1162,56 @@ app.post("/api/admin/products", requireAdmin, (req, res) => {
 app.delete("/api/admin/products/:id", requireAdmin, (req, res) => {
   db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
   res.json({ success: true, message: `Deleted product ${req.params.id}` });
+});
+
+const DEFAULT_REVIEWS = [
+  { id: "rev-1", name: "Ananya Sharma", location: "Mumbai, MH", rating: 5, comment: "I ordered the arch shapes for our travel wall. They are thick, gorgeous, and the magnetic grip is super strong. They feel like little pieces of fine art on our fridge!", photoUrl: "/images/shape_arch_magnet_1779653475722.png" },
+  { id: "rev-2", name: "Kabir Mehta", location: "New Delhi, DL", rating: 5, comment: "The polaroid cutouts let me add custom captions for my cat photos. They look so elegant and minimalist! Will definitely order more as anniversary gifts.", photoUrl: "/images/shape_polaroid_magnet_1780939416510.png" },
+  { id: "rev-3", name: "Pooja Iyer", location: "Bangalore, KA", rating: 5, comment: "Absolutely love the glass-like acrylic edges! The silhouette contour of my daughter was custom cut with such high precision. 10/10 quality!", photoUrl: "/images/shape_heart_magnet_1780939430998.png" }
+];
+
+app.get("/api/reviews", (_req, res) => {
+  try {
+    let reviews = db.prepare("SELECT * FROM reviews WHERE is_approved = 1 ORDER BY created_at DESC").all();
+    if (reviews.length === 0) {
+      const stmt = db.prepare(`INSERT OR REPLACE INTO reviews (id, name, location, rating, comment, photo_url, is_approved, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`);
+      for (const r of DEFAULT_REVIEWS) {
+        stmt.run(r.id, r.name, r.location, r.rating, r.comment, r.photoUrl, new Date().toISOString());
+      }
+      reviews = db.prepare("SELECT * FROM reviews WHERE is_approved = 1 ORDER BY created_at DESC").all();
+    }
+    const formatted = reviews.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      location: r.location,
+      rating: r.rating,
+      comment: r.comment,
+      photoUrl: r.photo_url,
+      createdAt: r.created_at
+    }));
+    return res.json({ success: true, reviews: formatted });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/reviews", (req, res) => {
+  try {
+    const { name, location, rating, comment, photoUrl } = req.body || {};
+    if (!name || !comment || !rating) return res.status(400).json({ error: "Name, rating, and comment are required." });
+    const id = `rev_${Date.now()}`;
+    db.prepare(`INSERT INTO reviews (id, name, location, rating, comment, photo_url, is_approved, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`).run(
+      id, name, location || "India", Number(rating), comment, photoUrl || null, new Date().toISOString()
+    );
+    return res.json({ success: true, message: "Review published successfully!" });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/admin/reviews/:id", requireAdmin, (req, res) => {
+  db.prepare("DELETE FROM reviews WHERE id = ?").run(req.params.id);
+  res.json({ success: true, message: `Deleted review ${req.params.id}` });
 });
 
 // Static file serving for production (Render / local production build)
