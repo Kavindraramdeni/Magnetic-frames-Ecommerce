@@ -1156,7 +1156,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                         </div>
                         <div className="space-y-1.5 grow leading-normal">
                           <div className="flex justify-between font-bold text-neutral-900">
-                            <span className="font-serif italic">{item.shapeName}</span>
+                            <span className="font-serif italic">{item.shapeName} {item.selectedSize ? `(${item.selectedSize})` : ''}</span>
                             <span>x{item.quantity}</span>
                           </div>
                           
@@ -1466,7 +1466,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     <tbody>
                       {(isPrintShippingLabelOpen.cart || []).map((item: any, idx: number) => (
                         <tr key={idx} className="border-b border-neutral-200">
-                          <td className="py-1 font-bold truncate max-w-[180px]">{item.shapeName || "Acrylic Magnet"} ({item.shapeId || "custom"})</td>
+                          <td className="py-1 font-bold truncate max-w-[180px]">{item.shapeName || "Acrylic Magnet"} {item.selectedSize ? `[${item.selectedSize}]` : ''}</td>
                           <td className="py-1 text-center font-bold">{item.quantity}</td>
                           <td className="py-1 text-right font-bold">₹{item.price * item.quantity}</td>
                         </tr>
@@ -1744,7 +1744,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                       return (
                         <tr key={idx}>
                           <td className="p-2.5">{idx + 1}</td>
-                          <td className="p-2.5 font-bold font-sans">{item.shapeName || "Custom Acrylic Magnet"} ({item.shapeId})</td>
+                          <td className="p-2.5 font-bold font-sans">{item.shapeName || "Custom Acrylic Magnet"} {item.selectedSize ? `(${item.selectedSize})` : ''}</td>
                           <td className="p-2.5 text-center font-mono text-neutral-600">39269099</td>
                           <td className="p-2.5 text-center font-bold">{item.quantity}</td>
                           <td className="p-2.5 text-right">₹{item.price}</td>

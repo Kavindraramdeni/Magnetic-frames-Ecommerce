@@ -6,9 +6,10 @@ import BrandLogo from './BrandLogo';
 
 interface ShapeShowcaseProps {
   onSelectShape: (id: MagnetShapeId, selectedSize?: string, selectedPrice?: number) => void;
+  onAddBulkToCart?: (shapeId: MagnetShapeId, shapeName: string, selectedSize: string, price: number) => void;
 }
 
-export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
+export default function ShapeShowcase({ onSelectShape, onAddBulkToCart }: ShapeShowcaseProps) {
   const [catalogShapes, setCatalogShapes] = useState<any[]>([]);
   const [selectedSizeIndex, setSelectedSizeIndex] = useState<{ [shapeId: string]: number }>({});
 
@@ -190,13 +191,26 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
                   </div>
                 </div>
 
-                {/* Order & Customize Action Button */}
-                <button
-                  onClick={() => onSelectShape(shape.id, activeSizeOpt.label, activeSizeOpt.price)}
-                  className="mt-4 w-full cursor-pointer bg-[#111111] hover:bg-black text-white transition-all py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
-                >
-                  <span>Customize ({activeSizeOpt.label})</span>
-                </button>
+                {/* Action Buttons: 1-pc Photo Customizer vs 5-pc Bulk Order */}
+                <div className="mt-4 space-y-1.5">
+                  <button
+                    onClick={() => onSelectShape(shape.id, activeSizeOpt.label, activeSizeOpt.price)}
+                    className="w-full cursor-pointer bg-[#111111] hover:bg-black text-white transition-all py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+                  >
+                    <span>🎨 Customize Photo ({activeSizeOpt.label})</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (onAddBulkToCart) {
+                        onAddBulkToCart(shape.id, displayName, activeSizeOpt.label, activeSizeOpt.price);
+                      }
+                    }}
+                    className="w-full cursor-pointer bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-300 transition-all py-2 rounded-xl text-[10px] font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1"
+                  >
+                    <span>📦 Quick Bulk Order (5 Pcs)</span>
+                  </button>
+                </div>
 
               </div>
             );

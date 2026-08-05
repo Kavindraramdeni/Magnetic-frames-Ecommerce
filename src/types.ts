@@ -66,4 +66,6 @@ export interface CartItem {
   customText?: string;
   objectKey?: string;
   price: number;
+  selectedSize?: string;
+  isBulkOrder?: boolean;
 }

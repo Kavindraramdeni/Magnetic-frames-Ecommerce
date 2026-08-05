@@ -358,7 +358,29 @@ export default function App() {
           backgroundImage="/images/luxury_living_room_bg_1782458094193.jpg"
           overlayColor="rgba(250, 248, 245, 0.85)"
         >
-          <ShapeShowcase onSelectShape={handleSelectShapeToCustomize} />
+          <ShapeShowcase 
+            onSelectShape={handleSelectShapeToCustomize} 
+            onAddBulkToCart={(shapeId, shapeName, selectedSize, price) => {
+              const uniqueId = `bulk-${Date.now()}`;
+              const newCartItem: CartItem = {
+                id: uniqueId,
+                shapeId,
+                shapeName,
+                quantity: 5,
+                previewUrl: '/images/shape_arch_magnet_1779653475722.png',
+                photoName: `Bulk ${shapeName} Order (${selectedSize})`,
+                captionText: '',
+                photoScale: 1.0,
+                photoPanX: 0,
+                photoPanY: 0,
+                price,
+                selectedSize,
+                isBulkOrder: true
+              };
+              setCart(prev => [...prev, newCartItem]);
+              setIsCartOpen(true);
+            }}
+          />
         </SectionWrapper>
       </div>
 
