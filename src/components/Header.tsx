@@ -47,10 +47,10 @@ export default function Header({
         {/* Desktop Navigation with Animated Underline Micro-interactions */}
         <nav className="hidden md:flex items-center gap-6 font-sans text-xs tracking-widest font-semibold text-[#555555]">
           <button 
-            onClick={onScrollToShapes}
-            className="relative py-2 hover:text-black transition-colors duration-200 cursor-pointer uppercase after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-neutral-900 after:transition-all after:duration-300"
+            onClick={onScrollToCustomizer}
+            className="relative py-2 hover:text-black transition-colors duration-200 cursor-pointer uppercase font-bold text-neutral-900 after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-neutral-900 after:transition-all after:duration-300"
           >
-            SHOP NOW
+            ORDER NOW ✨
           </button>
           <button 
             onClick={onScrollToGallery}

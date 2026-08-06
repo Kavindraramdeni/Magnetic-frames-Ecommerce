@@ -172,103 +172,18 @@ export default function App() {
     galleryRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // When user selects shape from collection card, redirect to style experience with that shape selected
+  // When user selects shape from collection card, scroll to Customizer workspace directly
   const handleSelectShapeToCustomize = (id: MagnetShapeId) => {
     setActiveWorkspaceShape(id);
-    setCurrentView('style-experience');
-  };
-
-  // Transfer shape & photo from StyleCarousel to Customizer workspace
-  const handleSelectAndCustomizeFromExperience = (shapeId: MagnetShapeId, photoUrl: string, photoName: string, scale: number, panX: number, panY: number) => {
-    setActiveWorkspaceShape(shapeId);
-    setCustomizerPhotoUrl(photoUrl);
-    setCustomizerPhotoName(photoName);
-    setCustomizerPhotoScale(scale);
-    setCustomizerPhotoPanX(panX);
-    setCustomizerPhotoPanY(panY);
-    setCurrentView('home');
-    
-    // Smooth scroll down to customizer shortly after transitioning view back
+    if (currentView !== 'home') setCurrentView('home');
     setTimeout(() => {
       scrollToCustomizer();
-    }, 150);
+    }, 100);
   };
 
-  // Directly add to cart and open cart drawer from Style Experience
-  const handleSelectAndAddDirectlyToTrayAndCheckout = (shapeId: MagnetShapeId, photoUrl: string, photoName: string, scale: number, panX: number, panY: number) => {
-    const shapeObj = BASE_SHAPES.find(s => s.id === shapeId) || { name: 'Custom Frame', price: 399 };
-
-    // Check if an identical item (same shape + same photo) already exists in cart
-    const existingIndex = cart.findIndex(
-      (item: CartItem) => item.shapeId === shapeId && item.previewUrl === photoUrl
-    );
-
-    if (existingIndex !== -1) {
-      // Increment quantity of existing item instead of adding duplicate
-      setCart((prev: CartItem[]) =>
-        prev.map((item: CartItem, i: number) =>
-          i === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
-        )
-      );
-    } else {
-      // Add as new cart item
-      const uniqueId = `item-direct-${Date.now()}`;
-      const newCartItem: CartItem = {
-        id: uniqueId,
-        shapeId,
-        shapeName: shapeObj.name,
-        quantity: 1,
-        previewUrl: photoUrl,
-        photoName: photoName || `${shapeObj.name} custom.jpg`,
-        captionText: shapeId === 'polaroid' ? 'Sunny Moments' : '',
-        photoScale: scale,
-        photoPanX: panX,
-        photoPanY: panY,
-        price: shapeObj.price
-      };
-      setCart((prev: CartItem[]) => [...prev, newCartItem]);
-    }
-
-    setActiveWorkspaceShape(shapeId);
-    setCustomizerPhotoUrl(photoUrl);
-    setCustomizerPhotoName(photoName);
-    setCustomizerPhotoScale(scale);
-    setCustomizerPhotoPanX(panX);
-    setCustomizerPhotoPanY(panY);
-
-    setIsCartOpen(true);
-  };
-
-  // If the user is on the separate immersive page
+  // Redirect style-experience to B2B Wholesale page
   if (currentView === 'style-experience') {
-    return (
-      <>
-        <StyleCarousel 
-          onBackToHome={() => setCurrentView('home')}
-          onSelectAndCustomize={handleSelectAndCustomizeFromExperience}
-          onAddDirectlyToTrayAndCheckout={handleSelectAndAddDirectlyToTrayAndCheckout}
-          onOpenCart={() => setIsCartOpen(true)}
-          cartItemCount={cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
-          initialShapeId={activeWorkspaceShape}
-        />
-        <CartDrawer 
-          isOpen={isCartOpen}
-          onClose={() => setIsCartOpen(false)}
-          cart={cart}
-          onUpdateQuantity={handleUpdateQuantity}
-          onRemoveItem={handleRemoveItem}
-          onClearCart={handleClearCart}
-          onProceedToCheckout={() => {
-            setIsCartOpen(false);
-            setCurrentView('home');
-            setIsCheckoutOpen(true);
-            setTimeout(() => {
-              scrollToCustomizer();
-            }, 100);
-          }}
-        />
-      </>
-    );
+    setCurrentView('b2b');
   }
 
 

@@ -87,21 +87,21 @@ export default function Hero({ onScrollToCustomizer, onScrollToShapes, onOpenSty
             {/* Action Buttons */}
             <div className="pt-2 flex flex-wrap gap-3.5 items-center">
               
-              {/* Choose Your Style Button */}
+              {/* B2B Wholesale Button (Replaced Choose Your Style) */}
               <button
                 onClick={onOpenStyleExperience}
                 className="bg-[#E8DCCF] text-[#111111] hover:bg-[#dfd0bf] active:scale-98 text-xs font-mono font-extrabold uppercase tracking-widest px-7 py-4 rounded-full flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md cursor-pointer border border-[#d3c0ad]"
               >
                 <Sparkles className="h-4 w-4 text-[#111111] fill-[#111111]" />
-                CHOOSE YOUR STYLE
+                💼 B2B WHOLESALE (MOQ 5+)
               </button>
 
-              {/* Shop Now Button */}
+              {/* Order Now Button (Scrolls directly to Customizer Workspace) */}
               <button
-                onClick={onScrollToShapes}
+                onClick={onScrollToCustomizer}
                 className="bg-[#111111] text-[#FAF8F5] hover:bg-[#222222] active:scale-98 text-xs font-mono font-bold tracking-widest uppercase px-7 py-4 rounded-full flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg cursor-pointer"
               >
-                SHOP NOW
+                ORDER NOW ✨
                 <ArrowRight className="h-4 w-4" />
               </button>
 
