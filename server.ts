@@ -142,36 +142,33 @@ db.exec(`
   );
 `);
 
-// Initial seed for primary warehouse if empty
+// Initial seed for primary warehouse (Exact PDF Address)
 try {
-  const existingWh = db.prepare("SELECT * FROM warehouses WHERE id = ?").get("wh_primary");
-  if (!existingWh) {
-    db.prepare(`INSERT INTO warehouses (id, name, address1, address2, city, state, pincode, gstin, phone, email, shiprocket_pickup_name, is_default, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      "wh_primary",
-      "KRIA Studio Central Warehouse",
-      "Jubilee Tech Zone, Phase II",
-      "Kukatpally Industrial Area",
-      "Hyderabad",
-      "Telangana",
-      "500085",
-      "36AAAFK7892P1Z0",
-      "+91 93925 76792",
-      "kriatechgroup@gmail.com",
-      "Primary_Hyderabad_500085",
-      1,
-      new Date().toISOString()
-    );
-  }
+  db.prepare(`INSERT OR REPLACE INTO warehouses (id, name, address1, address2, city, state, pincode, gstin, phone, email, shiprocket_pickup_name, is_default, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    "wh_primary",
+    "KRIA TECH",
+    "Shop no 9, Mallikarjuna Towers, Radha Krishna Rd",
+    "Venkata Ramana Colony, Gokul Plots, 9th Phase KPHB, Near Quantum Leap School, Hafeezpet",
+    "Hyderabad",
+    "Telangana",
+    "500085",
+    "36AAAFK7892P1Z0",
+    "9392576792",
+    "kriatechgroup@gmail.com",
+    "Primary_Hyderabad_500085",
+    1,
+    new Date().toISOString()
+  );
 } catch (e) {}
 
-// Initial seed for business settings if empty
+// Initial seed for business settings (Exact PDF details)
 const initialSettings = [
-  { key: "company_name", value: "KRIA STUDIO PRIVATE LIMITED" },
+  { key: "company_name", value: "KRIA TECH" },
   { key: "gstin", value: "36AAAFK7892P1Z0" },
   { key: "support_email", value: "kriatechgroup@gmail.com" },
-  { key: "support_phone", value: "+91 93925 76792" },
+  { key: "support_phone", value: "9392576792" },
   { key: "bank_name", value: "HDFC Bank Ltd" },
   { key: "account_no", value: "50200084920194" },
   { key: "ifsc", value: "HDFC0001294" },
@@ -181,7 +178,7 @@ const initialSettings = [
 ];
 for (const s of initialSettings) {
   try {
-    db.prepare("INSERT OR IGNORE INTO business_settings (key, value) VALUES (?, ?)").run(s.key, s.value);
+    db.prepare("INSERT OR REPLACE INTO business_settings (key, value) VALUES (?, ?)").run(s.key, s.value);
   } catch (e) {}
 }
 

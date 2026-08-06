@@ -505,10 +505,10 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [newCouponForm, setNewCouponForm] = useState({ code: '', type: 'percent', value: 10, label: 'Special Discount', minOrderValue: 0 });
 
   const [businessSettings, setBusinessSettings] = useState<any>({
-    company_name: 'KRIA STUDIO PRIVATE LIMITED',
+    company_name: 'KRIA TECH',
     gstin: '36AAAFK7892P1Z0',
     support_email: 'kriatechgroup@gmail.com',
-    support_phone: '+91 93925 76792',
+    support_phone: '9392576792',
     bank_name: 'HDFC Bank Ltd',
     account_no: '50200084920194',
     ifsc: 'HDFC0001294',
@@ -516,14 +516,14 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   });
 
   const [warehouseForm, setWarehouseForm] = useState<any>({
-    name: 'KRIA Studio Central Warehouse',
-    address1: 'Jubilee Tech Zone, Phase II',
-    address2: 'Kukatpally Industrial Area',
+    name: 'KRIA TECH',
+    address1: 'Shop no 9, Mallikarjuna Towers, Radha Krishna Rd',
+    address2: 'Venkata Ramana Colony, Gokul Plots, 9th Phase KPHB, Near Quantum Leap School, Hafeezpet',
     city: 'Hyderabad',
     state: 'Telangana',
     pincode: '500085',
     gstin: '36AAAFK7892P1Z0',
-    phone: '+91 93925 76792',
+    phone: '9392576792',
     email: 'kriatechgroup@gmail.com',
     shiprocket_pickup_name: 'Primary_Hyderabad_500085'
   });
