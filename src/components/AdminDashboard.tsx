@@ -1414,11 +1414,12 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
 
         {/* TAB 2: 🛍️ PRODUCTS & SIZE-BASED PRICE MATRIX (CMS) */}
         {adminTab === 'products' && (
-          <div className="bg-white rounded-3xl border border-neutral-200 p-6 md:p-8 shadow-sm space-y-6">
-            <div className="flex justify-between items-center border-b border-neutral-200 pb-4">
+          <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 md:p-8 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#202738] pb-4">
               <div>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 font-bold">RETAIL & BULK SIZE PRICING MATRIX</span>
-                <h3 className="font-serif text-2xl font-bold text-neutral-900 mt-1">Catalog & Products CMS</h3>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">RETAIL & BULK SIZE PRICING MATRIX</span>
+                <h3 className="font-serif text-2xl font-bold text-white mt-1">Catalog & Products CMS</h3>
+                <p className="text-xs text-neutral-400 font-mono mt-1">Manage retail products, image uploads, sale prices, and catalog visibility.</p>
               </div>
               <button
                 onClick={() => {
@@ -1434,7 +1435,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     isTrending: true
                   });
                 }}
-                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-mono text-xs uppercase font-bold tracking-wider cursor-pointer shadow-sm transition flex items-center gap-1.5"
+                className="px-5 py-3 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black rounded-xl font-mono text-xs uppercase font-bold tracking-wider cursor-pointer shadow-lg transition flex items-center gap-1.5 shrink-0"
               >
                 <Sparkles className="h-4 w-4" />
                 <span>➕ Add New Product</span>
@@ -1448,46 +1449,56 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 const visible = Boolean(product.isTrending ?? true);
 
                 return (
-                  <div key={product.id} className="bg-[#FAF8F5] border border-neutral-200 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-serif text-lg font-bold text-neutral-900">{product.name}</h4>
-                        <span className="font-mono text-[9px] uppercase tracking-wider font-bold bg-neutral-200 px-2 py-0.5 rounded text-neutral-700">
-                          {product.dimensions || 'Standard'}
-                        </span>
+                  <div key={product.id} className="bg-[#0A0C10] border border-[#22283A] rounded-2xl p-5 shadow-lg space-y-4 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      {/* Product Preview Thumbnail */}
+                      <div className="flex items-center gap-3">
+                        {product.image ? (
+                          <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-xl border border-[#2D3852] shrink-0" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-xl border border-dashed border-[#2D3852] bg-[#1C2333] flex items-center justify-center text-neutral-400 text-[10px] shrink-0 font-mono">No Image</div>
+                        )}
+                        <div className="space-y-1 grow overflow-hidden">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-serif text-base font-bold text-white truncate">{product.name}</h4>
+                          </div>
+                          <span className="font-mono text-[9px] uppercase tracking-wider font-bold bg-[#1C2333] border border-[#2D3852] px-2 py-0.5 rounded text-[#D4AF37] inline-block">
+                            {product.dimensions || 'Standard'}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-xs text-neutral-500 line-clamp-2">{product.description || product.tagline}</p>
+                      <p className="text-xs text-neutral-400 line-clamp-2">{product.description || product.tagline}</p>
                     </div>
 
-                    <div className="p-3 bg-white rounded-xl border border-neutral-200 font-mono text-xs space-y-1">
+                    <div className="p-3 bg-[#131722] rounded-xl border border-[#22283A] font-mono text-xs space-y-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-neutral-500 text-[10px] uppercase font-bold">Standard Sale Price:</span>
-                        <span className="font-bold text-neutral-900 text-sm">₹{currentPrice}</span>
+                        <span className="text-neutral-400 text-[10px] uppercase font-bold">Standard Sale Price:</span>
+                        <span className="font-bold text-[#F3E5AB] text-sm">₹{currentPrice}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-neutral-500 text-[10px] uppercase font-bold">MRP / Original Price:</span>
-                        <span className="text-neutral-400 line-through">₹{originalPrice}</span>
+                        <span className="text-neutral-400 text-[10px] uppercase font-bold">MRP / Strikethrough Price:</span>
+                        <span className="text-neutral-500 line-through">₹{originalPrice}</span>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-200">
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-[#202738]">
                       <button
                         onClick={() => handleOpenPriceModal(product)}
-                        className="flex-1 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl font-mono text-[11px] uppercase font-bold tracking-wider cursor-pointer shadow-sm text-center"
+                        className="flex-1 py-2 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black rounded-xl font-mono text-[11px] uppercase font-bold tracking-wider cursor-pointer shadow-md text-center hover:opacity-95"
                       >
-                        Edit Prices & Sizes
+                        Edit Details & Image
                       </button>
                       <button
                         onClick={() => saveProduct({ ...product, isTrending: !visible, price: currentPrice, originalPrice: product.originalPrice ?? originalPrice })}
                         className={`px-3 py-2 border rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer ${
-                          visible ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                          visible ? 'bg-[#1C2333] text-emerald-400 border-[#2D3852]' : 'bg-rose-950/40 text-rose-300 border-rose-900/40'
                         }`}
                       >
-                        {visible ? 'Hide' : 'Show'}
+                        {visible ? '👁️ Live' : '🚫 Hidden'}
                       </button>
                       <button
                         onClick={() => deleteProduct(product.id)}
-                        className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer"
+                        className="px-3 py-2 bg-rose-950/40 text-rose-400 hover:bg-rose-900/50 border border-rose-900/40 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer"
                         title="Delete Product"
                       >
                         <Trash2 className="h-3.5 w-3.5 inline" />
