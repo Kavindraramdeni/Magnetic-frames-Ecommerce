@@ -52,9 +52,9 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
   const shapeSampleImages: { [key in MagnetShapeId]: string } = {
     arch: '/images/shape_arch_magnet_1779653475722.png',
     cloud: '/images/shape_cloud_magnet_1780939383548.png',
-    circle: '/images/shape_circle_magnet_1780939399489.png',
+    circle: '/images/shape_circle_family_dog.jpg',
     polaroid: '/images/shape_polaroid_magnet_1780939416510.png',
-    love: '/images/shape_heart_magnet_1780939430998.png',
+    love: '/images/shape_heart_wedding_couple.png',
     filmstrip: '/images/shape_filmstrip_magnet_1780939443747.png',
     custom: '/images/shape_custom_silhouette_1780939456213.png',
     landscape: '/images/scenic_landscape_sample_1782458156606.jpg',

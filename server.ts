@@ -1307,9 +1307,9 @@ app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
 });
 
 const DEFAULT_CATALOG_PRODUCTS = [
+  { id: "love", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "10.0 × 10.0 CM", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
   { id: "circle", name: "Minimal Circle", price: 299, originalPrice: 399, dimensions: "7.5 CM Diameter", description: "Pure round 1:1 focus frame.", tagline: "Pure round focus frame.", isTrending: 1 },
   { id: "polaroid", name: "Classic Polaroid", price: 299, originalPrice: 500, dimensions: "7.0 × 7.0 CM", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
-  { id: "love", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "10.0 × 10.0 CM", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
   { id: "scalloped-stand", name: "Scalloped Desk Stand", price: 449, originalPrice: 599, dimensions: "12.5 × 17.5 CM", description: "Luxury scalloped desktop frame with clear stand.", tagline: "Desktop display stand.", isTrending: 1 },
   { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "7.5 × 10.0 CM", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
   { id: "landscape", name: "Horizontal Snapshot", price: 299, originalPrice: 369, dimensions: "8.8 × 6.3 CM", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
@@ -1321,19 +1321,17 @@ const DEFAULT_CATALOG_PRODUCTS = [
 
 app.get("/api/products", (_req, res) => {
   try {
-    // Purge removed products from active SQLite table
-    db.prepare("DELETE FROM products WHERE id IN ('custom', 'portrait', 'portrait-wide', 'cloud', 'circle-bloom', 'crest')").run();
-
-    let products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
-    if (products.length === 0) {
-      const stmt = db.prepare(`INSERT OR REPLACE INTO products
-        (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-      for (const p of DEFAULT_CATALOG_PRODUCTS) {
-        stmt.run(p.id, p.name, p.price, p.originalPrice, p.dimensions, p.description, "rounded-2xl border-2", "aspect-[4/5]", p.tagline, p.isTrending, new Date().toISOString());
-      }
-      products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
+    // Re-seed products table to match exact requested sequence
+    db.prepare("DELETE FROM products").run();
+    const stmt = db.prepare(`INSERT OR REPLACE INTO products
+      (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    let idx = 0;
+    for (const p of DEFAULT_CATALOG_PRODUCTS) {
+      idx++;
+      stmt.run(p.id, p.name, p.price, p.originalPrice, p.dimensions, p.description, "rounded-2xl border-2", "aspect-[4/5]", p.tagline, p.isTrending, new Date(Date.now() - idx * 1000).toISOString());
     }
+    const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
     const formatted = products.map((p: any) => ({
       id: p.id,
       name: p.name,

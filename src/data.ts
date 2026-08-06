@@ -3,6 +3,16 @@ import { SHAPE_PRICES } from './catalog';
 
 export const BASE_SHAPES: MagnetShape[] = [
   {
+    id: 'love',
+    name: 'Sculpted Heart',
+    price: SHAPE_PRICES.love,
+    dimensions: '10.0 × 10.0 cm',
+    description: 'A beautifully contoured, soft heart layout that looks like sculpted glass rather than a cliché. Ideal for anniversaries, couples, and pets.',
+    shapeClass: 'shape-heart border border-white/40',
+    frameRatio: 'aspect-square',
+    tagline: 'Romantic & Cozy (K10)'
+  },
+  {
     id: 'circle',
     name: 'Minimal Circle',
     price: SHAPE_PRICES.circle,
@@ -21,16 +31,6 @@ export const BASE_SHAPES: MagnetShape[] = [
     shapeClass: 'shape-polaroid border border-white/50 bg-white/90 p-3 pt-3 pb-8 text-black shadow-md',
     frameRatio: 'aspect-[4/5]',
     tagline: 'Retro Nostalgia (K1)'
-  },
-  {
-    id: 'love',
-    name: 'Sculpted Heart',
-    price: SHAPE_PRICES.love,
-    dimensions: '10.0 × 10.0 cm',
-    description: 'A beautifully contoured, soft heart layout that looks like sculpted glass rather than a cliché. Ideal for anniversaries, couples, and pets.',
-    shapeClass: 'shape-heart border border-white/40',
-    frameRatio: 'aspect-square',
-    tagline: 'Romantic & Cozy (K10)'
   },
   {
     id: 'scalloped-stand',
