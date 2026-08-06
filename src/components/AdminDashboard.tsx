@@ -3,7 +3,7 @@ import {
   ArrowLeft, RefreshCw, Printer, CheckCircle, 
   Trash2, ShieldCheck, Truck, ShoppingBag, 
   ExternalLink, Calendar, Phone, Mail, MapPin, 
-  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp
+  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp, Ticket
 } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import { jsPDF } from 'jspdf';
@@ -499,6 +499,59 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [catalogForm, setCatalogForm] = useState<any | null>(null);
 
+  // Dedicated Main Tab Navigation
+  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'coupons' | 'shiprocket' | 'analytics'>('orders');
+  const [couponsList, setCouponsList] = useState<any[]>([]);
+  const [newCouponForm, setNewCouponForm] = useState({ code: '', type: 'percent', value: 10, label: 'Special Discount', minOrderValue: 0 });
+
+  const fetchCoupons = async () => {
+    try {
+      const res = await fetch('/api/admin/coupons', { headers: { Authorization: `Bearer ${adminToken}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setCouponsList(data.coupons || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch coupons", e);
+    }
+  };
+
+  const saveCoupon = async (coupon: any) => {
+    try {
+      const res = await fetch('/api/admin/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify(coupon)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchCoupons();
+        setNewCouponForm({ code: '', type: 'percent', value: 10, label: 'Special Discount', minOrderValue: 0 });
+        setActionLog(prev => [`[${new Date().toLocaleTimeString()}] 🎟️ Coupon ${coupon.code} saved to database`, ...prev]);
+      } else {
+        alert(data.error || 'Failed to save coupon');
+      }
+    } catch (e: any) {
+      alert('Failed to save coupon: ' + e.message);
+    }
+  };
+
+  const deleteCoupon = async (code: string) => {
+    if (!confirm(`Delete coupon code ${code}?`)) return;
+    try {
+      const res = await fetch(`/api/admin/coupons/${code}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      if (res.ok) {
+        await fetchCoupons();
+        setActionLog(prev => [`[${new Date().toLocaleTimeString()}] 🗑️ Coupon ${code} deleted`, ...prev]);
+      }
+    } catch (e: any) {
+      alert('Failed to delete coupon: ' + e.message);
+    }
+  };
+
   // Fetch active database orders
   const fetchOrders = async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -585,6 +638,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   useEffect(() => {
     fetchOrders();
     fetchProducts();
+    fetchCoupons();
 
     // Live Real-time Auto Polling every 8 seconds
     const interval = setInterval(() => {
@@ -776,20 +830,6 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setIsAnalyticsOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/30 transition-all cursor-pointer"
-            >
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span>Business Intelligence</span>
-            </button>
-            <button
-              onClick={() => setIsCatalogOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#E8DCCF]/20 border border-[#E8DCCF]/40 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-[#E8DCCF] hover:bg-[#E8DCCF]/30 transition-all cursor-pointer"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Catalog & Prices</span>
-            </button>
-            <button
               onClick={() => fetchOrders()}
               disabled={isLoading}
               className="flex items-center gap-2 px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-white transition-all cursor-pointer hover:bg-neutral-800"
@@ -803,479 +843,349 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             </span>
           </div>
         </div>
+
+        {/* --- DEDICATED 5-MODULE ADMIN SYSTEM NAVIGATION BAR --- */}
+        <div className="bg-neutral-900 border-t border-neutral-800 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto gap-2 py-2.5 font-mono text-xs font-bold uppercase tracking-wider">
+            <button
+              onClick={() => setAdminTab('orders')}
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'orders' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Box className="h-4 w-4 text-emerald-600" />
+              <span>📦 Orders Pipeline ({orders.length})</span>
+            </button>
+
+            <button
+              onClick={() => setAdminTab('products')}
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'products' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span>🛍️ Products & Size Prices ({productsList.length})</span>
+            </button>
+
+            <button
+              onClick={() => setAdminTab('coupons')}
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'coupons' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Ticket className="h-4 w-4 text-purple-400" />
+              <span>🎟️ Promo Coupons ({couponsList.length})</span>
+            </button>
+
+            <button
+              onClick={() => setAdminTab('shiprocket')}
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'shiprocket' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Truck className="h-4 w-4 text-blue-400" />
+              <span>🚚 Shiprocket Logistics</span>
+            </button>
+
+            <button
+              onClick={() => setAdminTab('analytics')}
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
+        adminTab === 'analytics' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4 text-emerald-400" />
+              <span>📊 Executive Analytics</span>
+            </button>
+          </div>
+        </div>
       </header>
 
       {/* Main CMS Layout Grid */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 grow grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 grow text-left w-full">
         
-        {/* Left Column: Orders Pipeline (7 cols) */}
-        <div className="lg:col-span-7 space-y-6 flex flex-col h-full min-h-[70vh]">
-          
-          {/* Header Stats & Pipeline Filter bar */}
-          <div className="bg-white rounded-3xl border border-neutral-200/60 p-5 shadow-sm space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-neutral-100">
-              <h3 className="font-sans text-xs font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-2">
-                <Box className="h-4 w-4 text-[#c0a88a]" />
-                <span>Active Print Pipelines</span>
-              </h3>
-              <span className="font-mono text-xs font-bold bg-neutral-100 px-3 py-1 rounded-full text-neutral-700">
-                {orders.length} Registered
-              </span>
+        {/* TAB 1: 📦 ORDERS & FULFILLMENT PIPELINE */}
+        {adminTab === 'orders' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left Column: Orders Pipeline (7 cols) */}
+            <div className="lg:col-span-7 space-y-6 flex flex-col h-full min-h-[70vh]">
+              {/* Header Stats & Pipeline Filter bar */}
+              <div className="bg-white rounded-3xl border border-neutral-200/60 p-5 shadow-sm space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-neutral-100">
+                  <h3 className="font-sans text-xs font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-2">
+                    <Box className="h-4 w-4 text-[#c0a88a]" />
+                    <span>Active Print Pipelines</span>
+                  </h3>
+                  <span className="font-mono text-xs font-bold bg-neutral-100 px-3 py-1 rounded-full text-neutral-700">
+                    {orders.length} Registered
+                  </span>
+                </div>
+
+                {/* Quick Filter Pill Buttons */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {['Pending', 'All', 'Paid', 'Processing', 'Printing', 'Quality Check', 'Packed', 'Shipped'].map((filter) => {
+                    const count = filter === 'All' 
+                      ? orders.length 
+                      : filter === 'Pending'
+                        ? orders.filter(o => o.status !== 'Shipped').length
+                        : orders.filter(o => o.status === filter).length;
+                    const isSelected = activeFilter === filter;
+                    return (
+                      <button
+                        key={filter}
+                        onClick={() => setActiveFilter(filter)}
+                        className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono tracking-wider uppercase font-bold border transition-all cursor-pointer ${
+                          isSelected 
+                            ? 'bg-[#111111] text-white border-[#111111]' 
+                            : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                        }`}
+                      >
+                        {filter} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Orders List Viewport */}
+              <div className="space-y-4 grow">
+                {isLoading ? (
+                  <div className="bg-white rounded-3xl border border-neutral-200 p-12 text-center flex flex-col items-center justify-center space-y-3">
+                    <div className="animate-spin h-8 w-8 rounded-full border-2 border-[#111111] border-t-transparent" />
+                    <p className="font-serif italic text-sm text-neutral-500">Retrieving secure orders registry...</p>
+                  </div>
+                ) : filteredOrders.length === 0 ? (
+                  <div className="bg-white rounded-3xl border border-neutral-200 p-12 text-center text-neutral-500 space-y-2">
+                    <ShoppingBag className="h-8 w-8 mx-auto text-neutral-300" />
+                    <h4 className="font-serif text-base font-light text-neutral-800">No active orders found</h4>
+                    <p className="text-xs text-neutral-400 font-light">There are currently no orders in the "{activeFilter}" category pipeline.</p>
+                  </div>
+                ) : (
+                  filteredOrders.map((order) => {
+                    const isSelected = selectedOrder && selectedOrder.id === order.id;
+                    const itemQuantityTotal = order.cart.reduce((acc: number, item: any) => acc + (parseInt(item.quantity) || 1), 0);
+                    const firstInitial = order.shippingDetails.fullName ? order.shippingDetails.fullName.charAt(0).toUpperCase() : 'C';
+                    
+                    return (
+                      <div 
+                        key={order.id}
+                        onClick={() => setSelectedOrder(order)}
+                        className={`bg-white rounded-2xl border transition-all p-4 shadow-sm cursor-pointer hover:border-neutral-400 relative overflow-hidden flex flex-col space-y-3 ${
+                          isSelected ? 'ring-2 ring-black border-transparent bg-neutral-50/50' : 'border-neutral-200/80'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center gap-2">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-neutral-100 border border-neutral-300 flex items-center justify-center font-serif text-xs font-bold text-neutral-800">
+                              {firstInitial}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs font-bold text-neutral-900">{order.id}</span>
+                                <span className="text-[10px] text-neutral-400 font-mono">
+                                  {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <p className="text-xs font-medium text-neutral-600">{order.shippingDetails.fullName}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono border uppercase ${getStatusColor(order.status)}`}>
+                              {order.status}
+                            </span>
+                            <span className="font-mono text-xs font-bold text-neutral-900">₹{order.grandTotal}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
 
-            {/* Quick Filter Pill Buttons */}
-            <div className="flex flex-wrap gap-2 pt-1">
-              {['Pending', 'All', 'Paid', 'Processing', 'Printing', 'Quality Check', 'Packed', 'Shipped'].map((filter) => {
-                const count = filter === 'All' 
-                  ? orders.length 
-                  : filter === 'Pending'
-                    ? orders.filter(o => o.status !== 'Shipped').length
-                    : orders.filter(o => o.status === filter).length;
-                const isSelected = activeFilter === filter;
+            {/* Right Column: Order Details Drawer & Notification Feed (5 cols) */}
+            <div className="lg:col-span-5 space-y-6 flex flex-col h-full">
+              {selectedOrder ? (
+                <div className="bg-white rounded-3xl border border-neutral-200/80 p-6 shadow-sm space-y-6 text-left">
+                  <div className="flex justify-between items-start border-b border-neutral-100 pb-4">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">SELECTED FULFILLMENT DOSSIER</span>
+                      <h4 className="font-mono text-lg font-bold text-neutral-900 mt-0.5">{selectedOrder.id}</h4>
+                    </div>
+                    <button
+                      onClick={() => handleVoidOrder(selectedOrder.id)}
+                      className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 p-2 rounded-xl text-xs font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
+                      title="Void/Delete Order Record"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>Void Order</span>
+                    </button>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
+                      className="px-3 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <Printer className="h-3 w-3 text-[#E8DCCF]" />
+                      <span>4x6 Photo Sheet</span>
+                    </button>
+                    <button
+                      onClick={() => setIsPrintTaxInvoiceOpen(selectedOrder)}
+                      className="px-3 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <FileText className="h-3 w-3" />
+                      <span>GST Invoice</span>
+                    </button>
+                    <button
+                      onClick={() => setIsPrintShippingLabelOpen(selectedOrder)}
+                      className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <Truck className="h-3 w-3" />
+                      <span>Ship Label</span>
+                    </button>
+                  </div>
+
+                  {/* Order Lifecycle Progress Buttons */}
+                  <div className="space-y-2 pt-2 border-t border-neutral-100">
+                    <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block font-bold">LIFECYCLE STATUS (AUTOSENDS WHATSAPP/EMAIL/SMS)</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Order received', 'Payment success', 'Printing started', 'Packed', 'Shipped', 'Delivered'].map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => handleUpdateStatus(selectedOrder.id, st, `Status updated to ${st}`)}
+                          className={`px-3 py-2 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer border transition-all ${
+                            selectedOrder.status === st 
+                              ? 'bg-neutral-900 text-white border-neutral-900' 
+                              : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
+                          }`}
+                        >
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-3xl border border-neutral-200/60 p-12 text-center text-neutral-500 flex flex-col justify-center items-center space-y-4 shadow-sm min-h-[40vh]">
+                  <Clipboard className="h-10 w-10 text-neutral-300" />
+                  <div className="space-y-1">
+                    <h4 className="font-serif text-base font-light text-neutral-800">Fulfillment Detail Panel</h4>
+                    <p className="text-xs text-neutral-400 font-light max-w-xs mx-auto">Select any order from the left list to view details, print 4x6 photo cutouts, GST invoices, or update status.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Notification Terminal */}
+              <div className="bg-neutral-900 text-emerald-400 rounded-3xl p-5 border border-neutral-800 text-left space-y-3 shadow-xl font-mono text-[10px] leading-relaxed">
+                <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
+                  <span className="text-[#E8DCCF] font-bold uppercase tracking-wider text-xs">📬 WHATSAPP / SMS / EMAIL LOG FEED</span>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                  </span>
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {actionLog.length === 0 ? (
+                    <p className="text-neutral-600 italic">Listening for notification dispatches...</p>
+                  ) : (
+                    actionLog.map((log, idx) => (
+                      <p key={idx} className="text-emerald-500 font-light">{log}</p>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: 🛍️ PRODUCTS & SIZE-BASED PRICE MATRIX (CMS) */}
+        {adminTab === 'products' && (
+          <div className="bg-white rounded-3xl border border-neutral-200 p-6 md:p-8 shadow-sm space-y-6">
+            <div className="flex justify-between items-center border-b border-neutral-200 pb-4">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 font-bold">RETAIL & BULK SIZE PRICING MATRIX</span>
+                <h3 className="font-serif text-2xl font-bold text-neutral-900 mt-1">Catalog & Products CMS</h3>
+              </div>
+              <button
+                onClick={() => {
+                  const newId = `custom-${Date.now()}`;
+                  saveProduct({
+                    id: newId,
+                    name: "New Custom Acrylic Magnet",
+                    price: 299,
+                    originalPrice: 429,
+                    dimensions: "8.0 × 10.0 CM",
+                    description: "Hand-polished custom acrylic photo frame.",
+                    tagline: "Custom shape frame",
+                    isTrending: true
+                  });
+                }}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-mono text-xs uppercase font-bold tracking-wider cursor-pointer shadow-sm transition flex items-center gap-1.5"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>➕ Add New Product</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {productsList.map((product) => {
+                const currentPrice = Number(product.price || 0);
+                const originalPrice = Number(product.originalPrice || currentPrice + 100);
+                const visible = Boolean(product.isTrending ?? true);
+
                 return (
-                  <button
-                    key={filter}
-                    onClick={() => setActiveFilter(filter)}
-                    className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono tracking-wider uppercase font-bold border transition-all cursor-pointer ${
-                      isSelected 
-                        ? 'bg-[#111111] text-white border-[#111111]' 
-                        : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
-                    }`}
-                  >
-                    {filter} ({count})
-                  </button>
+                  <div key={product.id} className="bg-[#FAF8F5] border border-neutral-200 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-serif text-lg font-bold text-neutral-900">{product.name}</h4>
+                        <span className="font-mono text-[9px] uppercase tracking-wider font-bold bg-neutral-200 px-2 py-0.5 rounded text-neutral-700">
+                          {product.dimensions || 'Standard'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-500 line-clamp-2">{product.description || product.tagline}</p>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-neutral-200 font-mono text-xs space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-neutral-500 text-[10px] uppercase font-bold">Standard Sale Price:</span>
+                        <span className="font-bold text-neutral-900 text-sm">₹{currentPrice}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-neutral-500 text-[10px] uppercase font-bold">MRP / Original Price:</span>
+                        <span className="text-neutral-400 line-through">₹{originalPrice}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-200">
+                      <button
+                        onClick={() => handleOpenPriceModal(product)}
+                        className="flex-1 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl font-mono text-[11px] uppercase font-bold tracking-wider cursor-pointer shadow-sm text-center"
+                      >
+                        Edit Prices & Sizes
+                      </button>
+                      <button
+                        onClick={() => saveProduct({ ...product, isTrending: !visible, price: currentPrice, originalPrice: product.originalPrice ?? originalPrice })}
+                        className={`px-3 py-2 border rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer ${
+                          visible ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                        }`}
+                      >
+                        {visible ? 'Hide' : 'Show'}
+                      </button>
+                      <button
+                        onClick={() => deleteProduct(product.id)}
+                        className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer"
+                        title="Delete Product"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 inline" />
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
           </div>
-
-          {/* Orders List Viewport */}
-          <div className="space-y-4 grow">
-            {isLoading ? (
-              <div className="bg-white rounded-3xl border border-neutral-200 p-12 text-center flex flex-col items-center justify-center space-y-3">
-                <div className="animate-spin h-8 w-8 rounded-full border-2 border-[#111111] border-t-transparent" />
-                <p className="font-serif italic text-sm text-neutral-500">Retrieving secure orders registry...</p>
-              </div>
-            ) : filteredOrders.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-neutral-200 p-12 text-center text-neutral-500 space-y-2">
-                <ShoppingBag className="h-8 w-8 mx-auto text-neutral-300" />
-                <h4 className="font-serif text-base font-light text-neutral-800">No active orders found</h4>
-                <p className="text-xs text-neutral-400 font-light">There are currently no orders in the "{activeFilter}" category pipeline.</p>
-              </div>
-            ) : (
-              filteredOrders.map((order) => {
-                const isSelected = selectedOrder && selectedOrder.id === order.id;
-                const itemQuantityTotal = order.cart.reduce((acc: number, item: any) => acc + (parseInt(item.quantity) || 1), 0);
-                const firstInitial = order.shippingDetails.fullName ? order.shippingDetails.fullName.charAt(0).toUpperCase() : 'C';
-                
-                return (
-                  <div 
-                    key={order.id}
-                    onClick={() => setSelectedOrder(order)}
-                    className={`bg-white rounded-2xl border transition-all p-4 shadow-sm cursor-pointer hover:border-neutral-400 relative overflow-hidden flex flex-col space-y-3 ${
-                      isSelected ? 'ring-2 ring-black border-transparent bg-neutral-50/50' : 'border-neutral-200/80'
-                    }`}
-                  >
-                    {/* Header: Customer Avatar + Order ID + Badges */}
-                    <div className="flex justify-between items-center gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-neutral-900 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
-                          {firstInitial}
-                        </div>
-                        <div>
-                          <h4 className="font-sans font-bold text-xs text-neutral-900 leading-tight">
-                            {order.shippingDetails.fullName}
-                          </h4>
-                          <span className="font-mono text-[10px] text-neutral-400 select-all">{order.id}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-md">
-                          PREPAID
-                        </span>
-                        <span className={`text-[9px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Middle: Thumbnails + Item Count + Grand Total */}
-                    <div className="flex items-center justify-between bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
-                      <div className="flex items-center gap-1.5">
-                        {order.cart.slice(0, 3).map((item: any, idx: number) => (
-                          <div key={item.id || idx} className="h-9 w-9 rounded-lg bg-white overflow-hidden border border-neutral-200 shrink-0 relative shadow-2xs">
-                            <img src={item.previewUrl} alt="Thumbnail" className="h-full w-full object-cover" />
-                            <span className="absolute bottom-0 right-0 bg-black/80 text-white text-[7px] px-0.5 font-mono">x{item.quantity}</span>
-                          </div>
-                        ))}
-                        {order.cart.length > 3 && (
-                          <span className="text-[10px] text-neutral-500 font-mono pl-1">+{order.cart.length - 3} more</span>
-                        )}
-                      </div>
-
-                      <div className="text-right font-mono">
-                        <span className="text-[10px] text-neutral-400 block uppercase">{itemQuantityTotal} Item(s)</span>
-                        <span className="text-sm font-bold text-neutral-900">₹{order.grandTotal}</span>
-                      </div>
-                    </div>
-
-                    {/* Footer: Primary Action Button + Icons */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 font-mono text-[10px]" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-neutral-400 text-[9px] uppercase">
-                        {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                      </span>
-
-                      <div className="flex items-center gap-1.5">
-                        {order.status === 'Paid' && (
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'Processing', 'Started UV printing & laser cutting.')}
-                            disabled={isUpdatingStatus === order.id}
-                            className="px-3 py-1 bg-neutral-900 hover:bg-black text-white rounded-lg font-bold uppercase tracking-wider shadow-sm transition flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>▶ Start Print</span>
-                          </button>
-                        )}
-                        {order.status === 'Processing' && (
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'Shipped', 'Handed over to express courier.')}
-                            disabled={isUpdatingStatus === order.id}
-                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold uppercase tracking-wider shadow-sm transition flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>▶ Mark Shipped</span>
-                          </button>
-                        )}
-                        {order.status === 'Shipped' && (
-                          <span className="text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                            ✓ Shipped
-                          </span>
-                        )}
-
-                        <button
-                          onClick={() => setIsPrintWorkOrderOpen(order)}
-                          className="p-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-200 rounded-lg transition cursor-pointer"
-                          title="Print 4x6 Photo Sheet"
-                        >
-                          <Printer className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setIsPrintTaxInvoiceOpen(order)}
-                          className="p-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-200 rounded-lg transition cursor-pointer"
-                          title="Print GST Invoice"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setIsPrintShippingLabelOpen(order)}
-                          className="p-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-200 rounded-lg transition cursor-pointer"
-                          title="Print Shipping Label"
-                        >
-                          <Truck className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Right Column: Order Details & Fulfillment Controller (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          
-          {selectedOrder ? (
-            <div className="bg-white rounded-3xl border border-neutral-200/60 shadow-sm overflow-hidden flex flex-col">
-              
-              {/* Selected Order Header */}
-              <div className="bg-neutral-900 text-white p-5 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-mono text-[#FAF8F5]/60 uppercase tracking-wider">SELECTED ORDER</span>
-                  <h4 className="font-mono text-sm font-bold text-[#E8DCCF]">{selectedOrder.id}</h4>
-                </div>
-                <button 
-                  onClick={() => setSelectedOrder(null)}
-                  className="p-1 hover:bg-white/10 rounded-full transition-colors text-white cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Order Body Details */}
-              <div className="p-5 space-y-6 overflow-y-auto max-h-[80vh] text-xs">
-                
-                {/* 1. Fulfillment Controller Flow */}
-                <div className="space-y-3.5 p-4 bg-[#FAF8F5] border border-neutral-200 rounded-2xl">
-                  <h5 className="font-mono text-[10px] text-neutral-500 uppercase tracking-wider font-bold">1. STEP-BY-STEP WORKFLOW CONTROLLER</h5>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Order received', 'Order payload received & logged.')}
-                      disabled={selectedOrder.status === 'Order received'}
-                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        selectedOrder.status === 'Order received'
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
-                      }`}
-                    >
-                      <Clipboard className="h-3.5 w-3.5" />
-                      <span>1. Received</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Payment success', 'Prepaid payment verified.')}
-                      disabled={selectedOrder.status === 'Payment success' || selectedOrder.status === 'Paid'}
-                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        selectedOrder.status === 'Payment success' || selectedOrder.status === 'Paid'
-                          ? 'bg-emerald-600 border-emerald-600 text-white'
-                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
-                      }`}
-                    >
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      <span>2. Paid</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Printing started', 'UV printing & precision laser cutting started.')}
-                      disabled={selectedOrder.status === 'Printing started' || selectedOrder.status === 'Printing'}
-                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        selectedOrder.status === 'Printing started' || selectedOrder.status === 'Printing'
-                          ? 'bg-amber-500 border-amber-500 text-white'
-                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
-                      }`}
-                    >
-                      <Printer className="h-3.5 w-3.5" />
-                      <span>3. Printing</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Packed', 'Quality checked & packed in foam box.')}
-                      disabled={selectedOrder.status === 'Packed'}
-                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        selectedOrder.status === 'Packed'
-                          ? 'bg-orange-500 border-orange-500 text-white'
-                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
-                      }`}
-                    >
-                      <Box className="h-3.5 w-3.5" />
-                      <span>4. Packed</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Shipped', 'Handed over to courier with tracking AWB.')}
-                      disabled={selectedOrder.status === 'Shipped'}
-                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        selectedOrder.status === 'Shipped'
-                          ? 'bg-indigo-600 border-indigo-600 text-white'
-                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
-                      }`}
-                    >
-                      <Truck className="h-3.5 w-3.5" />
-                      <span>5. Shipped</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Delivered', 'Order delivered to customer address.')}
-                      disabled={selectedOrder.status === 'Delivered'}
-                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        selectedOrder.status === 'Delivered'
-                          ? 'bg-emerald-700 border-emerald-700 text-white'
-                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
-                      }`}
-                    >
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      <span>6. Delivered</span>
-                    </button>
-                  </div>
-
-                  {/* Multi-Channel Automated Notification Badge */}
-                  <div className="p-2.5 bg-white border border-neutral-200 rounded-xl text-[10px] font-mono text-neutral-600 flex items-center justify-between">
-                    <span className="font-bold text-neutral-900 uppercase">AUTOMATED ALERTS</span>
-                    <div className="flex items-center gap-2 text-[9px] font-bold">
-                      <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">💬 WhatsApp</span>
-                      <span className="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">📧 Email</span>
-                      <span className="text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">📱 SMS</span>
-                    </div>
-                  </div>
-
-                  {/* Shiprocket Sync trigger */}
-                  <div className="pt-2 border-t border-neutral-200 flex justify-between items-center gap-2">
-                    <div className="text-left">
-                      <p className="text-[10px] text-neutral-500 font-mono leading-none">COURIER DISPATCH</p>
-                      <p className="font-bold text-neutral-900 font-sans mt-1 leading-none">{selectedOrder.courierName}</p>
-                    </div>
-                    <button
-                      onClick={() => handleSyncShiprocket(selectedOrder.id)}
-                      className="px-3 py-1.5 border border-neutral-300 hover:bg-neutral-50 text-neutral-700 hover:text-black rounded-lg text-[10px] font-mono tracking-wider font-bold flex items-center gap-1 cursor-pointer transition-all"
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                      <span>Sync Shiprocket</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Dedicated 1-Click Print Operations Bar */}
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
-                    className="py-2.5 px-2 rounded-xl bg-neutral-900 hover:bg-black text-white text-[10px] font-mono tracking-wider font-bold uppercase flex flex-col items-center justify-center gap-1 cursor-pointer transition-all shadow-sm"
-                  >
-                    <Printer className="h-4 w-4 text-[#E8DCCF]" />
-                    <span>📷 Print Photo</span>
-                  </button>
-
-                  <button
-                    onClick={() => setIsPrintTaxInvoiceOpen(selectedOrder)}
-                    className="py-2.5 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[10px] font-mono tracking-wider font-bold uppercase flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
-                  >
-                    <FileText className="h-4 w-4 text-blue-600" />
-                    <span>🧾 Tax Invoice</span>
-                  </button>
-
-                  <button
-                    onClick={() => setIsPrintShippingLabelOpen(selectedOrder)}
-                    className="py-2.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-[10px] font-mono tracking-wider font-bold uppercase flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
-                  >
-                    <Truck className="h-4 w-4 text-emerald-600" />
-                    <span>🏷️ Parcel Label</span>
-                  </button>
-                </div>
-
-                {/* 3. Shipping Details Card */}
-                <div className="space-y-3.5 p-4 border border-neutral-200/80 rounded-2xl text-left">
-                  <h5 className="font-mono text-[10px] text-neutral-400 uppercase tracking-wider font-bold flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 text-[#c0a88a]" />
-                    <span>Delivery Details</span>
-                  </h5>
-                  <div className="space-y-2 font-sans">
-                    <p className="font-bold text-neutral-900 text-sm">{selectedOrder.shippingDetails.fullName}</p>
-                    
-                    <div className="space-y-1.5 text-neutral-600 leading-normal font-light">
-                      <p className="flex items-center gap-2">
-                        <Phone className="h-3 w-3 text-neutral-400 shrink-0" />
-                        <span className="select-all font-mono font-semibold">{selectedOrder.shippingDetails.phone}</span>
-                      </p>
-                      <p className="flex items-center gap-2">
-                        <Mail className="h-3 w-3 text-neutral-400 shrink-0" />
-                        <span className="select-all font-mono">{selectedOrder.shippingDetails.email}</span>
-                      </p>
-                      <p className="flex items-start gap-2 pt-1 border-t border-neutral-100">
-                        <MapPin className="h-3 w-3 text-neutral-400 shrink-0 mt-0.5" />
-                        <span className="select-all">{selectedOrder.shippingDetails.address}, {selectedOrder.shippingDetails.city}, {selectedOrder.shippingDetails.state} - <strong>{selectedOrder.shippingDetails.pincode}</strong></span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Cart Items and Print Config */}
-                <div className="space-y-3 p-4 border border-neutral-200/80 rounded-2xl text-left">
-                  <h5 className="font-mono text-[10px] text-neutral-400 uppercase tracking-wider font-bold">PRODUCTION ASSETS</h5>
-                  
-                  <div className="space-y-3.5">
-                    {selectedOrder.cart.map((item: any, idx: number) => (
-                      <div key={item.id || idx} className="flex gap-3 pb-3 border-b border-neutral-100 last:border-b-0 last:pb-0 items-start">
-                        <div className="h-12 w-12 bg-neutral-100 rounded-lg overflow-hidden border border-neutral-200 shrink-0 relative">
-                          <img src={item.previewUrl} alt="Asset" className="h-full w-full object-cover" />
-                        </div>
-                        <div className="space-y-1.5 grow leading-normal">
-                          <div className="flex justify-between font-bold text-neutral-900">
-                            <span className="font-serif italic">{item.shapeName}</span>
-                            <span>x{item.quantity}</span>
-                          </div>
-                          
-                          <div className="font-mono text-[10px] text-neutral-500 space-y-0.5">
-                            <p>📁 Filename: <span className="text-neutral-800 select-all font-bold">{item.photoName || 'web-upload-blob.png'}</span></p>
-                            <p>🔎 Scale: <span className="font-bold text-neutral-800">{Math.round((item.photoScale || 1.0) * 100)}%</span> | Pan X/Y: <span className="font-bold text-neutral-800">{Math.round(item.photoPanX || 0)}px, {Math.round(item.photoPanY || 0)}px</span></p>
-                            {item.captionText && (
-                              <p className="bg-[#FAF8F5] p-1.5 rounded text-neutral-900 border border-neutral-200 italic font-sans font-medium text-[10px]">
-                                Caption: "{item.captionText}"
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleDownloadFramedPhoto(item)}
-                                className="text-[10px] text-emerald-700 hover:underline flex items-center gap-1 font-mono font-bold cursor-pointer"
-                                title="Download fitted PNG asset"
-                              >
-                                <Download className="h-2.5 w-2.5" />
-                                <span>Fitted PNG</span>
-                              </button>
-                              <a 
-                                href={item.previewUrl} 
-                                download={item.photoName || 'raw_upload.png'}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[10px] text-neutral-400 hover:text-neutral-700 hover:underline flex items-center gap-1 font-mono"
-                                title="Download original uncropped raw file if needed"
-                              >
-                                Raw Upload
-                              </a>
-                            </div>
-                            <span className="font-mono font-bold text-neutral-900">₹{item.price * item.quantity}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 5. Order Fulfillment Timeline History */}
-                <div className="space-y-3.5 p-4 border border-neutral-200/80 rounded-2xl text-left">
-                  <h5 className="font-mono text-[10px] text-neutral-400 uppercase tracking-wider font-bold">ORDER ACTIVITY LOG</h5>
-                  <div className="space-y-3">
-                    {selectedOrder.history.map((log: any, idx: number) => (
-                      <div key={idx} className="flex gap-2.5 text-[10.5px] leading-normal relative pl-4">
-                        <div className="absolute left-1.5 top-1.5 bottom-[-14px] w-[1px] bg-neutral-200 last:hidden" />
-                        <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-neutral-200 border-2 border-white shadow-sm flex items-center justify-center shrink-0">
-                          <div className="h-1 w-1 rounded-full bg-neutral-500" />
-                        </div>
-                        <div className="space-y-0.5">
-                          <p className="font-mono text-neutral-400 font-bold">{new Date(log.timestamp).toLocaleTimeString('en-IN', { hour12: true })}</p>
-                          <p className="font-semibold text-neutral-800 font-sans">{log.status} Log entry</p>
-                          <p className="text-neutral-500 font-light italic font-serif">{log.note}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-3xl border border-neutral-200/60 p-12 text-center text-neutral-500 flex flex-col justify-center items-center space-y-4 shadow-sm min-h-[50vh]">
-              <Clipboard className="h-10 w-10 text-neutral-300" />
-              <div className="space-y-1">
-                <h4 className="font-serif text-base font-light text-neutral-800">Fulfillment Detail panel</h4>
-                <p className="text-xs text-neutral-400 font-light max-w-xs mx-auto">Select any order from the active pipeline list to view high-res print files, edit stages, sync logistics, or print labels.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Simulated SMS/Email Notification dispatcher terminal (Live Log Feed) */}
-          <div className="bg-neutral-900 text-emerald-400 rounded-3xl p-5 border border-neutral-800 text-left space-y-3 shadow-xl font-mono text-[10px] leading-relaxed">
-            <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
-              <span className="text-[#E8DCCF] font-bold uppercase tracking-wider text-xs">📬 SMS & EMAIL NOTIFICATION FEED</span>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-              </span>
-            </div>
-
-            <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
-              {actionLog.length === 0 ? (
-                <p className="text-neutral-600 italic">Listening for live e-commerce notification dispatches...</p>
-              ) : (
-                actionLog.map((log, idx) => (
-                  <p key={idx} className="text-emerald-500 font-light">{log}</p>
-                ))
-              )}
-            </div>
-          </div>
-
-        </div>
+        )}
 
       </main>
 
