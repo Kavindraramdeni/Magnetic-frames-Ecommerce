@@ -8,9 +8,10 @@ interface FooterProps {
   onOpenPolicies?: () => void;
   onOpenTracking?: () => void;
   onOpenBlog?: () => void;
+  onOpenB2B?: () => void;
 }
 
-export default function Footer({ onOpenAdmin, onOpenPolicies, onOpenTracking, onOpenBlog }: FooterProps) {
+export default function Footer({ onOpenAdmin, onOpenPolicies, onOpenTracking, onOpenBlog, onOpenB2B }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -41,10 +42,21 @@ export default function Footer({ onOpenAdmin, onOpenPolicies, onOpenTracking, on
               <li>
                 <button 
                   onClick={() => {
+                    if (onOpenB2B) onOpenB2B();
+                    else window.location.hash = 'b2b';
+                  }} 
+                  className="hover:text-white transition-colors text-amber-400 font-mono text-[11px] font-bold uppercase cursor-pointer block"
+                >
+                  💼 B2B Wholesale Portal (MOQ 5+)
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => {
                     if (onOpenBlog) onOpenBlog();
                     else window.location.hash = 'blog';
                   }} 
-                  className="hover:text-white transition-colors text-emerald-400 font-mono text-[11px] font-bold uppercase cursor-pointer"
+                  className="hover:text-white transition-colors text-emerald-400 font-mono text-[11px] font-bold uppercase cursor-pointer block"
                 >
                   📖 SEO Gifting & Design Guides
                 </button>

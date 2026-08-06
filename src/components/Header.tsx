@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, MessageSquare, Menu, X, Heart, Sparkle, ShoppingBag } from 'lucide-react';
+import { Sparkles, MessageSquare, Menu, X, Heart, Sparkle, ShoppingBag, Building2 } from 'lucide-react';
 
 import BrandLogo from './BrandLogo';
 
@@ -10,6 +10,7 @@ interface HeaderProps {
   cartItemsCount?: number;
   onOpenCart?: () => void;
   onOpenBulkModal?: () => void;
+  onOpenB2B?: () => void;
 }
 
 export default function Header({ 
@@ -18,7 +19,8 @@ export default function Header({
   onScrollToShapes,
   cartItemsCount = 0,
   onOpenCart,
-  onOpenBulkModal
+  onOpenBulkModal,
+  onOpenB2B
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -43,7 +45,7 @@ export default function Header({
         </div>
 
         {/* Desktop Navigation with Animated Underline Micro-interactions */}
-        <nav className="hidden md:flex items-center gap-8 font-sans text-xs tracking-widest font-semibold text-[#555555]">
+        <nav className="hidden md:flex items-center gap-6 font-sans text-xs tracking-widest font-semibold text-[#555555]">
           <button 
             onClick={onScrollToShapes}
             className="relative py-2 hover:text-black transition-colors duration-200 cursor-pointer uppercase after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-neutral-900 after:transition-all after:duration-300"
@@ -57,10 +59,10 @@ export default function Header({
             LIFESTYLE INSPIRATION
           </button>
           <button 
-            onClick={onOpenBulkModal}
-            className="relative py-2 text-amber-900 hover:text-amber-950 font-bold tracking-wider transition-colors duration-200 cursor-pointer uppercase flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full border border-amber-300/80 hover:bg-amber-100"
+            onClick={onOpenB2B}
+            className="relative text-emerald-950 font-bold tracking-wider transition-colors duration-200 cursor-pointer uppercase flex items-center gap-1.5 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-300/90 hover:bg-emerald-100 shadow-2xs"
           >
-            🎁 CORPORATE & WEDDING (100+)
+            💼 B2B WHOLESALE (MOQ 5+)
           </button>
         </nav>
 
@@ -138,16 +140,16 @@ export default function Header({
             >
               SPECIFICATIONS
             </a>
-            <a
-              href="https://wa.me/919392576792?text=Hi! I'm interested in bulk orders for KRIA Studio."
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => setIsMenuOpen(false)}
-              className="text-left py-2 hover:text-black border-b border-neutral-100 uppercase flex items-center justify-between"
+            <button
+              onClick={() => {
+                if (onOpenB2B) onOpenB2B();
+                setIsMenuOpen(false);
+              }}
+              className="text-left py-2 text-emerald-950 font-bold border-b border-neutral-100 uppercase flex items-center justify-between bg-emerald-50 px-3 rounded-lg"
             >
-              BULK ORDERS
-              <MessageSquare className="h-4 w-4 text-[#B09A84]" />
-            </a>
+              💼 B2B WHOLESALE (MOQ 5+)
+              <Building2 className="h-4 w-4 text-emerald-700" />
+            </button>
             
             <button
               onClick={() => {

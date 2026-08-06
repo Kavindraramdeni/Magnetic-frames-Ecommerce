@@ -14,6 +14,7 @@ import CartDrawer from './components/CartDrawer';
 import BulkCorporateModal from './components/BulkCorporateModal';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BlogSection from './components/BlogSection';
+import WholesaleB2BPage from './components/WholesaleB2BPage';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem } from './types';
 import { BASE_SHAPES } from './data';
@@ -77,7 +78,7 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'policies' | 'tracking' | 'blog'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'policies' | 'tracking' | 'blog' | 'b2b'>('home');
   const [adminToken, setAdminToken] = useState<string>('');
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
@@ -272,6 +273,48 @@ export default function App() {
 
 
 
+  if (currentView === 'b2b') {
+    return (
+      <>
+        <WholesaleB2BPage
+          onBackToHome={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setCurrentView('home');
+          }}
+          onAddToCart={(item: CartItem) => {
+            setCart((prev: CartItem[]) => {
+              const existingIndex = prev.findIndex((x) => x.id === item.id);
+              if (existingIndex > -1) {
+                const updated = [...prev];
+                updated[existingIndex].quantity += item.quantity;
+                return updated;
+              }
+              return [...prev, item];
+            });
+          }}
+          onOpenCart={() => setIsCartOpen(true)}
+          cartCount={cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
+        />
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          cart={cart}
+          onUpdateQuantity={handleUpdateQuantity}
+          onRemoveItem={handleRemoveItem}
+          onClearCart={handleClearCart}
+          onProceedToCheckout={() => {
+            setIsCartOpen(false);
+            setCurrentView('home');
+            setIsCheckoutOpen(true);
+            setTimeout(() => {
+              scrollToCustomizer();
+            }, 100);
+          }}
+        />
+      </>
+    );
+  }
+
   if (currentView === 'tracking') {
     return <OrderTrackingView onBackToHome={() => setCurrentView('home')} />;
   }
@@ -357,6 +400,7 @@ export default function App() {
         cartItemsCount={cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenBulkModal={() => setIsBulkModalOpen(true)}
+        onOpenB2B={() => setCurrentView('b2b')}
       />
 
       {/* Hero Header Banner */}
@@ -438,7 +482,7 @@ export default function App() {
         const data = await response.json();
         setAdminToken(data.token);
         setCurrentView('admin');
-      }} onOpenPolicies={() => setCurrentView('policies')} onOpenTracking={() => setCurrentView('tracking')} onOpenBlog={() => setCurrentView('blog')} />
+      }} onOpenPolicies={() => setCurrentView('policies')} onOpenTracking={() => setCurrentView('tracking')} onOpenBlog={() => setCurrentView('blog')} onOpenB2B={() => setCurrentView('b2b')} />
 
       {/* Floating Automated WhatsApp Support Widget */}
       <WhatsAppWidget
