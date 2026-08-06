@@ -3,7 +3,7 @@ import {
   ArrowLeft, RefreshCw, Printer, CheckCircle, 
   Trash2, ShieldCheck, Truck, ShoppingBag, 
   ExternalLink, Calendar, Phone, Mail, MapPin, 
-  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp, Ticket
+  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp, Ticket, Building2
 } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import { jsPDF } from 'jspdf';
@@ -500,9 +500,52 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [catalogForm, setCatalogForm] = useState<any | null>(null);
 
   // Dedicated Main Tab Navigation
-  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'coupons' | 'shiprocket' | 'analytics'>('orders');
+  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'coupons' | 'shiprocket' | 'analytics' | 'settings'>('orders');
   const [couponsList, setCouponsList] = useState<any[]>([]);
   const [newCouponForm, setNewCouponForm] = useState({ code: '', type: 'percent', value: 10, label: 'Special Discount', minOrderValue: 0 });
+
+  const [businessSettings, setBusinessSettings] = useState<any>({
+    company_name: 'KRIA STUDIO PRIVATE LIMITED',
+    gstin: '36AAAFK7892P1Z0',
+    support_email: 'kriatechgroup@gmail.com',
+    support_phone: '+91 93925 76792',
+    bank_name: 'HDFC Bank Ltd',
+    account_no: '50200084920194',
+    ifsc: 'HDFC0001294',
+    upi_id: '9392576792@ybl'
+  });
+
+  const [warehouseForm, setWarehouseForm] = useState<any>({
+    name: 'KRIA Studio Central Warehouse',
+    address1: 'Jubilee Tech Zone, Phase II',
+    address2: 'Kukatpally Industrial Area',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    pincode: '500085',
+    gstin: '36AAAFK7892P1Z0',
+    phone: '+91 93925 76792',
+    email: 'kriatechgroup@gmail.com',
+    shiprocket_pickup_name: 'Primary_Hyderabad_500085'
+  });
+
+  const fetchSettingsAndWarehouse = async () => {
+    try {
+      const sRes = await fetch('/api/settings');
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (sData) setBusinessSettings((prev: any) => ({ ...prev, ...sData }));
+      }
+      const wRes = await fetch('/api/warehouses');
+      if (wRes.ok) {
+        const wData = await wRes.json();
+        if (Array.isArray(wData) && wData.length > 0) {
+          setWarehouseForm(wData[0]);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch settings/warehouse', e);
+    }
+  };
 
   const fetchCoupons = async () => {
     try {
@@ -639,6 +682,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     fetchOrders();
     fetchProducts();
     fetchCoupons();
+    fetchSettingsAndWarehouse();
 
     // Live Real-time Auto Polling every 8 seconds
     const interval = setInterval(() => {
@@ -685,6 +729,100 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
       }
     } catch (e: any) {
       alert('Error updating status: ' + e.message);
+    } finally {
+      setIsUpdatingStatus(null);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify(businessSettings)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionLog(prev => [`[${new Date().toLocaleTimeString()}] ⚙️ Store Business Settings saved to database`, ...prev]);
+        alert('Business settings updated successfully!');
+      } else {
+        alert(data.error || 'Failed to save settings');
+      }
+    } catch (err: any) {
+      alert('Error saving settings: ' + err.message);
+    }
+  };
+
+  const handleSaveWarehouse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/warehouses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify(warehouseForm)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionLog(prev => [`[${new Date().toLocaleTimeString()}] 🏢 Warehouse details saved. Pickup Pincode: ${warehouseForm.pincode}`, ...prev]);
+        alert('Warehouse details updated successfully!');
+      } else {
+        alert(data.error || 'Failed to save warehouse');
+      }
+    } catch (err: any) {
+      alert('Error saving warehouse: ' + err.message);
+    }
+  };
+
+  const handleCreateProductionShipment = async (orderId: string) => {
+    setIsUpdatingStatus(orderId);
+    try {
+      const res = await fetch('/api/shiprocket/create-shipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ orderId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchOrders(true);
+        setActionLog(prev => [
+          `[${new Date().toLocaleTimeString()}] 📦 Production shipment created on Shiprocket. AWB: ${data.trackingNumber}`,
+          ...prev
+        ]);
+        if (data.labelPdfUrl) {
+          window.open(data.labelPdfUrl, '_blank');
+        }
+      } else {
+        alert(data.error || 'Failed creating shipment');
+      }
+    } catch (err: any) {
+      alert('Shipment creation error: ' + err.message);
+    } finally {
+      setIsUpdatingStatus(null);
+    }
+  };
+
+  const handleScheduleCourierPickup = async (orderId: string) => {
+    setIsUpdatingStatus(orderId);
+    try {
+      const res = await fetch('/api/shiprocket/schedule-pickup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ orderId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchOrders(true);
+        setActionLog(prev => [
+          `[${new Date().toLocaleTimeString()}] 🚚 Courier pickup scheduled for Order ${orderId}.`,
+          ...prev
+        ]);
+        alert(data.message || 'Pickup scheduled successfully!');
+      } else {
+        alert(data.error || 'Failed to schedule pickup');
+      }
+    } catch (err: any) {
+      alert('Pickup scheduling error: ' + err.message);
     } finally {
       setIsUpdatingStatus(null);
     }
@@ -890,11 +1028,21 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             <button
               onClick={() => setAdminTab('analytics')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-        adminTab === 'analytics' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                adminTab === 'analytics' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
               <BarChart3 className="h-4 w-4 text-emerald-400" />
               <span>📊 Executive Analytics</span>
+            </button>
+
+            <button
+              onClick={() => setAdminTab('settings')}
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'settings' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Building2 className="h-4 w-4 text-amber-400" />
+              <span>⚙️ Settings & Warehouse</span>
             </button>
           </div>
         </div>
@@ -1184,6 +1332,199 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* TAB 6: ⚙️ BUSINESS SETTINGS & WAREHOUSE MANAGEMENT */}
+        {adminTab === 'settings' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            {/* Form 1: Business Settings Editor */}
+            <div className="bg-white rounded-3xl border border-neutral-200 p-6 md:p-8 shadow-sm space-y-6">
+              <div className="border-b border-neutral-200 pb-4">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 font-bold">STORE CONFIGURATION</span>
+                <h3 className="font-serif text-2xl font-bold text-neutral-900 mt-1">Business Credentials & Policies</h3>
+                <p className="text-xs text-neutral-500 font-mono mt-1">Updates company GSTIN, legal name, phone, bank/UPI, and policy terms saved in SQLite.</p>
+              </div>
+
+              <form onSubmit={handleSaveSettings} className="space-y-4 font-mono text-xs">
+                <div>
+                  <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Legal Company Name</label>
+                  <input
+                    type="text"
+                    value={businessSettings.company_name || ''}
+                    onChange={(e) => setBusinessSettings({ ...businessSettings, company_name: e.target.value })}
+                    className="w-full border border-neutral-300 rounded-xl px-3.5 py-2 font-sans font-semibold text-sm outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Company GSTIN</label>
+                    <input
+                      type="text"
+                      value={businessSettings.gstin || ''}
+                      onChange={(e) => setBusinessSettings({ ...businessSettings, gstin: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3.5 py-2 font-mono font-bold text-xs uppercase outline-none focus:ring-1 focus:ring-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Support Phone</label>
+                    <input
+                      type="text"
+                      value={businessSettings.support_phone || ''}
+                      onChange={(e) => setBusinessSettings({ ...businessSettings, support_phone: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3.5 py-2 font-mono font-bold text-xs outline-none focus:ring-1 focus:ring-black"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Support Email</label>
+                  <input
+                    type="email"
+                    value={businessSettings.support_email || ''}
+                    onChange={(e) => setBusinessSettings({ ...businessSettings, support_email: e.target.value })}
+                    className="w-full border border-neutral-300 rounded-xl px-3.5 py-2 font-sans text-xs outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-100">
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Bank Name</label>
+                    <input
+                      type="text"
+                      value={businessSettings.bank_name || ''}
+                      onChange={(e) => setBusinessSettings({ ...businessSettings, bank_name: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3 py-1.5 text-xs outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Account Number</label>
+                    <input
+                      type="text"
+                      value={businessSettings.account_no || ''}
+                      onChange={(e) => setBusinessSettings({ ...businessSettings, account_no: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3 py-1.5 text-xs outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">IFSC Code</label>
+                    <input
+                      type="text"
+                      value={businessSettings.ifsc || ''}
+                      onChange={(e) => setBusinessSettings({ ...businessSettings, ifsc: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3 py-1.5 text-xs outline-none uppercase"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">UPI VPA ID</label>
+                    <input
+                      type="text"
+                      value={businessSettings.upi_id || ''}
+                      onChange={(e) => setBusinessSettings({ ...businessSettings, upi_id: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3 py-1.5 text-xs outline-none"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-neutral-900 hover:bg-black text-white font-mono font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow-md transition cursor-pointer"
+                >
+                  Save Business Credentials
+                </button>
+              </form>
+            </div>
+
+            {/* Form 2: Warehouse Location Editor */}
+            <div className="bg-white rounded-3xl border border-neutral-200 p-6 md:p-8 shadow-sm space-y-6">
+              <div className="border-b border-neutral-200 pb-4">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-600 font-bold">DISPATCH & LOGISTICS</span>
+                <h3 className="font-serif text-2xl font-bold text-neutral-900 mt-1">Warehouse & Return Address</h3>
+                <p className="text-xs text-neutral-500 font-mono mt-1">Controls return-to-sender labels, GST invoice origin, and Shiprocket pickup location.</p>
+              </div>
+
+              <form onSubmit={handleSaveWarehouse} className="space-y-4 font-mono text-xs">
+                <div>
+                  <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Warehouse Name</label>
+                  <input
+                    type="text"
+                    value={warehouseForm.name || ''}
+                    onChange={(e) => setWarehouseForm({ ...warehouseForm, name: e.target.value })}
+                    className="w-full border border-neutral-300 rounded-xl px-3.5 py-2 font-sans font-semibold text-sm outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Address Line 1</label>
+                  <input
+                    type="text"
+                    value={warehouseForm.address1 || ''}
+                    onChange={(e) => setWarehouseForm({ ...warehouseForm, address1: e.target.value })}
+                    className="w-full border border-neutral-300 rounded-xl px-3.5 py-2 font-sans text-xs outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Address Line 2 (Optional)</label>
+                  <input
+                    type="text"
+                    value={warehouseForm.address2 || ''}
+                    onChange={(e) => setWarehouseForm({ ...warehouseForm, address2: e.target.value })}
+                    className="w-full border border-neutral-300 rounded-xl px-3.5 py-2 font-sans text-xs outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">City</label>
+                    <input
+                      type="text"
+                      value={warehouseForm.city || ''}
+                      onChange={(e) => setWarehouseForm({ ...warehouseForm, city: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3 py-1.5 font-bold text-xs outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">State</label>
+                    <input
+                      type="text"
+                      value={warehouseForm.state || ''}
+                      onChange={(e) => setWarehouseForm({ ...warehouseForm, state: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3 py-1.5 font-bold text-xs outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Pickup Pincode</label>
+                    <input
+                      type="text"
+                      value={warehouseForm.pincode || ''}
+                      onChange={(e) => setWarehouseForm({ ...warehouseForm, pincode: e.target.value })}
+                      className="w-full border border-neutral-300 rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-1 focus:ring-black"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-neutral-700 font-bold uppercase text-[10px] mb-1">Shiprocket Pickup Location ID / Name</label>
+                  <input
+                    type="text"
+                    value={warehouseForm.shiprocket_pickup_name || ''}
+                    onChange={(e) => setWarehouseForm({ ...warehouseForm, shiprocket_pickup_name: e.target.value })}
+                    className="w-full border border-neutral-300 rounded-xl px-3.5 py-2 font-mono text-xs font-bold text-blue-900 bg-blue-50 outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-mono font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow-md transition cursor-pointer"
+                >
+                  Save Warehouse Address
+                </button>
+              </form>
+            </div>
+
           </div>
         )}
 
