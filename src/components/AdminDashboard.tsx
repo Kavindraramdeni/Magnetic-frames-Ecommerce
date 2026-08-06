@@ -1510,39 +1510,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               </div>
             </div>
 
-              {/* 4 Core B2B Shape Collections */}
-              <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-4 font-mono text-xs">
-                <div className="border-b border-neutral-200 pb-3">
-                  <span className="text-[10px] uppercase font-bold text-purple-600">B2B SHAPE CATALOG</span>
-                  <h4 className="font-serif text-lg font-bold text-neutral-900 mt-0.5">4 Bulk B2B Frame Collections</h4>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1">
-                    <p className="font-bold text-neutral-900 text-sm">Minimal Circle</p>
-                    <p className="text-neutral-500 text-[10px]">Shape ID: `circle`</p>
-                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] rounded font-bold uppercase">All 5 Sizes</span>
-                  </div>
-
-                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1">
-                    <p className="font-bold text-neutral-900 text-sm">Sculpted Heart</p>
-                    <p className="text-neutral-500 text-[10px]">Shape ID: `heart`</p>
-                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] rounded font-bold uppercase">All 5 Sizes</span>
-                  </div>
-
-                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1">
-                    <p className="font-bold text-neutral-900 text-sm">Arch Curve</p>
-                    <p className="text-neutral-500 text-[10px]">Shape ID: `arch`</p>
-                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] rounded font-bold uppercase">All 5 Sizes</span>
-                  </div>
-
-                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1">
-                    <p className="font-bold text-neutral-900 text-sm">Polaroid Set</p>
-                    <p className="text-neutral-500 text-[10px]">Shape ID: `polaroid`</p>
-                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] rounded font-bold uppercase">All 5 Sizes</span>
-                  </div>
-                </div>
-              </div>
 
           </div>
         )}
