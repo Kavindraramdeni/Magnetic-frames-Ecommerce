@@ -1987,32 +1987,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 />
               </div>
 
-              {/* Size Variations Price Matrix Editor */}
-              <div className="p-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl space-y-2 text-xs font-mono">
-                <p className="font-bold text-neutral-900 uppercase text-[10px] tracking-wider">SIZE VARIATION PRICES (OVERRIDE BY SIZE)</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[9px] text-neutral-500 block font-bold">2" Mini (₹)</label>
-                    <input type="number" defaultValue={199} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
-                  </div>
-                  <div>
-                    <label className="text-[9px] text-neutral-500 block font-bold">3" Classic (₹)</label>
-                    <input type="number" defaultValue={299} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
-                  </div>
-                  <div>
-                    <label className="text-[9px] text-neutral-500 block font-bold">4" Deluxe (₹)</label>
-                    <input type="number" defaultValue={349} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
-                  </div>
-                  <div>
-                    <label className="text-[9px] text-neutral-500 block font-bold">4x6" Grande (₹)</label>
-                    <input type="number" defaultValue={449} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-[9px] text-neutral-500 block font-bold">8x12" Jumbo B2B (₹)</label>
-                    <input type="number" defaultValue={749} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
-                  </div>
-                </div>
-              </div>
+
 
               {editPriceForm.originalPrice > editPriceForm.price && editPriceForm.originalPrice > 0 && (
                 <div className="bg-emerald-50 text-emerald-800 text-xs font-mono font-bold px-3.5 py-2 rounded-xl border border-emerald-200 flex justify-between items-center">
