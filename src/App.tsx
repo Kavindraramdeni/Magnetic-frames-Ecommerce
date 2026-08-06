@@ -15,7 +15,6 @@ import BulkCorporateModal from './components/BulkCorporateModal';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BlogSection from './components/BlogSection';
 import WholesaleB2BPage from './components/WholesaleB2BPage';
-import InHouseManufacturerSection from './components/InHouseManufacturerSection';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem } from './types';
 import { BASE_SHAPES } from './data';
@@ -425,9 +424,6 @@ export default function App() {
           <ShapeShowcase onSelectShape={handleSelectShapeToCustomize} />
         </SectionWrapper>
       </div>
-
-      {/* In-House Acrylic Manufacturing & Easy 4-Step Installation Banner */}
-      <InHouseManufacturerSection />
 
       {/* Futuristic Interactive Live Customizer Workspace */}
       <div ref={customizerRef}>
