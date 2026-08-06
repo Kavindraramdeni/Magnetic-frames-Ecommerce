@@ -1350,7 +1350,9 @@ app.post("/api/shiprocket/create-shipment", requireAdmin, async (req, res) => {
             name: `${item.shapeName} Acrylic Magnet`,
             sku: `KRIA-${item.shapeId}`,
             units: item.quantity,
-            selling_price: item.price
+            selling_price: item.price,
+            hsn: "39269099",
+            tax: 18
           })),
           payment_method: "Prepaid",
           sub_total: order.subtotal || order.grandTotal,
