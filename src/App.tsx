@@ -15,7 +15,6 @@ import BulkCorporateModal from './components/BulkCorporateModal';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BlogSection from './components/BlogSection';
 import WholesaleB2BPage from './components/WholesaleB2BPage';
-import ProductExcellenceShowcase from './components/ProductExcellenceShowcase';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem } from './types';
 import { BASE_SHAPES } from './data';
@@ -425,9 +424,6 @@ export default function App() {
           <ShapeShowcase onSelectShape={handleSelectShapeToCustomize} />
         </SectionWrapper>
       </div>
-
-      {/* Product Excellence Banners: Every Memory Deserves a Place, 4-Step Installation, Made to Last, Multi-Surface Use */}
-      <ProductExcellenceShowcase onScrollToShapes={() => shapesRef.current?.scrollIntoView({ behavior: 'smooth' })} />
 
       {/* Futuristic Interactive Live Customizer Workspace */}
       <div ref={customizerRef}>
