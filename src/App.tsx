@@ -15,6 +15,7 @@ import BulkCorporateModal from './components/BulkCorporateModal';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BlogSection from './components/BlogSection';
 import WholesaleB2BPage from './components/WholesaleB2BPage';
+import InHouseManufacturerSection from './components/InHouseManufacturerSection';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem } from './types';
 import { BASE_SHAPES } from './data';
@@ -425,6 +426,9 @@ export default function App() {
         </SectionWrapper>
       </div>
 
+      {/* In-House Acrylic Manufacturing & Easy 4-Step Installation Banner */}
+      <InHouseManufacturerSection />
+
       {/* Futuristic Interactive Live Customizer Workspace */}
       <div ref={customizerRef}>
         <SectionWrapper 
@@ -493,8 +497,8 @@ export default function App() {
         }}
       />
 
-      {/* Floating Global Shopping Cart Trigger */}
-      <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-40">
+      {/* Floating Global Shopping Cart Trigger - Positioned cleanly to the left of WhatsApp button */}
+      <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-60 z-40">
         <button
           onClick={() => setIsCartOpen(true)}
           aria-label="Open Shopping Cart"
