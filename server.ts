@@ -158,6 +158,26 @@ db.exec(`
   );
 `);
 
+// Seed default high-converting promo coupons if table is fresh
+try {
+  const couponCount = (db.prepare("SELECT COUNT(*) as count FROM coupons").get() as any)?.count || 0;
+  if (couponCount === 0) {
+    const defaultCoupons = [
+      { code: 'WELCOME10', type: 'percent', value: 10, label: 'Welcome 10% Discount', min_order_value: 0 },
+      { code: 'KRIA15', type: 'percent', value: 15, label: 'Special 15% Studio Offer', min_order_value: 999 },
+      { code: 'FLAT100', type: 'flat', value: 100, label: 'Flat ₹100 OFF Savings', min_order_value: 499 },
+      { code: 'VIP20', type: 'percent', value: 20, label: 'VIP Executive 20% Discount', min_order_value: 1499 }
+    ];
+    const insertCouponStmt = db.prepare(`
+      INSERT INTO coupons (code, type, value, label, min_order_value, is_active, created_at)
+      VALUES (?, ?, ?, ?, ?, 1, ?)
+    `);
+    for (const c of defaultCoupons) {
+      insertCouponStmt.run(c.code, c.type, c.value, c.label, c.min_order_value, new Date().toISOString());
+    }
+  }
+} catch (e) {}
+
 // Initial seed for primary warehouse (Exact PDF Address)
 try {
   db.prepare(`INSERT OR REPLACE INTO warehouses (id, name, address1, address2, city, state, pincode, gstin, phone, email, shiprocket_pickup_name, is_default, created_at)

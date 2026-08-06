@@ -1622,7 +1622,238 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
           </div>
         )}
 
-        {/* TAB 6: ⚙️ BUSINESS SETTINGS & WAREHOUSE MANAGEMENT */}
+        {/* TAB 4: 🎟️ PROMO COUPONS CMS */}
+        {adminTab === 'coupons' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Form: Create New Coupon (5 cols) */}
+            <div className="lg:col-span-5 bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-6">
+              <div className="border-b border-[#202738] pb-4">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">DISCOUNT ENGINE</span>
+                <h3 className="font-serif text-xl font-bold text-white mt-1">Create Promo Coupon</h3>
+                <p className="text-xs text-neutral-400 font-mono mt-1">Add discount codes for checkout promotions.</p>
+              </div>
+
+              <form onSubmit={(e) => { e.preventDefault(); saveCoupon(newCouponForm); }} className="space-y-4 font-mono text-xs">
+                <div>
+                  <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Coupon Code</label>
+                  <input
+                    type="text"
+                    value={newCouponForm.code}
+                    onChange={(e) => setNewCouponForm({ ...newCouponForm, code: e.target.value.toUpperCase() })}
+                    placeholder="e.g. FESTIVE20"
+                    required
+                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3.5 py-2.5 font-mono font-bold text-sm text-[#F3E5AB] outline-none focus:border-[#D4AF37]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Discount Type</label>
+                    <select
+                      value={newCouponForm.type}
+                      onChange={(e) => setNewCouponForm({ ...newCouponForm, type: e.target.value as any })}
+                      className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#D4AF37]"
+                    >
+                      <option value="percent">Percentage (%)</option>
+                      <option value="flat">Flat Amount (₹)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Discount Value</label>
+                    <input
+                      type="number"
+                      value={newCouponForm.value}
+                      onChange={(e) => setNewCouponForm({ ...newCouponForm, value: Number(e.target.value) })}
+                      placeholder="e.g. 15 or 100"
+                      required
+                      className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#D4AF37]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Promo Label / Name</label>
+                  <input
+                    type="text"
+                    value={newCouponForm.label}
+                    onChange={(e) => setNewCouponForm({ ...newCouponForm, label: e.target.value })}
+                    placeholder="e.g. Festival Special Offer"
+                    required
+                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#D4AF37]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Min Order Amount (₹)</label>
+                  <input
+                    type="number"
+                    value={newCouponForm.minOrderValue}
+                    onChange={(e) => setNewCouponForm({ ...newCouponForm, minOrderValue: Number(e.target.value) })}
+                    placeholder="0 for no minimum"
+                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#D4AF37]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black font-mono font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-lg transition"
+                >
+                  ➕ Save Promo Coupon
+                </button>
+              </form>
+            </div>
+
+            {/* List: Active Coupons (7 cols) */}
+            <div className="lg:col-span-7 bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-4">
+              <div className="flex justify-between items-center pb-3 border-b border-[#202738]">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">DATABASE REGISTRY</span>
+                  <h3 className="font-serif text-xl font-bold text-white mt-0.5">Active Promo Coupons</h3>
+                </div>
+                <span className="font-mono text-xs font-bold bg-[#1C2333] border border-[#2D3852] px-3 py-1 rounded-full text-[#D4AF37]">
+                  {couponsList.length} Active
+                </span>
+              </div>
+
+              {couponsList.length === 0 ? (
+                <div className="p-8 text-center text-neutral-400 font-mono text-xs">
+                  No coupons found in database. Create one using the form on the left.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {couponsList.map((c) => (
+                    <div key={c.code} className="bg-[#0A0C10] border border-[#22283A] rounded-2xl p-4 flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold text-[#F3E5AB] bg-[#1C2333] px-2.5 py-0.5 rounded border border-[#2D3852]">
+                            {c.code}
+                          </span>
+                          <span className="text-xs font-bold text-emerald-400 font-mono">
+                            {c.type === 'percent' ? `${c.value}% OFF` : `₹${c.value} OFF`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-300 font-medium">{c.label}</p>
+                        <p className="text-[10px] font-mono text-neutral-500">Min Order: ₹{c.minOrderValue || 0}</p>
+                      </div>
+
+                      <button
+                        onClick={() => deleteCoupon(c.code)}
+                        className="text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 p-2 rounded-xl text-xs font-mono font-bold uppercase transition border border-rose-900/40"
+                        title="Delete Coupon"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: 🚚 SHIPROCKET LOGISTICS & SERVICEABILITY TESTER */}
+        {adminTab === 'shiprocket' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-6 bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-5">
+              <div className="border-b border-[#202738] pb-4">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">PRODUCTION COURIER GATEWAY</span>
+                <h3 className="font-serif text-xl font-bold text-white mt-1">Shiprocket Logistics Setup</h3>
+                <p className="text-xs text-neutral-400 font-mono mt-1">Central Warehouse & Live Webhook Configuration</p>
+              </div>
+
+              <div className="space-y-4 font-mono text-xs">
+                <div className="bg-[#0A0C10] border border-[#22283A] rounded-2xl p-4 space-y-2">
+                  <span className="text-[10px] text-neutral-400 uppercase font-bold block">CENTRAL PICKUP WAREHOUSE</span>
+                  <div className="text-sm font-bold text-white">Primary_Hyderabad_500085</div>
+                  <div className="text-xs text-neutral-300">Shop no 9, Mallikarjuna Towers, Radha Krishna Rd, Venkata Ramana Colony, KPHB 9th Phase, Hyderabad - 500085</div>
+                  <div className="text-xs text-[#D4AF37]">GSTIN: 36AAAFK7892P1Z0 | Phone: 9392576792</div>
+                </div>
+
+                <div className="bg-[#0A0C10] border border-[#22283A] rounded-2xl p-4 space-y-2">
+                  <span className="text-[10px] text-neutral-400 uppercase font-bold block">WEBHOOK ENDPOINT</span>
+                  <div className="text-xs font-bold text-emerald-400 break-all">https://kriatech.in/api/webhooks/courier-tracking</div>
+                  <div className="text-[10px] text-neutral-400">Pushes real-time shipment status updates directly to customer tracking page.</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6 bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-5">
+              <div className="border-b border-[#202738] pb-4">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">PINCODE AUDITOR</span>
+                <h3 className="font-serif text-xl font-bold text-white mt-1">Live Serviceability Tester</h3>
+                <p className="text-xs text-neutral-400 font-mono mt-1">Test pincode serviceability, courier rates, and estimated delivery dates.</p>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const pincodeInput = (e.currentTarget.elements.namedItem('pincode') as HTMLInputElement).value;
+                try {
+                  const res = await fetch('/api/admin/shipping-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ deliveryPincode: pincodeInput })
+                  });
+                  const data = await res.json();
+                  alert(`Pincode: ${pincodeInput}\nServiceable: ${data.serviceable ? 'YES ✅' : 'NO ❌'}\nCourier: ${data.carrierName || 'N/A'}\nETD: ${data.deliveryEstimate || 'N/A'}\nRate: ₹${data.shippingRate || 0}`);
+                } catch (err: any) {
+                  alert("Error: " + err.message);
+                }
+              }} className="space-y-4 font-mono text-xs">
+                <div>
+                  <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Destination Pincode</label>
+                  <input
+                    type="text"
+                    name="pincode"
+                    placeholder="e.g. 500085, 400001, 110001"
+                    required
+                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3.5 py-2.5 font-mono text-sm text-white outline-none focus:border-[#D4AF37]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-[#1C2333] hover:bg-[#252E44] text-[#D4AF37] border border-[#2D3852] font-mono font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition shadow-md"
+                >
+                  🔍 Run Live Pincode Serviceability Audit
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: 📊 EXECUTIVE ANALYTICS & BI */}
+        {adminTab === 'analytics' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 space-y-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-bold">TOTAL STORE REVENUE</span>
+                <div className="font-mono text-3xl font-bold text-[#F3E5AB]">
+                  ₹{orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0)}
+                </div>
+                <p className="text-[10px] font-mono text-emerald-400">Across {orders.length} total orders</p>
+              </div>
+
+              <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 space-y-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-bold">AVERAGE ORDER VALUE (AOV)</span>
+                <div className="font-mono text-3xl font-bold text-white">
+                  ₹{orders.length > 0 ? Math.round(orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0) / orders.length) : 0}
+                </div>
+                <p className="text-[10px] font-mono text-neutral-400">Per customer checkout</p>
+              </div>
+
+              <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 space-y-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-bold">FULFILLMENT DISPATCH RATE</span>
+                <div className="font-mono text-3xl font-bold text-emerald-400">
+                  {orders.length > 0 ? `${Math.round((shippedCount / orders.length) * 100)}%` : '100%'}
+                </div>
+                <p className="text-[10px] font-mono text-neutral-400">{shippedCount} shipped / {orders.length} orders</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: ⚙️ BUSINESS SETTINGS & WAREHOUSE MANAGEMENT */}
         {adminTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
