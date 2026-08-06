@@ -1255,6 +1255,16 @@ app.all(["/api/shiprocket/courier/invoice", "/shiprocket/courier/invoice", "/api
   }
 });
 
+app.get("/api/webhooks/razorpay", (_req, res) => {
+  return res.status(200).json({
+    status: "Active",
+    endpoint: "/api/webhooks/razorpay",
+    provider: "Razorpay Payment Gateway Webhook Listener",
+    method: "POST",
+    message: "KRIA TECH Webhook Listener is Live & Ready to receive payment events."
+  });
+});
+
 app.post("/api/webhooks/razorpay", async (req, res) => {
   const webhookSecret = (process.env.RAZORPAY_WEBHOOK_SECRET || "kria-webhook-secret-2026").trim();
   const signature = req.headers["x-razorpay-signature"];
