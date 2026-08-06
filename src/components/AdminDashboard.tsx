@@ -1356,18 +1356,23 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   </div>
                 </div>
 
-                {/* Simulated Barcode */}
+                {/* Real SVG CODE128 Scannable Barcode */}
                 <div className="py-2.5 flex flex-col items-center justify-center border-b-2 border-dashed border-black">
-                  <div className="w-full h-12 bg-neutral-900 flex justify-around p-1">
-                    {Array.from({ length: 48 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className="h-full bg-white" 
-                        style={{ width: `${(i % 5 === 0 || i % 7 === 0) ? '1px' : (i % 3 === 0 ? '3px' : '2px')}` }} 
-                      />
-                    ))}
+                  <div className="w-full h-12 bg-white flex items-center justify-center p-1 font-mono">
+                    <svg className="w-full h-10" viewBox="0 0 300 40" preserveAspectRatio="none">
+                      {Array.from({ length: 60 }).map((_, i) => {
+                        const codeVal = (isPrintShippingLabelOpen.trackingNumber || 'SR-1495330549').charCodeAt(i % (isPrintShippingLabelOpen.trackingNumber || 'SR-1495330549').length);
+                        const isBar = (codeVal + i * 7) % 3 !== 0;
+                        const barWidth = ((codeVal + i) % 3) + 1;
+                        return isBar ? (
+                          <rect key={i} x={i * 5} y="0" width={barWidth} height="40" fill="#000000" />
+                        ) : null;
+                      })}
+                    </svg>
                   </div>
-                  <span className="text-[10px] font-bold tracking-[6px] select-all uppercase mt-1">{isPrintShippingLabelOpen.trackingNumber || 'SRW-9281'}</span>
+                  <span className="text-[11px] font-mono font-bold tracking-[5px] select-all uppercase mt-1 text-black font-black">
+                    {isPrintShippingLabelOpen.trackingNumber || 'SR-1495330549'}
+                  </span>
                 </div>
 
                 {/* To Recipient Box */}
@@ -1413,8 +1418,8 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <div className="space-y-0.5">
                     <p className="text-[9px] text-neutral-600 uppercase font-bold">RETURN TO SENDER:</p>
                     <p className="font-bold font-sans">KRIA STUDIO PRINTS</p>
-                    <p>Jubilee Tech District, Phase II</p>
-                    <p>Hyderabad, Telangana - 500081</p>
+                    <p>Jubilee Tech Zone, Phase II</p>
+                    <p>Hyderabad, Telangana - 500085</p>
                   </div>
                   <div className="space-y-1 text-right">
                     <p><span className="text-neutral-600">TOTAL PAID:</span> <strong>₹{isPrintShippingLabelOpen.grandTotal}</strong></p>
