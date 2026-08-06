@@ -79,6 +79,18 @@ db.exec(`
     accepted_policies INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS shipping_quotes (
+    id TEXT PRIMARY KEY,
+    order_id TEXT,
+    destination_pin TEXT NOT NULL,
+    courier_name TEXT NOT NULL,
+    rate REAL NOT NULL,
+    etd TEXT NOT NULL,
+    serviceable INTEGER NOT NULL,
+    response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_shipping_quotes_pin ON shipping_quotes(destination_pin);
   CREATE TABLE IF NOT EXISTS payment_events (
     id TEXT PRIMARY KEY,
     provider TEXT NOT NULL,
@@ -1054,6 +1066,74 @@ const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.R
 app.post("/api/checkout/verify-payment", verifyCheckoutPaymentHandler);
 app.post("/api/orders/confirm", verifyCheckoutPaymentHandler);
 
+function saveShippingQuote(quote: {
+  id?: string;
+  orderId?: string;
+  destinationPin: string;
+  courierName: string;
+  rate: number;
+  etd: string;
+  serviceable: boolean;
+  responseJson: any;
+}) {
+  try {
+    const id = quote.id || `quote_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+    db.prepare(`
+      INSERT INTO shipping_quotes (id, order_id, destination_pin, courier_name, rate, etd, serviceable, response_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      quote.orderId || null,
+      quote.destinationPin,
+      quote.courierName,
+      quote.rate,
+      quote.etd,
+      quote.serviceable ? 1 : 0,
+      JSON.stringify(quote.responseJson),
+      new Date().toISOString()
+    );
+  } catch (e) {
+    console.error("Failed to save shipping quote:", e);
+  }
+}
+
+app.post("/api/admin/shipping-test", requireAdmin, async (req, res) => {
+  const startTime = Date.now();
+  const { pincode = "500085", weight = 0.25 } = req.body || {};
+  const token = await getShiprocketToken();
+  if (!token) return res.status(400).json({ error: "Shiprocket credentials not configured or login failed." });
+
+  try {
+    const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE || "500085";
+    const response = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/serviceability/?pickup_pincode=${pickupPincode}&delivery_pincode=${pincode}&weight=${weight}&cod=0`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const latencyMs = Date.now() - startTime;
+    const data: any = await response.json();
+
+    const couriers = data.data?.available_courier_companies || [];
+    const cheapest = couriers.length > 0 ? couriers.reduce((prev: any, curr: any) => (prev.rate < curr.rate ? prev : curr)) : null;
+
+    return res.json({
+      latencyMs,
+      serviceable: couriers.length > 0,
+      availableCouriersCount: couriers.length,
+      cheapestCourier: cheapest ? {
+        id: cheapest.courier_company_id,
+        name: cheapest.courier_name,
+        rate: cheapest.rate,
+        etd: cheapest.etd || cheapest.estimated_delivery_days,
+        cod: cheapest.cod,
+        isSurface: cheapest.is_surface,
+        isAir: cheapest.is_air
+      } : null,
+      rawResponse: data
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/api/shiprocket/check-serviceability", async (req, res) => {
   const { pincode, weight = 0.25 } = req.body || {};
   const cleanPin = String(pincode || "").trim().replace(/\D/g, "");
@@ -1109,7 +1189,7 @@ app.post("/api/shiprocket/check-serviceability", async (req, res) => {
             const etdRaw = cheapest.etd || cheapest.estimated_delivery_days || cheapest.etd_hours;
             const parsedDays = etdRaw ? (parseInt(String(etdRaw).replace(/\D/g, ''), 10) || 3) : 3;
             
-            return res.json({
+            const result = {
               serviceable: true,
               pincode: cleanPin,
               estimatedDays: parsedDays,
@@ -1118,7 +1198,18 @@ app.post("/api/shiprocket/check-serviceability", async (req, res) => {
               region: postalInfo ? postalInfo.locationName : (data.data.city || "India"),
               availableCouriersCount: data.data.available_courier_companies.length,
               isReal: true
+            };
+
+            saveShippingQuote({
+              destinationPin: cleanPin,
+              courierName: result.courierName,
+              rate: result.shippingCost,
+              etd: `${parsedDays} Days`,
+              serviceable: true,
+              responseJson: data
             });
+
+            return res.json(result);
           } else {
             return res.json({
               serviceable: false,
