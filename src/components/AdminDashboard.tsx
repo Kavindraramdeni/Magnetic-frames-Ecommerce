@@ -504,13 +504,53 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [couponsList, setCouponsList] = useState<any[]>([]);
   const [newCouponForm, setNewCouponForm] = useState({ code: '', type: 'percent', value: 10, label: 'Special Discount', minOrderValue: 0 });
 
-  const [b2bSizePrices, setB2bSizePrices] = useState({
-    mini: 199,      // 2" Mini
-    classic: 299,   // 3" Classic
-    deluxe: 349,    // 4" Deluxe
-    grande: 449,    // 4x6" Grande
-    jumbo: 749      // 8x12" Jumbo B2B
-  });
+  const [b2bProducts, setB2bProducts] = useState([
+    {
+      id: 'b2b-rectangle',
+      name: 'Rectangle Magnet',
+      code: 'Rctgl-8x12',
+      moq: 5,
+      sizes: [
+        { label: '3.5x2.5"', price: 40 },
+        { label: '4x3"', price: 65 },
+        { label: '4x6"', price: 120 },
+        { label: '8x12"', price: 299 }
+      ]
+    },
+    {
+      id: 'b2b-round',
+      name: 'Round Magnet',
+      code: 'RND-4',
+      moq: 5,
+      sizes: [
+        { label: '2"', price: 33 },
+        { label: '3"', price: 55 },
+        { label: '4"', price: 85 }
+      ]
+    },
+    {
+      id: 'b2b-square',
+      name: 'Square Magnet',
+      code: 'SQR-4',
+      moq: 5,
+      sizes: [
+        { label: '2x2"', price: 40 },
+        { label: '3x3"', price: 60 },
+        { label: '4x4"', price: 90 }
+      ]
+    },
+    {
+      id: 'b2b-heart',
+      name: 'Heart Magnet',
+      code: 'HRT-4',
+      moq: 5,
+      sizes: [
+        { label: '2"', price: 52 },
+        { label: '3"', price: 75 },
+        { label: '4"', price: 110 }
+      ]
+    }
+  ]);
 
   const [b2bTiers, setB2bTiers] = useState([
     { minQty: 5, maxQty: 10, discountPercent: 10, label: '5-10 Frames (10% OFF)' },
@@ -1371,120 +1411,104 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               </div>
             </div>
 
-            {/* B2B 5-Size Base Price Matrix Editor */}
+            {/* B2B 4-Product Size Matrix Price Editor */}
             <div className="bg-white rounded-3xl border border-neutral-200 p-6 md:p-8 shadow-sm space-y-6">
               <div className="border-b border-neutral-200 pb-4 flex justify-between items-center">
                 <div>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 font-bold">SIZE MATRIX PRICES</span>
-                  <h4 className="font-serif text-xl font-bold text-neutral-900 mt-0.5">5 Standard Frame Sizes (Base Unit Prices)</h4>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 font-bold">PER-PRODUCT & PER-SIZE B2B PRICES</span>
+                  <h4 className="font-serif text-xl font-bold text-neutral-900 mt-0.5">4 Bulk B2B Products (Editable Size Base Prices)</h4>
                 </div>
                 <button
-                  onClick={() => alert("Wholesale size base prices updated across B2B customizer!")}
+                  onClick={() => {
+                    setActionLog(prev => [`[${new Date().toLocaleTimeString()}] 🏢 B2B size prices updated for all 4 product collections`, ...prev]);
+                    alert("Wholesale per-size product prices updated successfully!");
+                  }}
                   className="px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer"
                 >
-                  Save B2B Size Prices
+                  Save All B2B Prices
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 font-mono text-xs">
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
-                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">2" MINI FRAME</span>
-                  <p className="text-xs text-neutral-400">Pocket & Laptop Magnet</p>
-                  <div className="flex items-center gap-1 pt-1">
-                    <span className="font-bold text-sm">₹</span>
-                    <input
-                      type="number"
-                      value={b2bSizePrices.mini}
-                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, mini: Number(e.target.value) })}
-                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
-                    />
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-xs">
+                {b2bProducts.map((prod, pIdx) => (
+                  <div key={prod.id} className="p-5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-4">
+                    <div className="flex justify-between items-center border-b border-neutral-200 pb-2">
+                      <div>
+                        <h5 className="font-bold text-neutral-900 text-sm font-sans">{prod.name}</h5>
+                        <p className="text-neutral-500 text-[10px]">Code: {prod.code} | MOQ: {prod.moq} pcs</p>
+                      </div>
+                      <span className="px-2.5 py-1 bg-neutral-900 text-white rounded-md text-[10px] font-bold">
+                        {prod.sizes.length} Sizes
+                      </span>
+                    </div>
 
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
-                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">3" CLASSIC FRAME</span>
-                  <p className="text-xs text-neutral-400">Standard Fridge Magnet</p>
-                  <div className="flex items-center gap-1 pt-1">
-                    <span className="font-bold text-sm">₹</span>
-                    <input
-                      type="number"
-                      value={b2bSizePrices.classic}
-                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, classic: Number(e.target.value) })}
-                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      {prod.sizes.map((s, sIdx) => (
+                        <div key={sIdx} className="bg-white p-2.5 rounded-xl border border-neutral-200 space-y-1">
+                          <span className="text-[9px] text-neutral-500 font-bold uppercase block">{s.label} Size</span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-bold text-neutral-700">₹</span>
+                            <input
+                              type="number"
+                              value={s.price}
+                              onChange={(e) => {
+                                const newP = Number(e.target.value);
+                                setB2bProducts(prev => prev.map((p, pI) => {
+                                  if (pI !== pIdx) return p;
+                                  const newSizes = [...p.sizes];
+                                  newSizes[sIdx] = { ...newSizes[sIdx], price: newP };
+                                  return { ...p, sizes: newSizes };
+                                }));
+                              }}
+                              className="w-full border border-neutral-300 rounded px-2 py-1 font-bold text-xs outline-none focus:ring-1 focus:ring-black"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
-                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">4" DELUXE FRAME</span>
-                  <p className="text-xs text-neutral-400">Premium Desk Magnet</p>
-                  <div className="flex items-center gap-1 pt-1">
-                    <span className="font-bold text-sm">₹</span>
-                    <input
-                      type="number"
-                      value={b2bSizePrices.deluxe}
-                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, deluxe: Number(e.target.value) })}
-                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
-                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">4x6" GRANDE FRAME</span>
-                  <p className="text-xs text-neutral-400">Glossy Portrait Cutout</p>
-                  <div className="flex items-center gap-1 pt-1">
-                    <span className="font-bold text-sm">₹</span>
-                    <input
-                      type="number"
-                      value={b2bSizePrices.grande}
-                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, grande: Number(e.target.value) })}
-                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
-                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">8x12" JUMBO B2B</span>
-                  <p className="text-xs text-neutral-400">Corporate Award Frame</p>
-                  <div className="flex items-center gap-1 pt-1">
-                    <span className="font-bold text-sm">₹</span>
-                    <input
-                      type="number"
-                      value={b2bSizePrices.jumbo}
-                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, jumbo: Number(e.target.value) })}
-                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
-                    />
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* B2B Tiered Volume Discounts & 4 B2B Product Shapes */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
-              {/* Tiered Bulk Volume Discounts */}
-              <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-4 font-mono text-xs">
-                <div className="border-b border-neutral-200 pb-3">
-                  <span className="text-[10px] uppercase font-bold text-blue-600">VOLUME TIER DISCOUNTS</span>
-                  <h4 className="font-serif text-lg font-bold text-neutral-900 mt-0.5">B2B Quantity Discount Tiers</h4>
+            {/* B2B Tiered Volume Discounts Editor */}
+            <div className="bg-white rounded-3xl border border-neutral-200 p-6 md:p-8 shadow-sm space-y-6 font-mono text-xs">
+              <div className="border-b border-neutral-200 pb-3 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-blue-600">VOLUME TIER DISCOUNTS (CRUD)</span>
+                  <h4 className="font-serif text-lg font-bold text-neutral-900 mt-0.5">Quantity Discount Tier Rates</h4>
                 </div>
+                <button
+                  onClick={() => alert("B2B Quantity Discount Tiers saved!")}
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer"
+                >
+                  Save Volume Tiers
+                </button>
+              </div>
 
-                <div className="space-y-3">
-                  {b2bTiers.map((tier, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200">
-                      <div>
-                        <p className="font-bold text-neutral-900 text-sm">{tier.label}</p>
-                        <p className="text-neutral-500 text-[10px]">Min Qty: {tier.minQty} units</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-lg text-xs">
-                          {tier.discountPercent}% OFF
-                        </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {b2bTiers.map((tier, idx) => (
+                  <div key={idx} className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase block">{tier.label}</span>
+                    <div className="flex justify-between items-center gap-2 pt-1">
+                      <span className="text-[10px] text-neutral-500">Discount:</span>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={tier.discountPercent}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setB2bTiers(prev => prev.map((t, i) => i === idx ? { ...t, discountPercent: val } : t));
+                          }}
+                          className="w-16 bg-white border border-neutral-300 rounded px-2 py-1 font-bold text-xs text-right outline-none"
+                        />
+                        <span className="font-bold text-emerald-700">% OFF</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
+            </div>
 
               {/* 4 Core B2B Shape Collections */}
               <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-4 font-mono text-xs">
@@ -1519,8 +1543,6 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   </div>
                 </div>
               </div>
-
-            </div>
 
           </div>
         )}
