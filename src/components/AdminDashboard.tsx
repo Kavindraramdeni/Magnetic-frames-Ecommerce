@@ -974,50 +974,55 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const shippedCount = orders.filter(o => o.status === 'Shipped').length;
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-neutral-900 flex flex-col font-sans antialiased pb-20 select-none">
+    <div className="min-h-screen bg-[#0F1012] text-neutral-100 flex flex-col font-sans antialiased pb-20 select-none">
       
-      {/* CMS Luxury Header */}
-      <header className="bg-[#111111] text-white border-b border-neutral-800 sticky top-0 z-30 shadow-lg">
+      {/* LUXURY EXECUTIVE OPERATIONAL TERMINAL HEADER */}
+      <header className="bg-[#0A0B0D] text-white border-b border-[#262830] sticky top-0 z-30 shadow-2xl backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
               onClick={onBackToHome}
-              className="p-2 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-[#E8DCCF] transition-all cursor-pointer"
-              title="Return to Studio Design Workspace"
+              className="p-2 hover:bg-[#1A1C23] rounded-full text-neutral-400 hover:text-[#D4AF37] transition-all cursor-pointer border border-transparent hover:border-[#383324]"
+              title="Return to Studio Storefront Workspace"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-3">
-              <BrandLogo size={32} color="#E8DCCF" />
+              <BrandLogo size={34} color="#D4AF37" />
               <div>
-                <h1 className="font-serif text-xl font-light text-white tracking-wide">
-                  KRIA <span className="italic font-serif font-semibold text-[#E8DCCF]">Fulfillment CMS</span>
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-serif text-xl font-light text-white tracking-wide">
+                    KRIA <span className="italic font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#F3E5AB] via-[#D4AF37] to-[#AA7C11]">STUDIO</span>
+                  </h1>
+                  <span className="px-2 py-0.5 bg-[#262010] border border-[#524420] text-[#E8DCCF] text-[9px] font-mono font-bold rounded-full uppercase tracking-wider">
+                    EXECUTIVE OS
+                  </span>
+                </div>
                 <p className="text-[10px] font-mono text-neutral-400 tracking-widest uppercase">Factory Operations Terminal</p>
               </div>
             </div>
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="hidden xl:flex items-center gap-4 border-l border-r border-neutral-800 px-6 font-mono text-xs">
+          <div className="hidden xl:flex items-center gap-4 border-l border-r border-[#262830] px-6 font-mono text-xs">
             <div>
-              <span className="text-[9px] text-neutral-400 block uppercase">TODAY'S REVENUE</span>
-              <span className="font-bold text-[#E8DCCF]">₹{todayRevenue}</span>
+              <span className="text-[9px] text-neutral-400 block uppercase tracking-wider font-bold">TODAY'S REVENUE</span>
+              <span className="font-bold text-[#F3E5AB] text-sm">₹{todayRevenue}</span>
             </div>
-            <div className="h-6 w-px bg-neutral-800" />
+            <div className="h-6 w-px bg-[#262830]" />
             <div>
-              <span className="text-[9px] text-neutral-400 block uppercase">ORDERS</span>
-              <span className="font-bold text-white">{todayOrders.length}</span>
+              <span className="text-[9px] text-neutral-400 block uppercase tracking-wider font-bold">ORDERS</span>
+              <span className="font-bold text-white text-sm">{todayOrders.length}</span>
             </div>
-            <div className="h-6 w-px bg-neutral-800" />
+            <div className="h-6 w-px bg-[#262830]" />
             <div>
-              <span className="text-[9px] text-amber-400 block uppercase">PENDING</span>
-              <span className="font-bold text-amber-300">{pendingCount}</span>
+              <span className="text-[9px] text-amber-400 block uppercase tracking-wider font-bold">PENDING QUEUE</span>
+              <span className="font-bold text-amber-300 text-sm">{pendingCount}</span>
             </div>
-            <div className="h-6 w-px bg-neutral-800" />
+            <div className="h-6 w-px bg-[#262830]" />
             <div>
-              <span className="text-[9px] text-emerald-400 block uppercase">SHIPPED</span>
-              <span className="font-bold text-emerald-300">{shippedCount}</span>
+              <span className="text-[9px] text-emerald-400 block uppercase tracking-wider font-bold">DISPATCHED</span>
+              <span className="font-bold text-emerald-300 text-sm">{shippedCount}</span>
             </div>
           </div>
 
@@ -1025,89 +1030,89 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             <button
               onClick={() => fetchOrders()}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-white transition-all cursor-pointer hover:bg-neutral-800"
+              className="flex items-center gap-2 px-4 py-2 bg-[#16181F] border border-[#2B2E3B] rounded-full text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-white transition-all cursor-pointer hover:bg-[#20232E] hover:border-[#424759]"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-[#c0a88a]' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-[#D4AF37]' : ''}`} />
               <span>Refresh</span>
             </button>
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] font-mono font-bold uppercase text-emerald-400">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] font-mono font-bold uppercase text-emerald-400 shadow-inner">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              Live Sync 8s
+              ENGINE LIVE
             </span>
           </div>
         </div>
 
-        {/* --- DEDICATED 5-MODULE ADMIN SYSTEM NAVIGATION BAR --- */}
-        <div className="bg-neutral-900 border-t border-neutral-800 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto gap-2 py-2.5 font-mono text-xs font-bold uppercase tracking-wider">
+        {/* --- DEDICATED EXECUTIVE ADMIN NAVIGATION BAR --- */}
+        <div className="bg-[#121317] border-t border-[#262830] text-white shadow-inner">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto gap-2 py-2.5 font-mono text-xs font-bold uppercase tracking-wider no-scrollbar">
             <button
               onClick={() => setAdminTab('orders')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'orders' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                adminTab === 'orders' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
               }`}
             >
-              <Box className="h-4 w-4 text-emerald-600" />
+              <Box className="h-4 w-4" />
               <span>📦 Orders Pipeline ({orders.length})</span>
             </button>
 
             <button
               onClick={() => setAdminTab('products')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'products' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                adminTab === 'products' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
               }`}
             >
-              <Sparkles className="h-4 w-4 text-amber-500" />
-              <span>🛍️ Products & Size Prices ({productsList.length})</span>
+              <Sparkles className="h-4 w-4" />
+              <span>🛍️ Products CMS ({productsList.length})</span>
             </button>
 
             <button
               onClick={() => setAdminTab('b2b')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'b2b' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                adminTab === 'b2b' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
               }`}
             >
-              <Building2 className="h-4 w-4 text-blue-400" />
-              <span>🏢 Wholesale B2B CMS (MOQ 5+)</span>
+              <Building2 className="h-4 w-4" />
+              <span>🏢 Wholesale B2B</span>
             </button>
 
             <button
               onClick={() => setAdminTab('coupons')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'coupons' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                adminTab === 'coupons' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
               }`}
             >
-              <Ticket className="h-4 w-4 text-purple-400" />
-              <span>🎟️ Promo Coupons ({couponsList.length})</span>
+              <Ticket className="h-4 w-4" />
+              <span>🎟️ Coupons ({couponsList.length})</span>
             </button>
 
             <button
               onClick={() => setAdminTab('shiprocket')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'shiprocket' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                adminTab === 'shiprocket' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
               }`}
             >
-              <Truck className="h-4 w-4 text-blue-400" />
+              <Truck className="h-4 w-4" />
               <span>🚚 Shiprocket Logistics</span>
             </button>
 
             <button
               onClick={() => setAdminTab('analytics')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'analytics' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                adminTab === 'analytics' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
               }`}
             >
-              <BarChart3 className="h-4 w-4 text-emerald-400" />
-              <span>📊 Executive Analytics</span>
+              <BarChart3 className="h-4 w-4" />
+              <span>📊 Analytics</span>
             </button>
 
             <button
               onClick={() => setAdminTab('settings')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'settings' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                adminTab === 'settings' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
               }`}
             >
-              <Building2 className="h-4 w-4 text-amber-400" />
-              <span>⚙️ Settings & Warehouse</span>
+              <Info className="h-4 w-4" />
+              <span>⚙️ Business Settings</span>
             </button>
           </div>
         </div>
