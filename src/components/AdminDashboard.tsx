@@ -3,7 +3,7 @@ import {
   ArrowLeft, RefreshCw, Printer, CheckCircle, 
   Trash2, ShieldCheck, Truck, ShoppingBag, 
   ExternalLink, Calendar, Phone, Mail, MapPin, 
-  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp, Ticket, Building2
+  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp, Ticket, Building2, Upload
 } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import { jsPDF } from 'jspdf';
@@ -1896,21 +1896,86 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               </div>
 
               {catalogForm && (
-                <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <input value={catalogForm.name} onChange={(e) => setCatalogForm({...catalogForm, name: e.target.value})} placeholder="Product name" className="rounded-xl border px-3 py-2 text-sm font-sans" />
-                    <input type="number" value={catalogForm.price} onChange={(e) => setCatalogForm({...catalogForm, price: Number(e.target.value)})} placeholder="Sale price (₹)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
-                    <input type="number" value={catalogForm.originalPrice} onChange={(e) => setCatalogForm({...catalogForm, originalPrice: Number(e.target.value)})} placeholder="MRP (₹)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
-                    <input value={catalogForm.dimensions} onChange={(e) => setCatalogForm({...catalogForm, dimensions: e.target.value})} placeholder="Dimensions (e.g. 8x10 CM)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
+                <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4 shadow-sm text-left">
+                  <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
+                    <h4 className="font-serif font-bold text-base text-neutral-900">
+                      {catalogForm.id?.startsWith('custom-') ? '➕ Add New Product' : '✏️ Edit Product Details & Photo'}
+                    </h4>
+                    <span className="font-mono text-[10px] text-neutral-400">ID: {catalogForm.id}</span>
                   </div>
-                  <textarea value={catalogForm.description} onChange={(e) => setCatalogForm({...catalogForm, description: e.target.value})} placeholder="Product description..." className="w-full rounded-xl border px-3 py-2 text-sm font-sans" rows={3} />
-                  <label className="flex items-center gap-2 text-sm font-sans">
-                    <input type="checkbox" checked={catalogForm.isTrending} onChange={(e) => setCatalogForm({...catalogForm, isTrending: e.target.checked})} />
+
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">Product Title</label>
+                      <input value={catalogForm.name || ''} onChange={(e) => setCatalogForm({...catalogForm, name: e.target.value})} placeholder="e.g. Luxury Heart Acrylic Magnet" className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-sans outline-none focus:ring-1 focus:ring-black" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">Dimensions</label>
+                      <input value={catalogForm.dimensions || ''} onChange={(e) => setCatalogForm({...catalogForm, dimensions: e.target.value})} placeholder="e.g. 8.0 × 10.0 CM" className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-black" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">Sale Price (₹)</label>
+                      <input type="number" value={catalogForm.price || ''} onChange={(e) => setCatalogForm({...catalogForm, price: Number(e.target.value)})} placeholder="299" className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-black" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">MRP / Strikethrough Price (₹)</label>
+                      <input type="number" value={catalogForm.originalPrice || ''} onChange={(e) => setCatalogForm({...catalogForm, originalPrice: Number(e.target.value)})} placeholder="429" className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-black" />
+                    </div>
+                  </div>
+
+                  {/* Image Upload & URL Picker Field */}
+                  <div className="space-y-2 pt-2 border-t border-neutral-100">
+                    <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500">Product Preview Image (Upload File or Paste Image URL)</label>
+                    <div className="flex items-center gap-3">
+                      {catalogForm.image ? (
+                        <img src={catalogForm.image} alt="Preview" className="w-14 h-14 object-cover rounded-xl border border-neutral-300 shadow-sm shrink-0" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center text-neutral-400 text-xs shrink-0 font-mono">No Pic</div>
+                      )}
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={catalogForm.image || ''}
+                          onChange={(e) => setCatalogForm({ ...catalogForm, image: e.target.value })}
+                          placeholder="Paste image URL (https://...)"
+                          className="w-full rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-mono outline-none focus:ring-1 focus:ring-black"
+                        />
+                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-xs font-mono font-bold cursor-pointer transition">
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>Upload Image File</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setCatalogForm(prev => ({ ...prev, image: reader.result as string }));
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">Product Description</label>
+                    <textarea value={catalogForm.description || ''} onChange={(e) => setCatalogForm({...catalogForm, description: e.target.value})} placeholder="Hand-polished acrylic magnet..." className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-sans outline-none focus:ring-1 focus:ring-black" rows={2} />
+                  </div>
+
+                  <label className="flex items-center gap-2 text-xs font-sans font-semibold text-neutral-800">
+                    <input type="checkbox" checked={Boolean(catalogForm.isTrending ?? true)} onChange={(e) => setCatalogForm({...catalogForm, isTrending: e.target.checked})} className="rounded text-black focus:ring-black" />
                     Visible in Storefront Catalog
                   </label>
-                  <div className="flex gap-2">
-                    <button onClick={() => saveProduct(catalogForm)} className="px-4 py-2 bg-neutral-900 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer">Save Changes</button>
-                    <button onClick={() => { setCatalogForm(null); setEditingProduct(null); }} className="px-4 py-2 bg-neutral-200 text-neutral-800 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer">Cancel</button>
+
+                  <div className="flex gap-2 pt-2 border-t border-neutral-100">
+                    <button onClick={() => saveProduct(catalogForm)} className="px-5 py-2.5 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer shadow-sm">Save Product</button>
+                    <button onClick={() => { setCatalogForm(null); setEditingProduct(null); }} className="px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer">Cancel</button>
                   </div>
                 </div>
               )}

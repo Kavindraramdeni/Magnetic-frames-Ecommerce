@@ -112,8 +112,12 @@ db.exec(`
     tagline TEXT NOT NULL,
     is_trending INTEGER DEFAULT 0,
     stock INTEGER DEFAULT 500,
+    image TEXT,
     created_at TEXT NOT NULL
   );
+  try {
+    db.exec("ALTER TABLE products ADD COLUMN image TEXT;");
+  } catch(e) {}
   CREATE TABLE IF NOT EXISTS reviews (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -1977,6 +1981,7 @@ app.get("/api/products", (_req, res) => {
       shapeClass: p.shape_class,
       frameRatio: p.frame_ratio,
       tagline: p.tagline,
+      image: p.image || null,
       isTrending: Boolean(p.is_trending)
     }));
     return res.json({ success: true, products: formatted });
@@ -1987,13 +1992,13 @@ app.get("/api/products", (_req, res) => {
 
 app.post("/api/admin/products", requireAdmin, (req, res) => {
   try {
-    const { id, name, price, originalPrice, dimensions, description, shapeClass, frameRatio, tagline, isTrending } = req.body;
+    const { id, name, price, originalPrice, dimensions, description, shapeClass, frameRatio, tagline, isTrending, image } = req.body;
     if (!id || !name || !price) return res.status(400).json({ error: "ID, Name, and Price are required." });
     db.prepare(`INSERT OR REPLACE INTO products
-      (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, image, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
-      id, name, price, originalPrice || null, dimensions || "Standard", description || "", shapeClass || "rounded-2xl border-2", frameRatio || "aspect-[4/5]", tagline || "Custom Product", isTrending ? 1 : 0, new Date().toISOString()
+      id, name, price, originalPrice || null, dimensions || "Standard", description || "", shapeClass || "rounded-2xl border-2", frameRatio || "aspect-[4/5]", tagline || "Custom Product", isTrending ? 1 : 0, image || null, new Date().toISOString()
     );
     return res.json({ success: true, message: `Product ${name} saved successfully.` });
   } catch (err: any) {
