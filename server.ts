@@ -112,7 +112,6 @@ db.exec(`
     tagline TEXT NOT NULL,
     is_trending INTEGER DEFAULT 0,
     stock INTEGER DEFAULT 500,
-    image TEXT,
     created_at TEXT NOT NULL
   );
   CREATE TABLE IF NOT EXISTS reviews (
@@ -154,31 +153,6 @@ db.exec(`
     value TEXT NOT NULL
   );
 `);
-
-// Seed default high-converting promo coupons if table is fresh
-try {
-  const couponCount = (db.prepare("SELECT COUNT(*) as count FROM coupons").get() as any)?.count || 0;
-  if (couponCount === 0) {
-    const defaultCoupons = [
-      { code: 'WELCOME10', type: 'percent', value: 10, label: 'Welcome 10% Discount', min_order_value: 0 },
-      { code: 'KRIA15', type: 'percent', value: 15, label: 'Special 15% Studio Offer', min_order_value: 999 },
-      { code: 'FLAT100', type: 'flat', value: 100, label: 'Flat ₹100 OFF Savings', min_order_value: 499 },
-      { code: 'VIP20', type: 'percent', value: 20, label: 'VIP Executive 20% Discount', min_order_value: 1499 }
-    ];
-    const insertCouponStmt = db.prepare(`
-      INSERT INTO coupons (code, type, value, label, min_order_value, is_active, created_at)
-      VALUES (?, ?, ?, ?, ?, 1, ?)
-    `);
-    for (const c of defaultCoupons) {
-      insertCouponStmt.run(c.code, c.type, c.value, c.label, c.min_order_value, new Date().toISOString());
-    }
-  }
-} catch (e) {}
-
-// Database migration: Ensure 'image' column exists on products table
-try {
-  db.exec("ALTER TABLE products ADD COLUMN image TEXT;");
-} catch (e) {}
 
 // Initial seed for primary warehouse (Exact PDF Address)
 try {
@@ -1003,50 +977,6 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
     const whatsappUrl = `https://wa.me/919392576792?text=${encodeURIComponent(waText)}`;
 
     return res.json({ success: true, orderId, whatsappUrl, grandTotal });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/api/admin/orders/create-test", requireAdmin, (req, res) => {
-  try {
-    const testOrder: any = {
-      id: `ORD-TEST-${Date.now().toString().slice(-6)}`,
-      cart: [
-        {
-          id: 'item-heart-demo',
-          shapeId: 'heart',
-          shapeName: 'Heart Magnet (4x4")',
-          quantity: 2,
-          price: 299,
-          previewUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=600&auto=format&fit=crop&q=80',
-          photoScale: 1.1,
-          photoPanX: 0,
-          photoPanY: 0,
-          captionText: 'Love & Memories ❤️'
-        }
-      ],
-      shippingDetails: {
-        fullName: 'Kavin Ramdeni',
-        phone: '9392576792',
-        email: 'kriatechgroup@gmail.com',
-        address: 'Shop no 9, Mallikarjuna Towers, Radha Krishna Rd, Venkata Ramana Colony',
-        city: 'Hyderabad',
-        state: 'Telangana',
-        pincode: '500085'
-      },
-      status: 'Paid',
-      transactionId: `pay_test_${Math.floor(10000000 + Math.random() * 90000000)}`,
-      createdAt: new Date().toISOString(),
-      grandTotal: 598,
-      subtotal: 598,
-      bulkDiscount: 0,
-      deliveryCharge: 0,
-      history: [{ status: 'Paid', timestamp: new Date().toISOString(), note: 'Admin generated live test order' }]
-    };
-
-    saveOrder(testOrder);
-    return res.json({ success: true, order: testOrder });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
@@ -2047,7 +1977,6 @@ app.get("/api/products", (_req, res) => {
       shapeClass: p.shape_class,
       frameRatio: p.frame_ratio,
       tagline: p.tagline,
-      image: p.image || null,
       isTrending: Boolean(p.is_trending)
     }));
     return res.json({ success: true, products: formatted });
@@ -2058,13 +1987,13 @@ app.get("/api/products", (_req, res) => {
 
 app.post("/api/admin/products", requireAdmin, (req, res) => {
   try {
-    const { id, name, price, originalPrice, dimensions, description, shapeClass, frameRatio, tagline, isTrending, image } = req.body;
+    const { id, name, price, originalPrice, dimensions, description, shapeClass, frameRatio, tagline, isTrending } = req.body;
     if (!id || !name || !price) return res.status(400).json({ error: "ID, Name, and Price are required." });
     db.prepare(`INSERT OR REPLACE INTO products
-      (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, image, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
-      id, name, price, originalPrice || null, dimensions || "Standard", description || "", shapeClass || "rounded-2xl border-2", frameRatio || "aspect-[4/5]", tagline || "Custom Product", isTrending ? 1 : 0, image || null, new Date().toISOString()
+      id, name, price, originalPrice || null, dimensions || "Standard", description || "", shapeClass || "rounded-2xl border-2", frameRatio || "aspect-[4/5]", tagline || "Custom Product", isTrending ? 1 : 0, new Date().toISOString()
     );
     return res.json({ success: true, message: `Product ${name} saved successfully.` });
   } catch (err: any) {

@@ -3,7 +3,7 @@ import {
   ArrowLeft, RefreshCw, Printer, CheckCircle, 
   Trash2, ShieldCheck, Truck, ShoppingBag, 
   ExternalLink, Calendar, Phone, Mail, MapPin, 
-  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp, Ticket, Building2, Upload
+  Activity, Info, Box, Clipboard, Download, ArrowRight, X, Sparkles, MessageSquare, FileText, BarChart3, TrendingUp, Ticket, Building2
 } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import { jsPDF } from 'jspdf';
@@ -497,27 +497,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [productsList, setProductsList] = useState<any[]>([]);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [catalogForm, setCatalogForm] = useState<any | null>(null);
-
-  const handleCreateTestOrder = async () => {
-    try {
-      const res = await fetch('/api/admin/orders/create-test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` }
-      });
-      const data = await res.json();
-      if (res.ok && data.order) {
-        await fetchOrders(true);
-        setSelectedOrder(data.order);
-        setActionLog(prev => [`[${new Date().toLocaleTimeString()}] ⚡ Live Test Order (${data.order.id}) generated!`, ...prev]);
-      } else {
-        alert(data.error || "Failed to create test order");
-      }
-    } catch (e: any) {
-      alert("Test order error: " + e.message);
-    }
-  };
 
   // Dedicated Main Tab Navigation
   const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'b2b' | 'coupons' | 'shiprocket' | 'analytics' | 'settings'>('orders');
@@ -981,25 +961,11 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     }
   };
 
-  const filteredOrders = orders.filter(o => {
-    const matchesFilter = activeFilter === 'All' 
-      ? true 
-      : activeFilter === 'Pending'
-        ? o.status !== 'Shipped'
-        : o.status === activeFilter;
-    
-    if (!matchesFilter) return false;
-    if (!searchQuery.trim()) return true;
-    
-    const q = searchQuery.toLowerCase();
-    return (
-      o.id.toLowerCase().includes(q) ||
-      (o.shippingDetails?.fullName || '').toLowerCase().includes(q) ||
-      (o.shippingDetails?.phone || '').includes(q) ||
-      (o.shippingDetails?.email || '').toLowerCase().includes(q) ||
-      (o.trackingNumber || '').toLowerCase().includes(q)
-    );
-  });
+  const filteredOrders = activeFilter === 'All' 
+    ? orders 
+    : activeFilter === 'Pending'
+      ? orders.filter(o => o.status !== 'Shipped')
+      : orders.filter(o => o.status === activeFilter);
 
   const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString());
   const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
@@ -1008,55 +974,50 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const shippedCount = orders.filter(o => o.status === 'Shipped').length;
 
   return (
-    <div className="min-h-screen bg-[#0F1012] text-neutral-100 flex flex-col font-sans antialiased pb-20 select-none">
+    <div className="min-h-screen bg-[#FAF8F5] text-neutral-900 flex flex-col font-sans antialiased pb-20 select-none">
       
-      {/* LUXURY EXECUTIVE OPERATIONAL TERMINAL HEADER */}
-      <header className="bg-[#0A0B0D] text-white border-b border-[#262830] sticky top-0 z-30 shadow-2xl backdrop-blur-md">
+      {/* CMS Luxury Header */}
+      <header className="bg-[#111111] text-white border-b border-neutral-800 sticky top-0 z-30 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
               onClick={onBackToHome}
-              className="p-2 hover:bg-[#1A1C23] rounded-full text-neutral-400 hover:text-[#D4AF37] transition-all cursor-pointer border border-transparent hover:border-[#383324]"
-              title="Return to Studio Storefront Workspace"
+              className="p-2 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-[#E8DCCF] transition-all cursor-pointer"
+              title="Return to Studio Design Workspace"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-3">
-              <BrandLogo size={34} color="#D4AF37" />
+              <BrandLogo size={32} color="#E8DCCF" />
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="font-serif text-xl font-light text-white tracking-wide">
-                    KRIA <span className="italic font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#F3E5AB] via-[#D4AF37] to-[#AA7C11]">STUDIO</span>
-                  </h1>
-                  <span className="px-2 py-0.5 bg-[#262010] border border-[#524420] text-[#E8DCCF] text-[9px] font-mono font-bold rounded-full uppercase tracking-wider">
-                    EXECUTIVE OS
-                  </span>
-                </div>
+                <h1 className="font-serif text-xl font-light text-white tracking-wide">
+                  KRIA <span className="italic font-serif font-semibold text-[#E8DCCF]">Fulfillment CMS</span>
+                </h1>
                 <p className="text-[10px] font-mono text-neutral-400 tracking-widest uppercase">Factory Operations Terminal</p>
               </div>
             </div>
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="hidden xl:flex items-center gap-4 border-l border-r border-[#262830] px-6 font-mono text-xs">
+          <div className="hidden xl:flex items-center gap-4 border-l border-r border-neutral-800 px-6 font-mono text-xs">
             <div>
-              <span className="text-[9px] text-neutral-400 block uppercase tracking-wider font-bold">TODAY'S REVENUE</span>
-              <span className="font-bold text-[#F3E5AB] text-sm">₹{todayRevenue}</span>
+              <span className="text-[9px] text-neutral-400 block uppercase">TODAY'S REVENUE</span>
+              <span className="font-bold text-[#E8DCCF]">₹{todayRevenue}</span>
             </div>
-            <div className="h-6 w-px bg-[#262830]" />
+            <div className="h-6 w-px bg-neutral-800" />
             <div>
-              <span className="text-[9px] text-neutral-400 block uppercase tracking-wider font-bold">ORDERS</span>
-              <span className="font-bold text-white text-sm">{todayOrders.length}</span>
+              <span className="text-[9px] text-neutral-400 block uppercase">ORDERS</span>
+              <span className="font-bold text-white">{todayOrders.length}</span>
             </div>
-            <div className="h-6 w-px bg-[#262830]" />
+            <div className="h-6 w-px bg-neutral-800" />
             <div>
-              <span className="text-[9px] text-amber-400 block uppercase tracking-wider font-bold">PENDING QUEUE</span>
-              <span className="font-bold text-amber-300 text-sm">{pendingCount}</span>
+              <span className="text-[9px] text-amber-400 block uppercase">PENDING</span>
+              <span className="font-bold text-amber-300">{pendingCount}</span>
             </div>
-            <div className="h-6 w-px bg-[#262830]" />
+            <div className="h-6 w-px bg-neutral-800" />
             <div>
-              <span className="text-[9px] text-emerald-400 block uppercase tracking-wider font-bold">DISPATCHED</span>
-              <span className="font-bold text-emerald-300 text-sm">{shippedCount}</span>
+              <span className="text-[9px] text-emerald-400 block uppercase">SHIPPED</span>
+              <span className="font-bold text-emerald-300">{shippedCount}</span>
             </div>
           </div>
 
@@ -1064,89 +1025,89 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             <button
               onClick={() => fetchOrders()}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-[#16181F] border border-[#2B2E3B] rounded-full text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-white transition-all cursor-pointer hover:bg-[#20232E] hover:border-[#424759]"
+              className="flex items-center gap-2 px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-white transition-all cursor-pointer hover:bg-neutral-800"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-[#D4AF37]' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-[#c0a88a]' : ''}`} />
               <span>Refresh</span>
             </button>
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] font-mono font-bold uppercase text-emerald-400 shadow-inner">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] font-mono font-bold uppercase text-emerald-400">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              ENGINE LIVE
+              Live Sync 8s
             </span>
           </div>
         </div>
 
-        {/* --- DEDICATED EXECUTIVE ADMIN NAVIGATION BAR --- */}
-        <div className="bg-[#121317] border-t border-[#262830] text-white shadow-inner">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto gap-2 py-2.5 font-mono text-xs font-bold uppercase tracking-wider no-scrollbar">
+        {/* --- DEDICATED 5-MODULE ADMIN SYSTEM NAVIGATION BAR --- */}
+        <div className="bg-neutral-900 border-t border-neutral-800 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto gap-2 py-2.5 font-mono text-xs font-bold uppercase tracking-wider">
             <button
               onClick={() => setAdminTab('orders')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'orders' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
+                adminTab === 'orders' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
-              <Box className="h-4 w-4" />
+              <Box className="h-4 w-4 text-emerald-600" />
               <span>📦 Orders Pipeline ({orders.length})</span>
             </button>
 
             <button
               onClick={() => setAdminTab('products')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'products' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
+                adminTab === 'products' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
-              <Sparkles className="h-4 w-4" />
-              <span>🛍️ Products CMS ({productsList.length})</span>
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span>🛍️ Products & Size Prices ({productsList.length})</span>
             </button>
 
             <button
               onClick={() => setAdminTab('b2b')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'b2b' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
+                adminTab === 'b2b' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
-              <Building2 className="h-4 w-4" />
-              <span>🏢 Wholesale B2B</span>
+              <Building2 className="h-4 w-4 text-blue-400" />
+              <span>🏢 Wholesale B2B CMS (MOQ 5+)</span>
             </button>
 
             <button
               onClick={() => setAdminTab('coupons')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'coupons' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
+                adminTab === 'coupons' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
-              <Ticket className="h-4 w-4" />
-              <span>🎟️ Coupons ({couponsList.length})</span>
+              <Ticket className="h-4 w-4 text-purple-400" />
+              <span>🎟️ Promo Coupons ({couponsList.length})</span>
             </button>
 
             <button
               onClick={() => setAdminTab('shiprocket')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'shiprocket' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
+                adminTab === 'shiprocket' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
-              <Truck className="h-4 w-4" />
+              <Truck className="h-4 w-4 text-blue-400" />
               <span>🚚 Shiprocket Logistics</span>
             </button>
 
             <button
               onClick={() => setAdminTab('analytics')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'analytics' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
+                adminTab === 'analytics' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
-              <BarChart3 className="h-4 w-4" />
-              <span>📊 Analytics</span>
+              <BarChart3 className="h-4 w-4 text-emerald-400" />
+              <span>📊 Executive Analytics</span>
             </button>
 
             <button
               onClick={() => setAdminTab('settings')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'settings' ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold shadow-lg tracking-wider' : 'text-neutral-400 hover:text-white hover:bg-[#1C1E26]'
+                adminTab === 'settings' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
-              <Info className="h-4 w-4" />
-              <span>⚙️ Business Settings</span>
+              <Building2 className="h-4 w-4 text-amber-400" />
+              <span>⚙️ Settings & Warehouse</span>
             </button>
           </div>
         </div>
@@ -1160,47 +1121,16 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Column: Orders Pipeline (7 cols) */}
             <div className="lg:col-span-7 space-y-6 flex flex-col h-full min-h-[70vh]">
-              
-              {/* Executive Top Bar & Search Command Header */}
-              <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-5 shadow-xl space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-[#202738]">
-                  <div className="flex items-center gap-2">
-                    <Box className="h-5 w-5 text-[#D4AF37]" />
-                    <h3 className="font-serif text-lg font-bold text-white tracking-wide">
-                      Active Orders Pipeline
-                    </h3>
-                    <span className="font-mono text-xs font-bold bg-[#1C2333] border border-[#2D3852] px-2.5 py-0.5 rounded-full text-[#D4AF37]">
-                      {orders.length} Total
-                    </span>
-                  </div>
-
-                  {/* 1-Click Generate Live Test Order Button */}
-                  <button
-                    onClick={handleCreateTestOrder}
-                    className="px-3.5 py-2 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black font-mono font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-md transition transform active:scale-95 flex items-center gap-1.5 shrink-0"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>⚡ Create Test Order</span>
-                  </button>
-                </div>
-
-                {/* Real-time Search Input */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="🔍 Search Order ID, Customer Name, Phone, Email, AWB tracking..."
-                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-2xl px-4 py-2.5 text-xs font-mono text-white placeholder-neutral-500 outline-none focus:border-[#D4AF37] transition shadow-inner"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-2.5 text-neutral-400 hover:text-white text-xs font-mono"
-                    >
-                      Clear
-                    </button>
-                  )}
+              {/* Header Stats & Pipeline Filter bar */}
+              <div className="bg-white rounded-3xl border border-neutral-200/60 p-5 shadow-sm space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-neutral-100">
+                  <h3 className="font-sans text-xs font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-2">
+                    <Box className="h-4 w-4 text-[#c0a88a]" />
+                    <span>Active Print Pipelines</span>
+                  </h3>
+                  <span className="font-mono text-xs font-bold bg-neutral-100 px-3 py-1 rounded-full text-neutral-700">
+                    {orders.length} Registered
+                  </span>
                 </div>
 
                 {/* Quick Filter Pill Buttons */}
@@ -1218,8 +1148,8 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                         onClick={() => setActiveFilter(filter)}
                         className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono tracking-wider uppercase font-bold border transition-all cursor-pointer ${
                           isSelected 
-                            ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black border-transparent font-extrabold shadow-md' 
-                            : 'bg-[#1C2333] text-neutral-300 border-[#2D3852] hover:bg-[#252E44] hover:text-white'
+                            ? 'bg-[#111111] text-white border-[#111111]' 
+                            : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
                         }`}
                       >
                         {filter} ({count})
@@ -1232,29 +1162,15 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               {/* Orders List Viewport */}
               <div className="space-y-4 grow">
                 {isLoading ? (
-                  <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-12 text-center flex flex-col items-center justify-center space-y-3">
-                    <div className="animate-spin h-8 w-8 rounded-full border-2 border-[#D4AF37] border-t-transparent" />
-                    <p className="font-mono text-xs text-neutral-400">Retrieving encrypted orders registry...</p>
+                  <div className="bg-white rounded-3xl border border-neutral-200 p-12 text-center flex flex-col items-center justify-center space-y-3">
+                    <div className="animate-spin h-8 w-8 rounded-full border-2 border-[#111111] border-t-transparent" />
+                    <p className="font-serif italic text-sm text-neutral-500">Retrieving secure orders registry...</p>
                   </div>
                 ) : filteredOrders.length === 0 ? (
-                  /* Actionable Executive Empty State */
-                  <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-10 text-center space-y-5 shadow-2xl">
-                    <div className="w-16 h-16 rounded-2xl bg-[#1C2333] border border-[#2D3852] flex items-center justify-center mx-auto text-[#D4AF37]">
-                      <Sparkles className="h-8 w-8 animate-pulse" />
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-serif text-xl font-bold text-white">Live Production Pipeline Active</h4>
-                      <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
-                        Customer orders placed on <strong>kriatech.in</strong> automatically stream here in real-time. You can generate a live test order with 1 click below to verify 4x6 photo cutouts, GST invoices, and Shiprocket logistics!
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleCreateTestOrder}
-                      className="px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black font-mono font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-xl transition transform active:scale-95 flex items-center gap-2 mx-auto"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      <span>⚡ Generate 1-Click Live Test Order</span>
-                    </button>
+                  <div className="bg-white rounded-3xl border border-neutral-200 p-12 text-center text-neutral-500 space-y-2">
+                    <ShoppingBag className="h-8 w-8 mx-auto text-neutral-300" />
+                    <h4 className="font-serif text-base font-light text-neutral-800">No active orders found</h4>
+                    <p className="text-xs text-neutral-400 font-light">There are currently no orders in the "{activeFilter}" category pipeline.</p>
                   </div>
                 ) : (
                   filteredOrders.map((order) => {
@@ -1266,30 +1182,30 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                       <div 
                         key={order.id}
                         onClick={() => setSelectedOrder(order)}
-                        className={`bg-[#131722] rounded-2xl border transition-all p-4.5 shadow-lg cursor-pointer hover:border-[#3E4D70] relative overflow-hidden flex flex-col space-y-3 ${
-                          isSelected ? 'ring-2 ring-[#D4AF37] border-transparent bg-[#1A2030]' : 'border-[#22283A]'
+                        className={`bg-white rounded-2xl border transition-all p-4 shadow-sm cursor-pointer hover:border-neutral-400 relative overflow-hidden flex flex-col space-y-3 ${
+                          isSelected ? 'ring-2 ring-black border-transparent bg-neutral-50/50' : 'border-neutral-200/80'
                         }`}
                       >
                         <div className="flex justify-between items-center gap-2">
                           <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-[#1C2333] border border-[#2D3852] flex items-center justify-center font-mono text-xs font-bold text-[#D4AF37]">
+                            <div className="h-8 w-8 rounded-full bg-neutral-100 border border-neutral-300 flex items-center justify-center font-serif text-xs font-bold text-neutral-800">
                               {firstInitial}
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs font-bold text-[#F3E5AB]">{order.id}</span>
+                                <span className="font-mono text-xs font-bold text-neutral-900">{order.id}</span>
                                 <span className="text-[10px] text-neutral-400 font-mono">
                                   {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
-                              <p className="text-xs font-medium text-neutral-300">{order.shippingDetails.fullName} ({itemQuantityTotal} item)</p>
+                              <p className="text-xs font-medium text-neutral-600">{order.shippingDetails.fullName}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-mono border uppercase bg-[#1C2333] border-[#384666] text-emerald-400 font-bold">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono border uppercase ${getStatusColor(order.status)}`}>
                               {order.status}
                             </span>
-                            <span className="font-mono text-sm font-bold text-white">₹{order.grandTotal}</span>
+                            <span className="font-mono text-xs font-bold text-neutral-900">₹{order.grandTotal}</span>
                           </div>
                         </div>
                       </div>
@@ -1302,18 +1218,18 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             {/* Right Column: Order Details Drawer & Notification Feed (5 cols) */}
             <div className="lg:col-span-5 space-y-6 flex flex-col h-full">
               {selectedOrder ? (
-                <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-6 text-left">
-                  <div className="flex justify-between items-start border-b border-[#202738] pb-4">
+                <div className="bg-white rounded-3xl border border-neutral-200/80 p-6 shadow-sm space-y-6 text-left">
+                  <div className="flex justify-between items-start border-b border-neutral-100 pb-4">
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">SELECTED FULFILLMENT DOSSIER</span>
-                      <h4 className="font-mono text-lg font-bold text-[#F3E5AB] mt-0.5">{selectedOrder.id}</h4>
+                      <h4 className="font-mono text-lg font-bold text-neutral-900 mt-0.5">{selectedOrder.id}</h4>
                     </div>
                     <button
                       onClick={() => handleVoidOrder(selectedOrder.id)}
-                      className="text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 px-2.5 py-1 rounded-xl text-xs font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer border border-rose-900/40"
+                      className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 p-2 rounded-xl text-xs font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
                       title="Void/Delete Order Record"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                       <span>Void Order</span>
                     </button>
                   </div>
@@ -1322,16 +1238,16 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
-                      className="px-3 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                      className="px-3 py-2.5 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
                     >
-                      <Printer className="h-4 w-4" />
+                      <Printer className="h-4 w-4 text-[#E8DCCF]" />
                       <span>🖨️ Print 4x6 Photo Sheet</span>
                     </button>
                     <button
                       onClick={() => setIsPrintTaxInvoiceOpen(selectedOrder)}
-                      className="px-3 py-2.5 bg-[#1C2333] hover:bg-[#252E44] text-white border border-[#2D3852] rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5"
+                      className="px-3 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <FileText className="h-4 w-4 text-blue-400" />
+                      <FileText className="h-4 w-4" />
                       <span>📑 GST Invoice</span>
                     </button>
                   </div>
@@ -1339,17 +1255,17 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <button
                     onClick={() => {
                       const phone = selectedOrder.shippingDetails.phone.replace(/\D/g, '');
-                      const msg = encodeURIComponent(`Hello ${selectedOrder.shippingDetails.fullName}! Your KRIA TECH order #${selectedOrder.id} status is: ${selectedOrder.status.toUpperCase()}. Thank you for shopping with us! https://kriatech.in`);
+                      const msg = encodeURIComponent(`Hello ${selectedOrder.shippingDetails.fullName}! Your KRIA TECH order #${selectedOrder.id} status is: ${selectedOrder.status.toUpperCase()}. Thank you for shopping with us! https://magnetic-frames-ecommerce.onrender.com`);
                       window.open(`https://wa.me/91${phone}?text=${msg}`, '_blank');
                     }}
-                    className="w-full py-2.5 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-800/50 text-emerald-300 rounded-xl font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition shadow-sm"
+                    className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition shadow-sm"
                   >
-                    <MessageSquare className="h-4 w-4 text-emerald-400" />
+                    <MessageSquare className="h-4 w-4" />
                     <span>📲 Send WhatsApp Notification to Customer</span>
                   </button>
 
                   {/* Order Lifecycle Progress Buttons */}
-                  <div className="space-y-2 pt-2 border-t border-[#202738]">
+                  <div className="space-y-2 pt-2 border-t border-neutral-100">
                     <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block font-bold">LIFECYCLE STATUS (AUTOSENDS WHATSAPP/EMAIL/SMS)</span>
                     <div className="grid grid-cols-2 gap-2">
                       {['Order received', 'Payment success', 'Printing started', 'Packed', 'Shipped', 'Delivered'].map((st) => (
@@ -1358,8 +1274,8 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                           onClick={() => handleUpdateStatus(selectedOrder.id, st, `Status updated to ${st}`)}
                           className={`px-3 py-2 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer border transition-all ${
                             selectedOrder.status === st 
-                              ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black border-transparent font-extrabold shadow-md' 
-                              : 'bg-[#161B28] text-neutral-300 border-[#273047] hover:bg-[#1F2639] hover:text-white'
+                              ? 'bg-neutral-900 text-white border-neutral-900' 
+                              : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
                           }`}
                         >
                           {st}
@@ -1369,23 +1285,12 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   </div>
                 </div>
               ) : (
-                <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-10 text-center text-neutral-400 flex flex-col justify-center items-center space-y-4 shadow-xl min-h-[45vh]">
-                  <div className="w-14 h-14 rounded-2xl bg-[#1C2333] border border-[#2D3852] flex items-center justify-center text-[#D4AF37]">
-                    <Clipboard className="h-7 w-7" />
-                  </div>
+                <div className="bg-white rounded-3xl border border-neutral-200/60 p-12 text-center text-neutral-500 flex flex-col justify-center items-center space-y-4 shadow-sm min-h-[40vh]">
+                  <Clipboard className="h-10 w-10 text-neutral-300" />
                   <div className="space-y-1">
-                    <h4 className="font-serif text-lg font-bold text-white">Fulfillment Detail Inspector</h4>
-                    <p className="text-xs text-neutral-400 max-w-xs mx-auto leading-relaxed">Select any order from the left pipeline to view details, print 4x6 photo cutouts, generate GST invoices, or update status.</p>
+                    <h4 className="font-serif text-base font-light text-neutral-800">Fulfillment Detail Panel</h4>
+                    <p className="text-xs text-neutral-400 font-light max-w-xs mx-auto">Select any order from the left list to view details, print 4x6 photo cutouts, GST invoices, or update status.</p>
                   </div>
-                  {orders.length === 0 && (
-                    <button
-                      onClick={handleCreateTestOrder}
-                      className="px-4 py-2 bg-[#1C2333] hover:bg-[#252E44] text-[#D4AF37] border border-[#2D3852] rounded-xl text-xs font-mono font-bold uppercase cursor-pointer transition flex items-center gap-1.5"
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Create Test Order to Inspect</span>
-                    </button>
-                  )}
                 </div>
               )}
 
@@ -1414,12 +1319,11 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
 
         {/* TAB 2: 🛍️ PRODUCTS & SIZE-BASED PRICE MATRIX (CMS) */}
         {adminTab === 'products' && (
-          <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 md:p-8 shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#202738] pb-4">
+          <div className="bg-white rounded-3xl border border-neutral-200 p-6 md:p-8 shadow-sm space-y-6">
+            <div className="flex justify-between items-center border-b border-neutral-200 pb-4">
               <div>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">RETAIL & BULK SIZE PRICING MATRIX</span>
-                <h3 className="font-serif text-2xl font-bold text-white mt-1">Catalog & Products CMS</h3>
-                <p className="text-xs text-neutral-400 font-mono mt-1">Manage retail products, image uploads, sale prices, and catalog visibility.</p>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 font-bold">RETAIL & BULK SIZE PRICING MATRIX</span>
+                <h3 className="font-serif text-2xl font-bold text-neutral-900 mt-1">Catalog & Products CMS</h3>
               </div>
               <button
                 onClick={() => {
@@ -1435,7 +1339,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     isTrending: true
                   });
                 }}
-                className="px-5 py-3 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black rounded-xl font-mono text-xs uppercase font-bold tracking-wider cursor-pointer shadow-lg transition flex items-center gap-1.5 shrink-0"
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-mono text-xs uppercase font-bold tracking-wider cursor-pointer shadow-sm transition flex items-center gap-1.5"
               >
                 <Sparkles className="h-4 w-4" />
                 <span>➕ Add New Product</span>
@@ -1449,56 +1353,46 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 const visible = Boolean(product.isTrending ?? true);
 
                 return (
-                  <div key={product.id} className="bg-[#0A0C10] border border-[#22283A] rounded-2xl p-5 shadow-lg space-y-4 flex flex-col justify-between">
-                    <div className="space-y-3">
-                      {/* Product Preview Thumbnail */}
-                      <div className="flex items-center gap-3">
-                        {product.image ? (
-                          <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-xl border border-[#2D3852] shrink-0" />
-                        ) : (
-                          <div className="w-16 h-16 rounded-xl border border-dashed border-[#2D3852] bg-[#1C2333] flex items-center justify-center text-neutral-400 text-[10px] shrink-0 font-mono">No Image</div>
-                        )}
-                        <div className="space-y-1 grow overflow-hidden">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-serif text-base font-bold text-white truncate">{product.name}</h4>
-                          </div>
-                          <span className="font-mono text-[9px] uppercase tracking-wider font-bold bg-[#1C2333] border border-[#2D3852] px-2 py-0.5 rounded text-[#D4AF37] inline-block">
-                            {product.dimensions || 'Standard'}
-                          </span>
-                        </div>
+                  <div key={product.id} className="bg-[#FAF8F5] border border-neutral-200 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-serif text-lg font-bold text-neutral-900">{product.name}</h4>
+                        <span className="font-mono text-[9px] uppercase tracking-wider font-bold bg-neutral-200 px-2 py-0.5 rounded text-neutral-700">
+                          {product.dimensions || 'Standard'}
+                        </span>
                       </div>
-                      <p className="text-xs text-neutral-400 line-clamp-2">{product.description || product.tagline}</p>
+                      <p className="text-xs text-neutral-500 line-clamp-2">{product.description || product.tagline}</p>
                     </div>
 
-                    <div className="p-3 bg-[#131722] rounded-xl border border-[#22283A] font-mono text-xs space-y-1">
+                    <div className="p-3 bg-white rounded-xl border border-neutral-200 font-mono text-xs space-y-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-neutral-400 text-[10px] uppercase font-bold">Standard Sale Price:</span>
-                        <span className="font-bold text-[#F3E5AB] text-sm">₹{currentPrice}</span>
+                        <span className="text-neutral-500 text-[10px] uppercase font-bold">Standard Sale Price:</span>
+                        <span className="font-bold text-neutral-900 text-sm">₹{currentPrice}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-neutral-400 text-[10px] uppercase font-bold">MRP / Strikethrough Price:</span>
-                        <span className="text-neutral-500 line-through">₹{originalPrice}</span>
+                        <span className="text-neutral-500 text-[10px] uppercase font-bold">MRP / Original Price:</span>
+                        <span className="text-neutral-400 line-through">₹{originalPrice}</span>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-[#202738]">
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-200">
                       <button
                         onClick={() => handleOpenPriceModal(product)}
-                        className="flex-1 py-2 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black rounded-xl font-mono text-[11px] uppercase font-bold tracking-wider cursor-pointer shadow-md text-center hover:opacity-95"
+                        className="flex-1 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl font-mono text-[11px] uppercase font-bold tracking-wider cursor-pointer shadow-sm text-center"
                       >
-                        Edit Details & Image
+                        Edit Prices & Sizes
                       </button>
                       <button
                         onClick={() => saveProduct({ ...product, isTrending: !visible, price: currentPrice, originalPrice: product.originalPrice ?? originalPrice })}
                         className={`px-3 py-2 border rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer ${
-                          visible ? 'bg-[#1C2333] text-emerald-400 border-[#2D3852]' : 'bg-rose-950/40 text-rose-300 border-rose-900/40'
+                          visible ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-emerald-50 text-emerald-900 border-emerald-300'
                         }`}
                       >
-                        {visible ? '👁️ Live' : '🚫 Hidden'}
+                        {visible ? 'Hide' : 'Show'}
                       </button>
                       <button
                         onClick={() => deleteProduct(product.id)}
-                        className="px-3 py-2 bg-rose-950/40 text-rose-400 hover:bg-rose-900/50 border border-rose-900/40 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer"
+                        className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer"
                         title="Delete Product"
                       >
                         <Trash2 className="h-3.5 w-3.5 inline" />
@@ -1633,238 +1527,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
           </div>
         )}
 
-        {/* TAB 4: 🎟️ PROMO COUPONS CMS */}
-        {adminTab === 'coupons' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Form: Create New Coupon (5 cols) */}
-            <div className="lg:col-span-5 bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-6">
-              <div className="border-b border-[#202738] pb-4">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">DISCOUNT ENGINE</span>
-                <h3 className="font-serif text-xl font-bold text-white mt-1">Create Promo Coupon</h3>
-                <p className="text-xs text-neutral-400 font-mono mt-1">Add discount codes for checkout promotions.</p>
-              </div>
-
-              <form onSubmit={(e) => { e.preventDefault(); saveCoupon(newCouponForm); }} className="space-y-4 font-mono text-xs">
-                <div>
-                  <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Coupon Code</label>
-                  <input
-                    type="text"
-                    value={newCouponForm.code}
-                    onChange={(e) => setNewCouponForm({ ...newCouponForm, code: e.target.value.toUpperCase() })}
-                    placeholder="e.g. FESTIVE20"
-                    required
-                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3.5 py-2.5 font-mono font-bold text-sm text-[#F3E5AB] outline-none focus:border-[#D4AF37]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Discount Type</label>
-                    <select
-                      value={newCouponForm.type}
-                      onChange={(e) => setNewCouponForm({ ...newCouponForm, type: e.target.value as any })}
-                      className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#D4AF37]"
-                    >
-                      <option value="percent">Percentage (%)</option>
-                      <option value="flat">Flat Amount (₹)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Discount Value</label>
-                    <input
-                      type="number"
-                      value={newCouponForm.value}
-                      onChange={(e) => setNewCouponForm({ ...newCouponForm, value: Number(e.target.value) })}
-                      placeholder="e.g. 15 or 100"
-                      required
-                      className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#D4AF37]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Promo Label / Name</label>
-                  <input
-                    type="text"
-                    value={newCouponForm.label}
-                    onChange={(e) => setNewCouponForm({ ...newCouponForm, label: e.target.value })}
-                    placeholder="e.g. Festival Special Offer"
-                    required
-                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#D4AF37]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Min Order Amount (₹)</label>
-                  <input
-                    type="number"
-                    value={newCouponForm.minOrderValue}
-                    onChange={(e) => setNewCouponForm({ ...newCouponForm, minOrderValue: Number(e.target.value) })}
-                    placeholder="0 for no minimum"
-                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#D4AF37]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black font-mono font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-lg transition"
-                >
-                  ➕ Save Promo Coupon
-                </button>
-              </form>
-            </div>
-
-            {/* List: Active Coupons (7 cols) */}
-            <div className="lg:col-span-7 bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-4">
-              <div className="flex justify-between items-center pb-3 border-b border-[#202738]">
-                <div>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">DATABASE REGISTRY</span>
-                  <h3 className="font-serif text-xl font-bold text-white mt-0.5">Active Promo Coupons</h3>
-                </div>
-                <span className="font-mono text-xs font-bold bg-[#1C2333] border border-[#2D3852] px-3 py-1 rounded-full text-[#D4AF37]">
-                  {couponsList.length} Active
-                </span>
-              </div>
-
-              {couponsList.length === 0 ? (
-                <div className="p-8 text-center text-neutral-400 font-mono text-xs">
-                  No coupons found in database. Create one using the form on the left.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {couponsList.map((c) => (
-                    <div key={c.code} className="bg-[#0A0C10] border border-[#22283A] rounded-2xl p-4 flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-bold text-[#F3E5AB] bg-[#1C2333] px-2.5 py-0.5 rounded border border-[#2D3852]">
-                            {c.code}
-                          </span>
-                          <span className="text-xs font-bold text-emerald-400 font-mono">
-                            {c.type === 'percent' ? `${c.value}% OFF` : `₹${c.value} OFF`}
-                          </span>
-                        </div>
-                        <p className="text-xs text-neutral-300 font-medium">{c.label}</p>
-                        <p className="text-[10px] font-mono text-neutral-500">Min Order: ₹{c.minOrderValue || 0}</p>
-                      </div>
-
-                      <button
-                        onClick={() => deleteCoupon(c.code)}
-                        className="text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 p-2 rounded-xl text-xs font-mono font-bold uppercase transition border border-rose-900/40"
-                        title="Delete Coupon"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: 🚚 SHIPROCKET LOGISTICS & SERVICEABILITY TESTER */}
-        {adminTab === 'shiprocket' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-6 bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-5">
-              <div className="border-b border-[#202738] pb-4">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">PRODUCTION COURIER GATEWAY</span>
-                <h3 className="font-serif text-xl font-bold text-white mt-1">Shiprocket Logistics Setup</h3>
-                <p className="text-xs text-neutral-400 font-mono mt-1">Central Warehouse & Live Webhook Configuration</p>
-              </div>
-
-              <div className="space-y-4 font-mono text-xs">
-                <div className="bg-[#0A0C10] border border-[#22283A] rounded-2xl p-4 space-y-2">
-                  <span className="text-[10px] text-neutral-400 uppercase font-bold block">CENTRAL PICKUP WAREHOUSE</span>
-                  <div className="text-sm font-bold text-white">Primary_Hyderabad_500085</div>
-                  <div className="text-xs text-neutral-300">Shop no 9, Mallikarjuna Towers, Radha Krishna Rd, Venkata Ramana Colony, KPHB 9th Phase, Hyderabad - 500085</div>
-                  <div className="text-xs text-[#D4AF37]">GSTIN: 36AAAFK7892P1Z0 | Phone: 9392576792</div>
-                </div>
-
-                <div className="bg-[#0A0C10] border border-[#22283A] rounded-2xl p-4 space-y-2">
-                  <span className="text-[10px] text-neutral-400 uppercase font-bold block">WEBHOOK ENDPOINT</span>
-                  <div className="text-xs font-bold text-emerald-400 break-all">https://kriatech.in/api/webhooks/courier-tracking</div>
-                  <div className="text-[10px] text-neutral-400">Pushes real-time shipment status updates directly to customer tracking page.</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-6 bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-5">
-              <div className="border-b border-[#202738] pb-4">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">PINCODE AUDITOR</span>
-                <h3 className="font-serif text-xl font-bold text-white mt-1">Live Serviceability Tester</h3>
-                <p className="text-xs text-neutral-400 font-mono mt-1">Test pincode serviceability, courier rates, and estimated delivery dates.</p>
-              </div>
-
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const pincodeInput = (e.currentTarget.elements.namedItem('pincode') as HTMLInputElement).value;
-                try {
-                  const res = await fetch('/api/admin/shipping-test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                    body: JSON.stringify({ deliveryPincode: pincodeInput })
-                  });
-                  const data = await res.json();
-                  alert(`Pincode: ${pincodeInput}\nServiceable: ${data.serviceable ? 'YES ✅' : 'NO ❌'}\nCourier: ${data.carrierName || 'N/A'}\nETD: ${data.deliveryEstimate || 'N/A'}\nRate: ₹${data.shippingRate || 0}`);
-                } catch (err: any) {
-                  alert("Error: " + err.message);
-                }
-              }} className="space-y-4 font-mono text-xs">
-                <div>
-                  <label className="block text-neutral-300 font-bold uppercase text-[10px] mb-1">Destination Pincode</label>
-                  <input
-                    type="text"
-                    name="pincode"
-                    placeholder="e.g. 500085, 400001, 110001"
-                    required
-                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-xl px-3.5 py-2.5 font-mono text-sm text-white outline-none focus:border-[#D4AF37]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-[#1C2333] hover:bg-[#252E44] text-[#D4AF37] border border-[#2D3852] font-mono font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition shadow-md"
-                >
-                  🔍 Run Live Pincode Serviceability Audit
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 6: 📊 EXECUTIVE ANALYTICS & BI */}
-        {adminTab === 'analytics' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 space-y-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-bold">TOTAL STORE REVENUE</span>
-                <div className="font-mono text-3xl font-bold text-[#F3E5AB]">
-                  ₹{orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0)}
-                </div>
-                <p className="text-[10px] font-mono text-emerald-400">Across {orders.length} total orders</p>
-              </div>
-
-              <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 space-y-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-bold">AVERAGE ORDER VALUE (AOV)</span>
-                <div className="font-mono text-3xl font-bold text-white">
-                  ₹{orders.length > 0 ? Math.round(orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0) / orders.length) : 0}
-                </div>
-                <p className="text-[10px] font-mono text-neutral-400">Per customer checkout</p>
-              </div>
-
-              <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 space-y-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-bold">FULFILLMENT DISPATCH RATE</span>
-                <div className="font-mono text-3xl font-bold text-emerald-400">
-                  {orders.length > 0 ? `${Math.round((shippedCount / orders.length) * 100)}%` : '100%'}
-                </div>
-                <p className="text-[10px] font-mono text-neutral-400">{shippedCount} shipped / {orders.length} orders</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 7: ⚙️ BUSINESS SETTINGS & WAREHOUSE MANAGEMENT */}
+        {/* TAB 6: ⚙️ BUSINESS SETTINGS & WAREHOUSE MANAGEMENT */}
         {adminTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
@@ -2233,86 +1896,21 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               </div>
 
               {catalogForm && (
-                <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4 shadow-sm text-left">
-                  <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
-                    <h4 className="font-serif font-bold text-base text-neutral-900">
-                      {catalogForm.id?.startsWith('custom-') ? '➕ Add New Product' : '✏️ Edit Product Details & Photo'}
-                    </h4>
-                    <span className="font-mono text-[10px] text-neutral-400">ID: {catalogForm.id}</span>
-                  </div>
-
+                <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
                   <div className="grid md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">Product Title</label>
-                      <input value={catalogForm.name || ''} onChange={(e) => setCatalogForm({...catalogForm, name: e.target.value})} placeholder="e.g. Luxury Heart Acrylic Magnet" className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-sans outline-none focus:ring-1 focus:ring-black" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">Dimensions</label>
-                      <input value={catalogForm.dimensions || ''} onChange={(e) => setCatalogForm({...catalogForm, dimensions: e.target.value})} placeholder="e.g. 8.0 × 10.0 CM" className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-black" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">Sale Price (₹)</label>
-                      <input type="number" value={catalogForm.price || ''} onChange={(e) => setCatalogForm({...catalogForm, price: Number(e.target.value)})} placeholder="299" className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-black" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">MRP / Strikethrough Price (₹)</label>
-                      <input type="number" value={catalogForm.originalPrice || ''} onChange={(e) => setCatalogForm({...catalogForm, originalPrice: Number(e.target.value)})} placeholder="429" className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-black" />
-                    </div>
+                    <input value={catalogForm.name} onChange={(e) => setCatalogForm({...catalogForm, name: e.target.value})} placeholder="Product name" className="rounded-xl border px-3 py-2 text-sm font-sans" />
+                    <input type="number" value={catalogForm.price} onChange={(e) => setCatalogForm({...catalogForm, price: Number(e.target.value)})} placeholder="Sale price (₹)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
+                    <input type="number" value={catalogForm.originalPrice} onChange={(e) => setCatalogForm({...catalogForm, originalPrice: Number(e.target.value)})} placeholder="MRP (₹)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
+                    <input value={catalogForm.dimensions} onChange={(e) => setCatalogForm({...catalogForm, dimensions: e.target.value})} placeholder="Dimensions (e.g. 8x10 CM)" className="rounded-xl border px-3 py-2 text-sm font-mono" />
                   </div>
-
-                  {/* Image Upload & URL Picker Field */}
-                  <div className="space-y-2 pt-2 border-t border-neutral-100">
-                    <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500">Product Preview Image (Upload File or Paste Image URL)</label>
-                    <div className="flex items-center gap-3">
-                      {catalogForm.image ? (
-                        <img src={catalogForm.image} alt="Preview" className="w-14 h-14 object-cover rounded-xl border border-neutral-300 shadow-sm shrink-0" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center text-neutral-400 text-xs shrink-0 font-mono">No Pic</div>
-                      )}
-                      <div className="flex-1 space-y-2">
-                        <input
-                          type="text"
-                          value={catalogForm.image || ''}
-                          onChange={(e) => setCatalogForm({ ...catalogForm, image: e.target.value })}
-                          placeholder="Paste image URL (https://...)"
-                          className="w-full rounded-xl border border-neutral-300 px-3 py-1.5 text-xs font-mono outline-none focus:ring-1 focus:ring-black"
-                        />
-                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-xs font-mono font-bold cursor-pointer transition">
-                          <Upload className="h-3.5 w-3.5" />
-                          <span>Upload Image File</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  setCatalogForm(prev => ({ ...prev, image: reader.result as string }));
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 mb-1">Product Description</label>
-                    <textarea value={catalogForm.description || ''} onChange={(e) => setCatalogForm({...catalogForm, description: e.target.value})} placeholder="Hand-polished acrylic magnet..." className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-sans outline-none focus:ring-1 focus:ring-black" rows={2} />
-                  </div>
-
-                  <label className="flex items-center gap-2 text-xs font-sans font-semibold text-neutral-800">
-                    <input type="checkbox" checked={Boolean(catalogForm.isTrending ?? true)} onChange={(e) => setCatalogForm({...catalogForm, isTrending: e.target.checked})} className="rounded text-black focus:ring-black" />
+                  <textarea value={catalogForm.description} onChange={(e) => setCatalogForm({...catalogForm, description: e.target.value})} placeholder="Product description..." className="w-full rounded-xl border px-3 py-2 text-sm font-sans" rows={3} />
+                  <label className="flex items-center gap-2 text-sm font-sans">
+                    <input type="checkbox" checked={catalogForm.isTrending} onChange={(e) => setCatalogForm({...catalogForm, isTrending: e.target.checked})} />
                     Visible in Storefront Catalog
                   </label>
-
-                  <div className="flex gap-2 pt-2 border-t border-neutral-100">
-                    <button onClick={() => saveProduct(catalogForm)} className="px-5 py-2.5 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer shadow-sm">Save Product</button>
-                    <button onClick={() => { setCatalogForm(null); setEditingProduct(null); }} className="px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer">Cancel</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => saveProduct(catalogForm)} className="px-4 py-2 bg-neutral-900 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer">Save Changes</button>
+                    <button onClick={() => { setCatalogForm(null); setEditingProduct(null); }} className="px-4 py-2 bg-neutral-200 text-neutral-800 rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer">Cancel</button>
                   </div>
                 </div>
               )}
