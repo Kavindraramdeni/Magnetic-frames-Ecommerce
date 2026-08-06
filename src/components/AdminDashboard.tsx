@@ -497,7 +497,27 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [productsList, setProductsList] = useState<any[]>([]);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [catalogForm, setCatalogForm] = useState<any | null>(null);
+
+  const handleCreateTestOrder = async () => {
+    try {
+      const res = await fetch('/api/admin/orders/create-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.order) {
+        await fetchOrders(true);
+        setSelectedOrder(data.order);
+        setActionLog(prev => [`[${new Date().toLocaleTimeString()}] ⚡ Live Test Order (${data.order.id}) generated!`, ...prev]);
+      } else {
+        alert(data.error || "Failed to create test order");
+      }
+    } catch (e: any) {
+      alert("Test order error: " + e.message);
+    }
+  };
 
   // Dedicated Main Tab Navigation
   const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'b2b' | 'coupons' | 'shiprocket' | 'analytics' | 'settings'>('orders');
@@ -961,11 +981,25 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     }
   };
 
-  const filteredOrders = activeFilter === 'All' 
-    ? orders 
-    : activeFilter === 'Pending'
-      ? orders.filter(o => o.status !== 'Shipped')
-      : orders.filter(o => o.status === activeFilter);
+  const filteredOrders = orders.filter(o => {
+    const matchesFilter = activeFilter === 'All' 
+      ? true 
+      : activeFilter === 'Pending'
+        ? o.status !== 'Shipped'
+        : o.status === activeFilter;
+    
+    if (!matchesFilter) return false;
+    if (!searchQuery.trim()) return true;
+    
+    const q = searchQuery.toLowerCase();
+    return (
+      o.id.toLowerCase().includes(q) ||
+      (o.shippingDetails?.fullName || '').toLowerCase().includes(q) ||
+      (o.shippingDetails?.phone || '').includes(q) ||
+      (o.shippingDetails?.email || '').toLowerCase().includes(q) ||
+      (o.trackingNumber || '').toLowerCase().includes(q)
+    );
+  });
 
   const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString());
   const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
@@ -1126,16 +1160,47 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Column: Orders Pipeline (7 cols) */}
             <div className="lg:col-span-7 space-y-6 flex flex-col h-full min-h-[70vh]">
-              {/* Header Stats & Pipeline Filter bar */}
-              <div className="bg-white rounded-3xl border border-neutral-200/60 p-5 shadow-sm space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b border-neutral-100">
-                  <h3 className="font-sans text-xs font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-2">
-                    <Box className="h-4 w-4 text-[#c0a88a]" />
-                    <span>Active Print Pipelines</span>
-                  </h3>
-                  <span className="font-mono text-xs font-bold bg-neutral-100 px-3 py-1 rounded-full text-neutral-700">
-                    {orders.length} Registered
-                  </span>
+              
+              {/* Executive Top Bar & Search Command Header */}
+              <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-5 shadow-xl space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-[#202738]">
+                  <div className="flex items-center gap-2">
+                    <Box className="h-5 w-5 text-[#D4AF37]" />
+                    <h3 className="font-serif text-lg font-bold text-white tracking-wide">
+                      Active Orders Pipeline
+                    </h3>
+                    <span className="font-mono text-xs font-bold bg-[#1C2333] border border-[#2D3852] px-2.5 py-0.5 rounded-full text-[#D4AF37]">
+                      {orders.length} Total
+                    </span>
+                  </div>
+
+                  {/* 1-Click Generate Live Test Order Button */}
+                  <button
+                    onClick={handleCreateTestOrder}
+                    className="px-3.5 py-2 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black font-mono font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-md transition transform active:scale-95 flex items-center gap-1.5 shrink-0"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>⚡ Create Test Order</span>
+                  </button>
+                </div>
+
+                {/* Real-time Search Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="🔍 Search Order ID, Customer Name, Phone, Email, AWB tracking..."
+                    className="w-full bg-[#0A0C10] border border-[#22283A] rounded-2xl px-4 py-2.5 text-xs font-mono text-white placeholder-neutral-500 outline-none focus:border-[#D4AF37] transition shadow-inner"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-2.5 text-neutral-400 hover:text-white text-xs font-mono"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
 
                 {/* Quick Filter Pill Buttons */}
@@ -1153,8 +1218,8 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                         onClick={() => setActiveFilter(filter)}
                         className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono tracking-wider uppercase font-bold border transition-all cursor-pointer ${
                           isSelected 
-                            ? 'bg-[#111111] text-white border-[#111111]' 
-                            : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                            ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black border-transparent font-extrabold shadow-md' 
+                            : 'bg-[#1C2333] text-neutral-300 border-[#2D3852] hover:bg-[#252E44] hover:text-white'
                         }`}
                       >
                         {filter} ({count})
@@ -1167,15 +1232,29 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               {/* Orders List Viewport */}
               <div className="space-y-4 grow">
                 {isLoading ? (
-                  <div className="bg-white rounded-3xl border border-neutral-200 p-12 text-center flex flex-col items-center justify-center space-y-3">
-                    <div className="animate-spin h-8 w-8 rounded-full border-2 border-[#111111] border-t-transparent" />
-                    <p className="font-serif italic text-sm text-neutral-500">Retrieving secure orders registry...</p>
+                  <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-12 text-center flex flex-col items-center justify-center space-y-3">
+                    <div className="animate-spin h-8 w-8 rounded-full border-2 border-[#D4AF37] border-t-transparent" />
+                    <p className="font-mono text-xs text-neutral-400">Retrieving encrypted orders registry...</p>
                   </div>
                 ) : filteredOrders.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-neutral-200 p-12 text-center text-neutral-500 space-y-2">
-                    <ShoppingBag className="h-8 w-8 mx-auto text-neutral-300" />
-                    <h4 className="font-serif text-base font-light text-neutral-800">No active orders found</h4>
-                    <p className="text-xs text-neutral-400 font-light">There are currently no orders in the "{activeFilter}" category pipeline.</p>
+                  /* Actionable Executive Empty State */
+                  <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-10 text-center space-y-5 shadow-2xl">
+                    <div className="w-16 h-16 rounded-2xl bg-[#1C2333] border border-[#2D3852] flex items-center justify-center mx-auto text-[#D4AF37]">
+                      <Sparkles className="h-8 w-8 animate-pulse" />
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-serif text-xl font-bold text-white">Live Production Pipeline Active</h4>
+                      <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
+                        Customer orders placed on <strong>kriatech.in</strong> automatically stream here in real-time. You can generate a live test order with 1 click below to verify 4x6 photo cutouts, GST invoices, and Shiprocket logistics!
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleCreateTestOrder}
+                      className="px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black font-mono font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-xl transition transform active:scale-95 flex items-center gap-2 mx-auto"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      <span>⚡ Generate 1-Click Live Test Order</span>
+                    </button>
                   </div>
                 ) : (
                   filteredOrders.map((order) => {
@@ -1187,30 +1266,30 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                       <div 
                         key={order.id}
                         onClick={() => setSelectedOrder(order)}
-                        className={`bg-white rounded-2xl border transition-all p-4 shadow-sm cursor-pointer hover:border-neutral-400 relative overflow-hidden flex flex-col space-y-3 ${
-                          isSelected ? 'ring-2 ring-black border-transparent bg-neutral-50/50' : 'border-neutral-200/80'
+                        className={`bg-[#131722] rounded-2xl border transition-all p-4.5 shadow-lg cursor-pointer hover:border-[#3E4D70] relative overflow-hidden flex flex-col space-y-3 ${
+                          isSelected ? 'ring-2 ring-[#D4AF37] border-transparent bg-[#1A2030]' : 'border-[#22283A]'
                         }`}
                       >
                         <div className="flex justify-between items-center gap-2">
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-neutral-100 border border-neutral-300 flex items-center justify-center font-serif text-xs font-bold text-neutral-800">
+                            <div className="h-9 w-9 rounded-full bg-[#1C2333] border border-[#2D3852] flex items-center justify-center font-mono text-xs font-bold text-[#D4AF37]">
                               {firstInitial}
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs font-bold text-neutral-900">{order.id}</span>
+                                <span className="font-mono text-xs font-bold text-[#F3E5AB]">{order.id}</span>
                                 <span className="text-[10px] text-neutral-400 font-mono">
                                   {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
-                              <p className="text-xs font-medium text-neutral-600">{order.shippingDetails.fullName}</p>
+                              <p className="text-xs font-medium text-neutral-300">{order.shippingDetails.fullName} ({itemQuantityTotal} item)</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono border uppercase ${getStatusColor(order.status)}`}>
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-mono border uppercase bg-[#1C2333] border-[#384666] text-emerald-400 font-bold">
                               {order.status}
                             </span>
-                            <span className="font-mono text-xs font-bold text-neutral-900">₹{order.grandTotal}</span>
+                            <span className="font-mono text-sm font-bold text-white">₹{order.grandTotal}</span>
                           </div>
                         </div>
                       </div>
@@ -1223,18 +1302,18 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             {/* Right Column: Order Details Drawer & Notification Feed (5 cols) */}
             <div className="lg:col-span-5 space-y-6 flex flex-col h-full">
               {selectedOrder ? (
-                <div className="bg-white rounded-3xl border border-neutral-200/80 p-6 shadow-sm space-y-6 text-left">
-                  <div className="flex justify-between items-start border-b border-neutral-100 pb-4">
+                <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-6 shadow-xl space-y-6 text-left">
+                  <div className="flex justify-between items-start border-b border-[#202738] pb-4">
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">SELECTED FULFILLMENT DOSSIER</span>
-                      <h4 className="font-mono text-lg font-bold text-neutral-900 mt-0.5">{selectedOrder.id}</h4>
+                      <h4 className="font-mono text-lg font-bold text-[#F3E5AB] mt-0.5">{selectedOrder.id}</h4>
                     </div>
                     <button
                       onClick={() => handleVoidOrder(selectedOrder.id)}
-                      className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 p-2 rounded-xl text-xs font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
+                      className="text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 px-2.5 py-1 rounded-xl text-xs font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer border border-rose-900/40"
                       title="Void/Delete Order Record"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                       <span>Void Order</span>
                     </button>
                   </div>
@@ -1243,16 +1322,16 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
-                      className="px-3 py-2.5 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                      className="px-3 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#E5C158] hover:to-[#FFF0B8] text-black rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
                     >
-                      <Printer className="h-4 w-4 text-[#E8DCCF]" />
+                      <Printer className="h-4 w-4" />
                       <span>🖨️ Print 4x6 Photo Sheet</span>
                     </button>
                     <button
                       onClick={() => setIsPrintTaxInvoiceOpen(selectedOrder)}
-                      className="px-3 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5"
+                      className="px-3 py-2.5 bg-[#1C2333] hover:bg-[#252E44] text-white border border-[#2D3852] rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <FileText className="h-4 w-4" />
+                      <FileText className="h-4 w-4 text-blue-400" />
                       <span>📑 GST Invoice</span>
                     </button>
                   </div>
@@ -1260,17 +1339,17 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <button
                     onClick={() => {
                       const phone = selectedOrder.shippingDetails.phone.replace(/\D/g, '');
-                      const msg = encodeURIComponent(`Hello ${selectedOrder.shippingDetails.fullName}! Your KRIA TECH order #${selectedOrder.id} status is: ${selectedOrder.status.toUpperCase()}. Thank you for shopping with us! https://magnetic-frames-ecommerce.onrender.com`);
+                      const msg = encodeURIComponent(`Hello ${selectedOrder.shippingDetails.fullName}! Your KRIA TECH order #${selectedOrder.id} status is: ${selectedOrder.status.toUpperCase()}. Thank you for shopping with us! https://kriatech.in`);
                       window.open(`https://wa.me/91${phone}?text=${msg}`, '_blank');
                     }}
-                    className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition shadow-sm"
+                    className="w-full py-2.5 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-800/50 text-emerald-300 rounded-xl font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition shadow-sm"
                   >
-                    <MessageSquare className="h-4 w-4" />
+                    <MessageSquare className="h-4 w-4 text-emerald-400" />
                     <span>📲 Send WhatsApp Notification to Customer</span>
                   </button>
 
                   {/* Order Lifecycle Progress Buttons */}
-                  <div className="space-y-2 pt-2 border-t border-neutral-100">
+                  <div className="space-y-2 pt-2 border-t border-[#202738]">
                     <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block font-bold">LIFECYCLE STATUS (AUTOSENDS WHATSAPP/EMAIL/SMS)</span>
                     <div className="grid grid-cols-2 gap-2">
                       {['Order received', 'Payment success', 'Printing started', 'Packed', 'Shipped', 'Delivered'].map((st) => (
@@ -1279,8 +1358,8 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                           onClick={() => handleUpdateStatus(selectedOrder.id, st, `Status updated to ${st}`)}
                           className={`px-3 py-2 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer border transition-all ${
                             selectedOrder.status === st 
-                              ? 'bg-neutral-900 text-white border-neutral-900' 
-                              : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
+                              ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black border-transparent font-extrabold shadow-md' 
+                              : 'bg-[#161B28] text-neutral-300 border-[#273047] hover:bg-[#1F2639] hover:text-white'
                           }`}
                         >
                           {st}
@@ -1290,12 +1369,23 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-3xl border border-neutral-200/60 p-12 text-center text-neutral-500 flex flex-col justify-center items-center space-y-4 shadow-sm min-h-[40vh]">
-                  <Clipboard className="h-10 w-10 text-neutral-300" />
-                  <div className="space-y-1">
-                    <h4 className="font-serif text-base font-light text-neutral-800">Fulfillment Detail Panel</h4>
-                    <p className="text-xs text-neutral-400 font-light max-w-xs mx-auto">Select any order from the left list to view details, print 4x6 photo cutouts, GST invoices, or update status.</p>
+                <div className="bg-[#131722] rounded-3xl border border-[#22283A] p-10 text-center text-neutral-400 flex flex-col justify-center items-center space-y-4 shadow-xl min-h-[45vh]">
+                  <div className="w-14 h-14 rounded-2xl bg-[#1C2333] border border-[#2D3852] flex items-center justify-center text-[#D4AF37]">
+                    <Clipboard className="h-7 w-7" />
                   </div>
+                  <div className="space-y-1">
+                    <h4 className="font-serif text-lg font-bold text-white">Fulfillment Detail Inspector</h4>
+                    <p className="text-xs text-neutral-400 max-w-xs mx-auto leading-relaxed">Select any order from the left pipeline to view details, print 4x6 photo cutouts, generate GST invoices, or update status.</p>
+                  </div>
+                  {orders.length === 0 && (
+                    <button
+                      onClick={handleCreateTestOrder}
+                      className="px-4 py-2 bg-[#1C2333] hover:bg-[#252E44] text-[#D4AF37] border border-[#2D3852] rounded-xl text-xs font-mono font-bold uppercase cursor-pointer transition flex items-center gap-1.5"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Create Test Order to Inspect</span>
+                    </button>
+                  )}
                 </div>
               )}
 

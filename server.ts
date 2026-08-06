@@ -986,6 +986,50 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
   }
 });
 
+app.post("/api/admin/orders/create-test", requireAdmin, (req, res) => {
+  try {
+    const testOrder: any = {
+      id: `ORD-TEST-${Date.now().toString().slice(-6)}`,
+      cart: [
+        {
+          id: 'item-heart-demo',
+          shapeId: 'heart',
+          shapeName: 'Heart Magnet (4x4")',
+          quantity: 2,
+          price: 299,
+          previewUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=600&auto=format&fit=crop&q=80',
+          photoScale: 1.1,
+          photoPanX: 0,
+          photoPanY: 0,
+          captionText: 'Love & Memories ❤️'
+        }
+      ],
+      shippingDetails: {
+        fullName: 'Kavin Ramdeni',
+        phone: '9392576792',
+        email: 'kriatechgroup@gmail.com',
+        address: 'Shop no 9, Mallikarjuna Towers, Radha Krishna Rd, Venkata Ramana Colony',
+        city: 'Hyderabad',
+        state: 'Telangana',
+        pincode: '500085'
+      },
+      status: 'Paid',
+      transactionId: `pay_test_${Math.floor(10000000 + Math.random() * 90000000)}`,
+      createdAt: new Date().toISOString(),
+      grandTotal: 598,
+      subtotal: 598,
+      bulkDiscount: 0,
+      deliveryCharge: 0,
+      history: [{ status: 'Paid', timestamp: new Date().toISOString(), note: 'Admin generated live test order' }]
+    };
+
+    saveOrder(testOrder);
+    return res.json({ success: true, order: testOrder });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.Response) => {
   try {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature, cart, shippingDetails, isMock, acceptedPolicies, couponCode } = req.body;
