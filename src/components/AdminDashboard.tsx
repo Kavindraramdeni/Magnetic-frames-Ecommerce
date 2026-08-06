@@ -1170,27 +1170,20 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
-                      className="px-3 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1"
+                      className="px-3 py-2.5 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
                     >
-                      <Printer className="h-3 w-3 text-[#E8DCCF]" />
-                      <span>4x6 Photo Sheet</span>
+                      <Printer className="h-4 w-4 text-[#E8DCCF]" />
+                      <span>🖨️ Print 4x6 Photo Sheet</span>
                     </button>
                     <button
                       onClick={() => setIsPrintTaxInvoiceOpen(selectedOrder)}
-                      className="px-3 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1"
+                      className="px-3 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <FileText className="h-3 w-3" />
-                      <span>GST Invoice</span>
-                    </button>
-                    <button
-                      onClick={() => setIsPrintShippingLabelOpen(selectedOrder)}
-                      className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1"
-                    >
-                      <Truck className="h-3 w-3" />
-                      <span>Ship Label</span>
+                      <FileText className="h-4 w-4" />
+                      <span>📑 GST Invoice</span>
                     </button>
                   </div>
 
@@ -1649,129 +1642,6 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               </div>
 
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- PRODUCTION SHIPPING LABEL POPUP --- */}
-      {isPrintShippingLabelOpen && (
-        <div className="fixed inset-0 z-50 bg-neutral-900/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg border border-neutral-300 shadow-2xl overflow-hidden text-left flex flex-col max-h-[90vh]">
-            
-            {/* Controls */}
-            <div className="bg-neutral-100 p-4 border-b border-neutral-200 flex justify-between items-center">
-              <div>
-                <h4 className="font-mono text-xs font-bold text-neutral-800 uppercase tracking-widest">Logistics Invoice Shipping Label</h4>
-                <p className="text-4xs font-mono text-neutral-500 uppercase tracking-widest mt-1">Courier: {isPrintShippingLabelOpen.courierName}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => window.print()}
-                  className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white transition-all text-2xs font-mono rounded-lg flex items-center gap-1 cursor-pointer font-bold uppercase"
-                >
-                  <Printer className="h-3 w-3" />
-                  <span>Print label</span>
-                </button>
-                <button
-                  onClick={() => setIsPrintShippingLabelOpen(null)}
-                  className="p-1 hover:bg-neutral-200 rounded-full transition-colors cursor-pointer text-neutral-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Print paper label container */}
-            <div className="p-8 bg-white font-mono text-neutral-950 select-all grow overflow-y-auto" id="print-shipping-label-body">
-              <div className="border-4 border-black p-4.5 space-y-4.5 rounded-xl">
-                
-                {/* Header routing */}
-                <div className="flex justify-between items-center border-b-2 border-dashed border-black pb-3">
-                  <div>
-                    <h3 className="font-sans text-xl font-black leading-none">{isPrintShippingLabelOpen.courierName}</h3>
-                    <p className="text-[10px] tracking-wide uppercase font-bold mt-1">Prepaid Premium Air Express</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] leading-none uppercase text-neutral-600">Shiprocket ID</p>
-                    <p className="font-bold text-sm select-all mt-1">{isPrintShippingLabelOpen.trackingNumber || 'SRW-9281'}</p>
-                  </div>
-                </div>
-
-                {/* Real SVG CODE128 Scannable Barcode */}
-                <div className="py-2.5 flex flex-col items-center justify-center border-b-2 border-dashed border-black">
-                  <div className="w-full h-12 bg-white flex items-center justify-center p-1 font-mono">
-                    <svg className="w-full h-10" viewBox="0 0 300 40" preserveAspectRatio="none">
-                      {Array.from({ length: 60 }).map((_, i) => {
-                        const codeVal = (isPrintShippingLabelOpen.trackingNumber || 'SR-1495330549').charCodeAt(i % (isPrintShippingLabelOpen.trackingNumber || 'SR-1495330549').length);
-                        const isBar = (codeVal + i * 7) % 3 !== 0;
-                        const barWidth = ((codeVal + i) % 3) + 1;
-                        return isBar ? (
-                          <rect key={i} x={i * 5} y="0" width={barWidth} height="40" fill="#000000" />
-                        ) : null;
-                      })}
-                    </svg>
-                  </div>
-                  <span className="text-[11px] font-mono font-bold tracking-[5px] select-all uppercase mt-1 text-black font-black">
-                    {isPrintShippingLabelOpen.trackingNumber || 'SR-1495330549'}
-                  </span>
-                </div>
-
-                {/* To Recipient Box */}
-                <div className="space-y-1.5 border-b-2 border-dashed border-black pb-3">
-                  <div className="flex justify-between items-start">
-                    <p className="text-[9px] text-neutral-600 uppercase font-bold">SHIP TO (RECIPIENT):</p>
-                    <span className="px-2 py-0.5 bg-black text-white text-[9px] font-bold uppercase tracking-wider rounded">PREPAID - DO NOT COLLECT CASH</span>
-                  </div>
-                  <h4 className="font-sans text-base font-black uppercase text-neutral-950 leading-tight">{isPrintShippingLabelOpen.shippingDetails.fullName}</h4>
-                  <div className="text-xs leading-relaxed space-y-0.5">
-                    <p className="font-bold">{isPrintShippingLabelOpen.shippingDetails.address}</p>
-                    <p className="font-black text-sm uppercase">{isPrintShippingLabelOpen.shippingDetails.city}, {isPrintShippingLabelOpen.shippingDetails.state} - {isPrintShippingLabelOpen.shippingDetails.pincode}</p>
-                    <p>Phone: <strong>{isPrintShippingLabelOpen.shippingDetails.phone}</strong></p>
-                    <p>Email: <span className="font-normal">{isPrintShippingLabelOpen.shippingDetails.email}</span></p>
-                  </div>
-                </div>
-
-                {/* Itemized Product Manifest Table */}
-                <div className="border-b-2 border-dashed border-black pb-3 space-y-1.5">
-                  <p className="text-[9px] text-neutral-600 uppercase font-bold">PACKAGE CONTENTS ({isPrintShippingLabelOpen.cart?.length || 1} ITEMS):</p>
-                  <table className="w-full text-left text-[10px] border-collapse">
-                    <thead>
-                      <tr className="border-b border-black font-bold">
-                        <th className="py-1">ITEM / SHAPE</th>
-                        <th className="py-1 text-center">QTY</th>
-                        <th className="py-1 text-right">TOTAL</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(isPrintShippingLabelOpen.cart || []).map((item: any, idx: number) => (
-                        <tr key={idx} className="border-b border-neutral-200">
-                          <td className="py-1 font-bold truncate max-w-[180px]">{item.shapeName || "Acrylic Magnet"} ({item.shapeId || "custom"})</td>
-                          <td className="py-1 text-center font-bold">{item.quantity}</td>
-                          <td className="py-1 text-right font-bold">₹{item.price * item.quantity}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Return Sender & Package dimensions */}
-                <div className="grid grid-cols-2 gap-4 text-[10px] leading-normal pt-1.5">
-                  <div className="space-y-0.5">
-                    <p className="text-[9px] text-neutral-600 uppercase font-bold">RETURN TO SENDER:</p>
-                    <p className="font-bold font-sans">KRIA STUDIO PRINTS</p>
-                    <p>Jubilee Tech Zone, Phase II</p>
-                    <p>Hyderabad, Telangana - 500085</p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p><span className="text-neutral-600">TOTAL PAID:</span> <strong>₹{isPrintShippingLabelOpen.grandTotal}</strong></p>
-                    <p><span className="text-neutral-600">WEIGHT:</span> <strong>0.35 KG</strong></p>
-                    <p><span className="text-neutral-600">ORDER NO:</span> <strong>{isPrintShippingLabelOpen.id}</strong></p>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
           </div>
         </div>
       )}
