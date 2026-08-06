@@ -111,6 +111,15 @@ db.exec(`
     is_approved INTEGER DEFAULT 1,
     created_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS coupons (
+    code TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    value REAL NOT NULL,
+    label TEXT NOT NULL,
+    min_order_value REAL DEFAULT 0,
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT NOT NULL
+  );
 `);
 
 const serializeOrder = (order: any) => ({
@@ -1362,6 +1371,50 @@ app.post("/api/admin/products", requireAdmin, (req, res) => {
 app.delete("/api/admin/products/:id", requireAdmin, (req, res) => {
   db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
   res.json({ success: true, message: `Deleted product ${req.params.id}` });
+});
+
+// ----------------------------------------------------------------------
+// ADMIN PROMO COUPONS CRUD
+// ----------------------------------------------------------------------
+app.get("/api/admin/coupons", requireAdmin, (_req, res) => {
+  try {
+    const rows = db.prepare("SELECT * FROM coupons ORDER BY created_at DESC").all() as any[];
+    const coupons = rows.map((c) => ({
+      code: c.code,
+      type: c.type,
+      value: c.value,
+      label: c.label,
+      minOrderValue: c.min_order_value || 0,
+      isActive: Boolean(c.is_active),
+      createdAt: c.created_at
+    }));
+    return res.json({ success: true, coupons });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/admin/coupons", requireAdmin, (req, res) => {
+  try {
+    const { code, type = "percent", value, label, minOrderValue = 0, isActive = true } = req.body || {};
+    if (!code || !value || !label) return res.status(400).json({ error: "Code, discount value, and label are required." });
+    const cleanCode = String(code).toUpperCase().trim();
+    db.prepare(`INSERT OR REPLACE INTO coupons (code, type, value, label, min_order_value, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
+      cleanCode, type, Number(value), label, Number(minOrderValue), isActive ? 1 : 0, new Date().toISOString()
+    );
+    // Sync into in-memory dictionary
+    VALID_COUPONS[cleanCode] = { type: type as any, value: Number(value), label };
+    return res.json({ success: true, message: `Coupon ${cleanCode} saved successfully.` });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/admin/coupons/:code", requireAdmin, (req, res) => {
+  const cleanCode = String(req.params.code).toUpperCase().trim();
+  db.prepare("DELETE FROM coupons WHERE code = ?").run(cleanCode);
+  delete VALID_COUPONS[cleanCode];
+  return res.json({ success: true, message: `Deleted coupon ${cleanCode}` });
 });
 
 const DEFAULT_REVIEWS = [

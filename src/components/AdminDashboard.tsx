@@ -1841,14 +1841,14 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
               <div>
-                <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-600 block mb-1">Sale Price (₹)</label>
+                <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-600 block mb-1">Standard Base Price (₹)</label>
                 <input 
                   type="number" 
                   value={editPriceForm.price} 
                   onChange={(e) => setEditPriceForm({...editPriceForm, price: Number(e.target.value)})}
-                  className="w-full border-2 border-neutral-300 focus:border-neutral-900 rounded-xl px-4 py-2.5 font-mono text-lg font-bold text-neutral-900 outline-none"
+                  className="w-full border-2 border-neutral-300 focus:border-neutral-900 rounded-xl px-4 py-2 font-mono text-lg font-bold text-neutral-900 outline-none"
                 />
               </div>
               <div>
@@ -1857,11 +1857,39 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   type="number" 
                   value={editPriceForm.originalPrice} 
                   onChange={(e) => setEditPriceForm({...editPriceForm, originalPrice: Number(e.target.value)})}
-                  className="w-full border-2 border-neutral-300 focus:border-neutral-900 rounded-xl px-4 py-2.5 font-mono text-base font-bold text-neutral-600 outline-none"
+                  className="w-full border-2 border-neutral-300 focus:border-neutral-900 rounded-xl px-4 py-2 font-mono text-base font-bold text-neutral-600 outline-none"
                 />
               </div>
+
+              {/* Size Variations Price Matrix Editor */}
+              <div className="p-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl space-y-2 text-xs font-mono">
+                <p className="font-bold text-neutral-900 uppercase text-[10px] tracking-wider">SIZE VARIATION PRICES (OVERRIDE BY SIZE)</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[9px] text-neutral-500 block font-bold">2" Mini (₹)</label>
+                    <input type="number" defaultValue={199} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-neutral-500 block font-bold">3" Classic (₹)</label>
+                    <input type="number" defaultValue={299} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-neutral-500 block font-bold">4" Deluxe (₹)</label>
+                    <input type="number" defaultValue={349} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-neutral-500 block font-bold">4x6" Grande (₹)</label>
+                    <input type="number" defaultValue={449} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[9px] text-neutral-500 block font-bold">8x12" Jumbo B2B (₹)</label>
+                    <input type="number" defaultValue={749} className="w-full border rounded px-2 py-1 text-xs font-mono font-bold bg-white" />
+                  </div>
+                </div>
+              </div>
+
               {editPriceForm.originalPrice > editPriceForm.price && editPriceForm.originalPrice > 0 && (
-                <div className="bg-emerald-50 text-emerald-800 text-xs font-mono font-bold px-3.5 py-2.5 rounded-xl border border-emerald-200 flex justify-between items-center">
+                <div className="bg-emerald-50 text-emerald-800 text-xs font-mono font-bold px-3.5 py-2 rounded-xl border border-emerald-200 flex justify-between items-center">
                   <span>Customer Discount:</span>
                   <span className="text-sm">{Math.round(((editPriceForm.originalPrice - editPriceForm.price) / editPriceForm.originalPrice) * 100)}% OFF</span>
                 </div>
