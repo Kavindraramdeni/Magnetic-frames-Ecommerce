@@ -99,6 +99,7 @@ db.exec(`
     frame_ratio TEXT NOT NULL,
     tagline TEXT NOT NULL,
     is_trending INTEGER DEFAULT 0,
+    stock INTEGER DEFAULT 500,
     created_at TEXT NOT NULL
   );
   CREATE TABLE IF NOT EXISTS reviews (
@@ -157,6 +158,17 @@ function saveOrder(order: any) {
     JSON.stringify(order.history),
     order.createdAt
   );
+
+  // Atomic inventory stock reduction for each purchased shape item
+  if (Array.isArray(order.cart)) {
+    for (const item of order.cart) {
+      try {
+        db.prepare("UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?").run(item.quantity || 1, item.shapeId);
+      } catch (err) {
+        console.warn("Stock update error:", err);
+      }
+    }
+  }
 }
 
 function saveCheckoutSession(session: any) {
