@@ -579,21 +579,27 @@ export default function Customizer({
           data = null;
         }
 
-        setServiceabilityResult({
-          serviceable: data?.serviceable ?? true,
-          courierName: data?.courierName || 'Express Air Courier',
-          estimatedDays: data?.estimatedDays || 3,
-          shippingCost: data?.shippingCost ?? (grandTotal >= 699 ? 0 : 60),
-          pincode: pin,
-          error: data?.error
-        });
+        if (res.ok && data?.serviceable) {
+          setServiceabilityResult({
+            serviceable: true,
+            courierName: data.courierName || 'Express Air Courier',
+            estimatedDays: data.estimatedDays || 3,
+            shippingCost: data.shippingCost ?? (grandTotal >= 699 ? 0 : 60),
+            pincode: pin,
+            error: undefined
+          });
+        } else {
+          setServiceabilityResult({
+            serviceable: false,
+            pincode: pin,
+            error: data?.error || `Invalid or unserviceable pincode ${pin}.`
+          });
+        }
       } catch (err) {
         setServiceabilityResult({
-          serviceable: true,
-          courierName: 'Delhivery Express Air',
-          estimatedDays: 3,
-          shippingCost: grandTotal >= 699 ? 0 : 60,
-          pincode: pin
+          serviceable: false,
+          pincode: pin,
+          error: `Unable to verify pincode ${pin}. Please re-check the 6 digits.`
         });
       } finally {
         setIsPincodeChecking(false);

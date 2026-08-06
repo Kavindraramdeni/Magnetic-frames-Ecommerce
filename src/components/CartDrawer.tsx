@@ -322,7 +322,9 @@ export default function CartDrawer({
                   </button>
                 </form>
               ) : (
-                <p className="text-[11px] font-mono text-neutral-500">{pincodeMessage}</p>
+                <p className={`text-[11px] font-mono font-medium ${pincodeVerified ? 'text-neutral-600' : 'text-rose-700 font-bold bg-rose-50 p-2 rounded-lg border border-rose-200'}`}>
+                  {pincodeMessage}
+                </p>
               )}
             </div>
 

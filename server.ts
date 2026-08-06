@@ -826,14 +826,50 @@ app.post("/api/checkout/verify-payment", verifyCheckoutPaymentHandler);
 app.post("/api/orders/confirm", verifyCheckoutPaymentHandler);
 
 app.post("/api/shiprocket/check-serviceability", async (req, res) => {
-  const { pincode, orderValue, weight = 0.25 } = req.body;
-  if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode)) return res.status(400).json({ error: "Please enter a valid 6-digit Indian pincode (must not start with 0)." });
+  const { pincode, weight = 0.25 } = req.body || {};
+  const cleanPin = String(pincode || "").trim().replace(/\D/g, "");
 
+  if (cleanPin.length !== 6 || !/^[1-9][0-9]{5}$/.test(cleanPin)) {
+    return res.json({
+      serviceable: false,
+      pincode: cleanPin,
+      error: `Invalid Pincode: "${cleanPin}" is not a valid 6-digit Indian postal PIN code.`
+    });
+  }
+
+  // 1. Validate against official Indian Postal Directory API (Real-time Postal Directory)
+  let postalInfo: any = null;
+  try {
+    const postalRes = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`);
+    if (postalRes.ok) {
+      const postalData: any = await postalRes.json();
+      if (Array.isArray(postalData) && postalData[0]?.Status === "Success" && Array.isArray(postalData[0]?.PostOffice) && postalData[0].PostOffice.length > 0) {
+        const po = postalData[0].PostOffice[0];
+        const city = po.District || po.Division || po.Name || "";
+        const state = po.State || "";
+        postalInfo = {
+          district: city,
+          state,
+          locationName: `${city}, ${state}`.trim()
+        };
+      } else {
+        return res.json({
+          serviceable: false,
+          pincode: cleanPin,
+          error: `Invalid Pincode: "${cleanPin}" is not a registered Indian postal PIN code.`
+        });
+      }
+    }
+  } catch (postalErr) {
+    console.error("Postal pincode directory lookup error:", postalErr);
+  }
+
+  // 2. Query Live Shiprocket Serviceability API
   const shiprocketToken = await getShiprocketToken();
   if (shiprocketToken) {
     try {
       const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE || "500085";
-      const response = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/serviceability/?pickup_pincode=${pickupPincode}&delivery_pincode=${pincode}&weight=${weight}&cod=0`, {
+      const response = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/serviceability/?pickup_pincode=${pickupPincode}&delivery_pincode=${cleanPin}&weight=${weight}&cod=0`, {
         headers: { Authorization: `Bearer ${shiprocketToken}` }
       });
       if (response.ok) {
@@ -843,18 +879,18 @@ app.post("/api/shiprocket/check-serviceability", async (req, res) => {
             const cheapest = data.data.available_courier_companies.reduce((prev: any, curr: any) => (prev.rate < curr.rate ? prev : curr));
             return res.json({
               serviceable: true,
-              pincode,
+              pincode: cleanPin,
               estimatedDays: cheapest.etd ? Number(cheapest.etd) : 3,
               shippingCost: Math.round(Number(cheapest.rate) || 60),
               courierName: cheapest.courier_name,
-              region: data.data.city || "India",
+              region: postalInfo ? postalInfo.locationName : (data.data.city || "India"),
               isReal: true
             });
           } else {
             return res.json({
               serviceable: false,
-              pincode,
-              error: "Currently not available for this location. We do not deliver to this pincode yet.",
+              pincode: cleanPin,
+              error: `Unserviceable: We currently do not have courier coverage for ${postalInfo ? postalInfo.locationName : cleanPin}.`,
               isReal: true
             });
           }
@@ -865,12 +901,24 @@ app.post("/api/shiprocket/check-serviceability", async (req, res) => {
     }
   }
 
-  const statePrefix = pincode.substring(0, 2);
-  let region = "National", estDays = 4, courierName = "Delhivery Surface";
-  if (["11","12","13","14","15","16","17","18","19"].includes(statePrefix)) { region = "North India"; estDays = 3; courierName = "BlueDart Express"; }
-  else if (["40","41","42","43","44","45","46","47","48","49"].includes(statePrefix)) { region = "West/Central India"; estDays = 3; courierName = "Delhivery Express"; }
-  else if (["50","51","52","53","56","57","58","59","60","61","62","63","64","68","69"].includes(statePrefix)) { region = "South India"; estDays = 2; courierName = "Delhivery Air"; }
-  return res.json({ serviceable: true, pincode, estimatedDays: estDays, shippingCost: 60, courierName, region, isReal: false });
+  // 3. Dynamic Location Response from Official Postal Registry (No hardcoded text!)
+  if (postalInfo) {
+    return res.json({
+      serviceable: true,
+      pincode: cleanPin,
+      estimatedDays: 3,
+      shippingCost: 60,
+      courierName: "Express Air Delivery",
+      region: postalInfo.locationName,
+      isReal: false
+    });
+  }
+
+  return res.json({
+    serviceable: false,
+    pincode: cleanPin,
+    error: `Invalid Pincode: "${cleanPin}" is not a valid 6-digit Indian postal PIN code.`
+  });
 });
 
 // ----------------------------------------------------------------------
