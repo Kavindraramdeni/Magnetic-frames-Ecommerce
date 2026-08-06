@@ -1252,6 +1252,18 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     </button>
                   </div>
 
+                  <button
+                    onClick={() => {
+                      const phone = selectedOrder.shippingDetails.phone.replace(/\D/g, '');
+                      const msg = encodeURIComponent(`Hello ${selectedOrder.shippingDetails.fullName}! Your KRIA TECH order #${selectedOrder.id} status is: ${selectedOrder.status.toUpperCase()}. Thank you for shopping with us! https://magnetic-frames-ecommerce.onrender.com`);
+                      window.open(`https://wa.me/91${phone}?text=${msg}`, '_blank');
+                    }}
+                    className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition shadow-sm"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    <span>📲 Send WhatsApp Notification to Customer</span>
+                  </button>
+
                   {/* Order Lifecycle Progress Buttons */}
                   <div className="space-y-2 pt-2 border-t border-neutral-100">
                     <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block font-bold">LIFECYCLE STATUS (AUTOSENDS WHATSAPP/EMAIL/SMS)</span>
