@@ -864,6 +864,152 @@ app.post("/api/shiprocket/check-serviceability", async (req, res) => {
   return res.json({ serviceable: true, pincode, estimatedDays: estDays, shippingCost: 60, courierName, region, isReal: false });
 });
 
+// ----------------------------------------------------------------------
+// FULL SHIPROCKET OFFICIAL API ENGINE (ALL 8 ENDPOINTS ACTIVE)
+// ----------------------------------------------------------------------
+
+// 1. POST /shiprocket/auth/login
+app.post(["/api/shiprocket/auth/login", "/shiprocket/auth/login"], async (req, res) => {
+  const email = req.body?.email || process.env.SHIPROCKET_EMAIL;
+  const password = req.body?.password || process.env.SHIPROCKET_PASSWORD;
+  if (!email || !password) return res.status(400).json({ error: "Shiprocket credentials missing. Set SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD in environment." });
+  
+  try {
+    const response = await fetch("https://apiv2.shiprocket.in/v1/external/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data: any = await response.json();
+    if (!response.ok) return res.status(response.status).json(data);
+    if (data.token) {
+      shiprocketTokenCache = { token: data.token, expiresAt: Date.now() + 9 * 24 * 60 * 60 * 1000 };
+    }
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to authenticate with Shiprocket API." });
+  }
+});
+
+// 2. POST /shiprocket/orders/create/adhoc
+app.post(["/api/shiprocket/orders/create/adhoc", "/shiprocket/orders/create/adhoc"], async (req, res) => {
+  const token = await getShiprocketToken();
+  if (!token) return res.status(401).json({ error: "Shiprocket authentication failed. Check API credentials." });
+  try {
+    const response = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. GET /shiprocket/courier/serviceability
+app.get(["/api/shiprocket/courier/serviceability", "/shiprocket/courier/serviceability"], async (req, res) => {
+  const { pickup_pincode = process.env.SHIPROCKET_PICKUP_PINCODE || "500085", delivery_pincode, weight = "0.25", cod = "0" } = req.query;
+  const token = await getShiprocketToken();
+  if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
+  try {
+    const url = `https://apiv2.shiprocket.in/v1/external/courier/serviceability/?pickup_pincode=${pickup_pincode}&delivery_pincode=${delivery_pincode}&weight=${weight}&cod=${cod}`;
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. POST /shiprocket/courier/assign/awb
+app.post(["/api/shiprocket/courier/assign/awb", "/shiprocket/courier/assign/awb"], async (req, res) => {
+  const token = await getShiprocketToken();
+  if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
+  try {
+    const response = await fetch("https://apiv2.shiprocket.in/v1/external/courier/assign/awb", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. GET /shiprocket/courier/track
+app.get(["/api/shiprocket/courier/track", "/shiprocket/courier/track", "/api/shiprocket/courier/track/awb/:awb"], async (req, res) => {
+  const awb = req.params.awb || req.query.awb || req.query.order_id;
+  const token = await getShiprocketToken();
+  if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
+  try {
+    const url = req.query.order_id 
+      ? `https://apiv2.shiprocket.in/v1/external/courier/track/order/${req.query.order_id}`
+      : `https://apiv2.shiprocket.in/v1/external/courier/track/awb/${awb}`;
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. POST /shiprocket/courier/generate/pickup
+app.post(["/api/shiprocket/courier/generate/pickup", "/shiprocket/courier/generate/pickup"], async (req, res) => {
+  const token = await getShiprocketToken();
+  if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
+  try {
+    const response = await fetch("https://apiv2.shiprocket.in/v1/external/orders/print/pickup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. GET/POST /shiprocket/courier/label
+app.all(["/api/shiprocket/courier/label", "/shiprocket/courier/label", "/api/shiprocket/courier/generate/label"], async (req, res) => {
+  const token = await getShiprocketToken();
+  if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
+  try {
+    const shipment_id = req.body?.shipment_id || req.query?.shipment_id;
+    const response = await fetch("https://apiv2.shiprocket.in/v1/external/courier/generate/label", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ shipment_id: Array.isArray(shipment_id) ? shipment_id : [Number(shipment_id)] })
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// 8. GET/POST /shiprocket/courier/invoice
+app.all(["/api/shiprocket/courier/invoice", "/shiprocket/courier/invoice", "/api/shiprocket/courier/generate/invoice"], async (req, res) => {
+  const token = await getShiprocketToken();
+  if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
+  try {
+    const ids = req.body?.ids || req.query?.ids || req.body?.order_id || req.query?.order_id;
+    const response = await fetch("https://apiv2.shiprocket.in/v1/external/orders/print/invoice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ids: Array.isArray(ids) ? ids : [Number(ids)] })
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/api/webhooks/razorpay", async (req, res) => {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!webhookSecret) return res.status(503).json({ error: "Razorpay webhook secret is not configured." });
