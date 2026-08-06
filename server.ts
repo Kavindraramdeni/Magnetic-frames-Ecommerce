@@ -182,6 +182,47 @@ for (const s of initialSettings) {
   } catch (e) {}
 }
 
+// --- AUTOMATED DAILY SQLITE DATABASE BACKUP ENGINE (30-DAY RETENTION) ---
+function backupDatabase() {
+  try {
+    const backupDir = path.join(process.cwd(), 'data', 'backups');
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    const backupFileName = `kria_backup_${dateStr}.sqlite`;
+    const backupPath = path.join(backupDir, backupFileName);
+
+    if (!fs.existsSync(backupPath) && fs.existsSync(DB_FILE)) {
+      fs.copyFileSync(DB_FILE, backupPath);
+      console.log(`[DATABASE BACKUP] Daily SQLite backup created: ${backupFileName}`);
+    }
+
+    // Auto-prune backups older than 30 days
+    const files = fs.readdirSync(backupDir);
+    const now = Date.now();
+    const maxAgeMs = 30 * 24 * 60 * 60 * 1000;
+
+    for (const file of files) {
+      if (file.startsWith('kria_backup_') && file.endsWith('.sqlite')) {
+        const filePath = path.join(backupDir, file);
+        const stats = fs.statSync(filePath);
+        if (now - stats.mtimeMs > maxAgeMs) {
+          fs.unlinkSync(filePath);
+          console.log(`[DATABASE BACKUP] Pruned 30+ day old backup: ${file}`);
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error('[DATABASE BACKUP ERROR]', err.message);
+  }
+}
+
+// Trigger initial backup on server startup & schedule 24h timer
+backupDatabase();
+setInterval(backupDatabase, 24 * 60 * 60 * 1000);
+
 function getBusinessSettings() {
   const rows = (db.prepare("SELECT * FROM business_settings").all() || []) as any[];
   const settingsObj: Record<string, string> = {};
@@ -1180,6 +1221,32 @@ app.post(["/api/shiprocket/courier/assign/awb", "/shiprocket/courier/assign/awb"
     });
     const data = await response.json();
     return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// --- ADMIN DATABASE BACKUP ENDPOINTS ---
+app.get("/api/admin/backups", requireAdmin, (_req, res) => {
+  try {
+    const backupDir = path.join(process.cwd(), 'data', 'backups');
+    if (!fs.existsSync(backupDir)) return res.json({ backups: [] });
+    const files = fs.readdirSync(backupDir)
+      .filter(f => f.startsWith('kria_backup_') && f.endsWith('.sqlite'))
+      .map(f => {
+        const stats = fs.statSync(path.join(backupDir, f));
+        return { filename: f, sizeBytes: stats.size, createdAt: stats.mtime.toISOString() };
+      });
+    return res.json({ backups: files });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/admin/backups/trigger", requireAdmin, (_req, res) => {
+  try {
+    backupDatabase();
+    return res.json({ success: true, message: "Database backup created successfully." });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
