@@ -773,6 +773,95 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
   return order;
 }
 
+async function sendTransactionalEmailNotifications(order: any, type: 'SUCCESS' | 'FAILED') {
+  const adminEmail = "kriatechgroup@gmail.com";
+  const customerEmail = order.shippingDetails?.email;
+  const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
+
+  console.log(`[NOTIFICATIONS] Order ${order.id} ${type}. Admin: ${adminEmail}, Customer: ${customerEmail}`);
+
+  if (resendApiKey) {
+    try {
+      // 1. Send Notification Email to Store Owner (You)
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: "KRIA TECH <orders@kriatech.in>",
+          to: [adminEmail],
+          subject: `🎉 NEW ORDER RECEIVED #${order.id} — ₹${order.grandTotal}`,
+          html: `
+            <div style="font-family: sans-serif; padding: 20px; color: #111;">
+              <h2 style="color: #10B981;">🎉 New Paid Order Received!</h2>
+              <p><strong>Order ID:</strong> ${order.id}</p>
+              <p><strong>Customer:</strong> ${order.shippingDetails?.fullName} (${order.shippingDetails?.phone})</p>
+              <p><strong>Email:</strong> ${order.shippingDetails?.email}</p>
+              <p><strong>Shipping Address:</strong> ${order.shippingDetails?.address}, ${order.shippingDetails?.city} - ${order.shippingDetails?.pincode}</p>
+              <p><strong>Grand Total:</strong> ₹${order.grandTotal}</p>
+              <p><strong>Payment Status:</strong> ${order.status}</p>
+            </div>
+          `
+        })
+      });
+
+      // 2. Send Confirmation Email to Customer
+      if (customerEmail) {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: "KRIA TECH <orders@kriatech.in>",
+            to: [customerEmail],
+            subject: `✨ Order Confirmed #${order.id} — KRIA TECH`,
+            html: `
+              <div style="font-family: sans-serif; padding: 20px; color: #111;">
+                <h2>Thank you for your order, ${order.shippingDetails?.fullName}!</h2>
+                <p>Your custom acrylic photo magnet order <strong>#${order.id}</strong> has been confirmed and is being processed for laser cutting & photo printing.</p>
+                <p><strong>Amount Paid:</strong> ₹${order.grandTotal}</p>
+                <p><strong>Delivery Address:</strong> ${order.shippingDetails?.address}, ${order.shippingDetails?.city} - ${order.shippingDetails?.pincode}</p>
+                <br/>
+                <p>Track your order status anytime at <a href="https://kriatech.in">https://kriatech.in</a></p>
+                <p>Warm regards,<br/><strong>KRIA TECH Team</strong></p>
+              </div>
+            `
+          })
+        });
+      }
+    } catch (e) {
+      console.error("Resend API Email Error:", e);
+    }
+  }
+}
+
+function processSuccessfulPayment(checkoutSessionId: string, paymentId: string, isMock = false) {
+  const session = getCheckoutSession(checkoutSessionId);
+  if (!session) throw new Error("Checkout session not found or expired.");
+  const { cart, shippingDetails, totals } = session;
+  const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = totals;
+  const order: any = {
+    id: `ORD-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`,
+    cart,
+    shippingDetails,
+    status: "Paid",
+    transactionId: paymentId,
+    createdAt: new Date().toISOString(),
+    grandTotal,
+    subtotal,
+    bulkDiscount,
+    deliveryCharge,
+    history: [{ status: "Paid", timestamp: new Date().toISOString(), note: isMock ? "Development mock payment confirmed." : "Razorpay server-side payment confirmation captured." }]
+  };
+  saveOrder(order);
+
+  // Send Email Notifications to Admin & Customer
+  sendTransactionalEmailNotifications(order, 'SUCCESS').catch((err) => console.error("Email notification background error:", err));
+
+  // Automatically create order in live Shiprocket dashboard upon payment!
+  syncOrderToShiprocket(order).catch((err) => console.error("Auto Shiprocket sync background error:", err));
+
+  return order;
+}
+
 const createCheckoutOrderHandler = async (req: express.Request, res: express.Response) => {
   try {
     const { cart, shippingDetails, acceptedPolicies = true, couponCode } = req.body;
