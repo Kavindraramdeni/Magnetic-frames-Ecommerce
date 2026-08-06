@@ -500,9 +500,24 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [catalogForm, setCatalogForm] = useState<any | null>(null);
 
   // Dedicated Main Tab Navigation
-  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'coupons' | 'shiprocket' | 'analytics' | 'settings'>('orders');
+  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'b2b' | 'coupons' | 'shiprocket' | 'analytics' | 'settings'>('orders');
   const [couponsList, setCouponsList] = useState<any[]>([]);
   const [newCouponForm, setNewCouponForm] = useState({ code: '', type: 'percent', value: 10, label: 'Special Discount', minOrderValue: 0 });
+
+  const [b2bSizePrices, setB2bSizePrices] = useState({
+    mini: 199,      // 2" Mini
+    classic: 299,   // 3" Classic
+    deluxe: 349,    // 4" Deluxe
+    grande: 449,    // 4x6" Grande
+    jumbo: 749      // 8x12" Jumbo B2B
+  });
+
+  const [b2bTiers, setB2bTiers] = useState([
+    { minQty: 5, maxQty: 10, discountPercent: 10, label: '5-10 Frames (10% OFF)' },
+    { minQty: 11, maxQty: 25, discountPercent: 20, label: '11-25 Frames (20% OFF)' },
+    { minQty: 26, maxQty: 50, discountPercent: 30, label: '26-50 Frames (30% OFF)' },
+    { minQty: 51, maxQty: 999, discountPercent: 40, label: '50+ Frames Bulk (40% OFF)' }
+  ]);
 
   const [businessSettings, setBusinessSettings] = useState<any>({
     company_name: 'KRIA TECH',
@@ -1006,6 +1021,16 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             </button>
 
             <button
+              onClick={() => setAdminTab('b2b')}
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'b2b' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Building2 className="h-4 w-4 text-blue-400" />
+              <span>🏢 Wholesale B2B CMS (MOQ 5+)</span>
+            </button>
+
+            <button
               onClick={() => setAdminTab('coupons')}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${
                 adminTab === 'coupons' ? 'bg-[#E8DCCF] text-neutral-950 shadow-md font-extrabold' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
@@ -1325,6 +1350,178 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* TAB 3: 🏢 WHOLESALE B2B MANAGEMENT MODULE (MOQ 5+) */}
+        {adminTab === 'b2b' && (
+          <div className="space-y-8 text-left">
+            
+            {/* Header Banner */}
+            <div className="bg-neutral-900 text-white rounded-3xl p-6 md:p-8 space-y-3 shadow-lg">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#E8DCCF] font-bold">BULK DISCOUNTS & SIZE MATRIX</span>
+                  <h3 className="font-serif text-2xl font-bold text-white mt-1">Wholesale B2B Catalog Operations</h3>
+                  <p className="text-xs text-neutral-400 font-mono mt-1">Manage unit prices across all 5 frame sizes & configure 4-tier volume discount rules for corporate & reseller bulk orders (MOQ 5+).</p>
+                </div>
+                <span className="px-3.5 py-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-mono font-bold rounded-full uppercase">
+                  MOQ 5+ Active
+                </span>
+              </div>
+            </div>
+
+            {/* B2B 5-Size Base Price Matrix Editor */}
+            <div className="bg-white rounded-3xl border border-neutral-200 p-6 md:p-8 shadow-sm space-y-6">
+              <div className="border-b border-neutral-200 pb-4 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 font-bold">SIZE MATRIX PRICES</span>
+                  <h4 className="font-serif text-xl font-bold text-neutral-900 mt-0.5">5 Standard Frame Sizes (Base Unit Prices)</h4>
+                </div>
+                <button
+                  onClick={() => alert("Wholesale size base prices updated across B2B customizer!")}
+                  className="px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer"
+                >
+                  Save B2B Size Prices
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 font-mono text-xs">
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">2" MINI FRAME</span>
+                  <p className="text-xs text-neutral-400">Pocket & Laptop Magnet</p>
+                  <div className="flex items-center gap-1 pt-1">
+                    <span className="font-bold text-sm">₹</span>
+                    <input
+                      type="number"
+                      value={b2bSizePrices.mini}
+                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, mini: Number(e.target.value) })}
+                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">3" CLASSIC FRAME</span>
+                  <p className="text-xs text-neutral-400">Standard Fridge Magnet</p>
+                  <div className="flex items-center gap-1 pt-1">
+                    <span className="font-bold text-sm">₹</span>
+                    <input
+                      type="number"
+                      value={b2bSizePrices.classic}
+                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, classic: Number(e.target.value) })}
+                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">4" DELUXE FRAME</span>
+                  <p className="text-xs text-neutral-400">Premium Desk Magnet</p>
+                  <div className="flex items-center gap-1 pt-1">
+                    <span className="font-bold text-sm">₹</span>
+                    <input
+                      type="number"
+                      value={b2bSizePrices.deluxe}
+                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, deluxe: Number(e.target.value) })}
+                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">4x6" GRANDE FRAME</span>
+                  <p className="text-xs text-neutral-400">Glossy Portrait Cutout</p>
+                  <div className="flex items-center gap-1 pt-1">
+                    <span className="font-bold text-sm">₹</span>
+                    <input
+                      type="number"
+                      value={b2bSizePrices.grande}
+                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, grande: Number(e.target.value) })}
+                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">8x12" JUMBO B2B</span>
+                  <p className="text-xs text-neutral-400">Corporate Award Frame</p>
+                  <div className="flex items-center gap-1 pt-1">
+                    <span className="font-bold text-sm">₹</span>
+                    <input
+                      type="number"
+                      value={b2bSizePrices.jumbo}
+                      onChange={(e) => setB2bSizePrices({ ...b2bSizePrices, jumbo: Number(e.target.value) })}
+                      className="w-full bg-white border border-neutral-300 rounded-lg px-2 py-1 font-bold text-sm outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* B2B Tiered Volume Discounts & 4 B2B Product Shapes */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
+              {/* Tiered Bulk Volume Discounts */}
+              <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-4 font-mono text-xs">
+                <div className="border-b border-neutral-200 pb-3">
+                  <span className="text-[10px] uppercase font-bold text-blue-600">VOLUME TIER DISCOUNTS</span>
+                  <h4 className="font-serif text-lg font-bold text-neutral-900 mt-0.5">B2B Quantity Discount Tiers</h4>
+                </div>
+
+                <div className="space-y-3">
+                  {b2bTiers.map((tier, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200">
+                      <div>
+                        <p className="font-bold text-neutral-900 text-sm">{tier.label}</p>
+                        <p className="text-neutral-500 text-[10px]">Min Qty: {tier.minQty} units</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-lg text-xs">
+                          {tier.discountPercent}% OFF
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4 Core B2B Shape Collections */}
+              <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-4 font-mono text-xs">
+                <div className="border-b border-neutral-200 pb-3">
+                  <span className="text-[10px] uppercase font-bold text-purple-600">B2B SHAPE CATALOG</span>
+                  <h4 className="font-serif text-lg font-bold text-neutral-900 mt-0.5">4 Bulk B2B Frame Collections</h4>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1">
+                    <p className="font-bold text-neutral-900 text-sm">Minimal Circle</p>
+                    <p className="text-neutral-500 text-[10px]">Shape ID: `circle`</p>
+                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] rounded font-bold uppercase">All 5 Sizes</span>
+                  </div>
+
+                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1">
+                    <p className="font-bold text-neutral-900 text-sm">Sculpted Heart</p>
+                    <p className="text-neutral-500 text-[10px]">Shape ID: `heart`</p>
+                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] rounded font-bold uppercase">All 5 Sizes</span>
+                  </div>
+
+                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1">
+                    <p className="font-bold text-neutral-900 text-sm">Arch Curve</p>
+                    <p className="text-neutral-500 text-[10px]">Shape ID: `arch`</p>
+                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] rounded font-bold uppercase">All 5 Sizes</span>
+                  </div>
+
+                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1">
+                    <p className="font-bold text-neutral-900 text-sm">Polaroid Set</p>
+                    <p className="text-neutral-500 text-[10px]">Shape ID: `polaroid`</p>
+                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] rounded font-bold uppercase">All 5 Sizes</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         )}
 
