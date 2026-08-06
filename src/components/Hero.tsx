@@ -34,12 +34,12 @@ export default function Hero({ onScrollToCustomizer, onScrollToShapes, onOpenSty
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-play transitions every 1 second (1000ms) as requested
+  // Auto-play transitions every 2 seconds (2000ms) as requested
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 1000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [isPaused]);
@@ -119,26 +119,28 @@ export default function Hero({ onScrollToCustomizer, onScrollToShapes, onOpenSty
 
           </div>
 
-          {/* Right Hero Visual: 1-Second Auto-Transitioning Carousel Frame */}
+          {/* Right Hero Visual: 2-Second Auto-Transitioning Carousel Frame */}
           <div 
             className="lg:col-span-6 relative w-full flex items-center justify-center pt-6 lg:pt-0"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
-            <div className="relative w-full aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white bg-neutral-900 group">
+            <div className="relative w-full aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white bg-white group flex items-center justify-center">
               
-              {/* Carousel Slide Images with 1-Second Smooth Fade */}
+              {/* Carousel Slide Images with 2-Second Smooth Fade & Fit Alignment */}
               {HERO_SLIDES.map((slide, index) => (
                 <div
                   key={index}
-                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                  className={`absolute inset-0 transition-opacity duration-500 ease-in-out bg-white flex items-center justify-center ${
                     index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
                   }`}
                 >
                   <img
                     src={slide.imageUrl}
                     alt={slide.label}
-                    className="w-full h-full object-cover select-none"
+                    className={`w-full h-full select-none ${
+                      index === 0 ? 'object-cover' : 'object-contain p-1'
+                    }`}
                   />
                 </div>
               ))}
