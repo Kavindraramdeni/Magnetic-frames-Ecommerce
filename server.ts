@@ -115,9 +115,6 @@ db.exec(`
     image TEXT,
     created_at TEXT NOT NULL
   );
-  try {
-    db.exec("ALTER TABLE products ADD COLUMN image TEXT;");
-  } catch(e) {}
   CREATE TABLE IF NOT EXISTS reviews (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -176,6 +173,11 @@ try {
       insertCouponStmt.run(c.code, c.type, c.value, c.label, c.min_order_value, new Date().toISOString());
     }
   }
+} catch (e) {}
+
+// Database migration: Ensure 'image' column exists on products table
+try {
+  db.exec("ALTER TABLE products ADD COLUMN image TEXT;");
 } catch (e) {}
 
 // Initial seed for primary warehouse (Exact PDF Address)
