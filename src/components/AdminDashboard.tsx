@@ -1010,69 +1010,92 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Processing', 'Fulfillment processing started.')}
-                      disabled={selectedOrder.status === 'Processing'}
-                      className={`py-2 px-3 rounded-xl border text-[11px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        selectedOrder.status === 'Processing'
-                          ? 'bg-[#E8DCCF]/80 border-[#d3c0ad] text-neutral-900 font-bold'
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Order received', 'Order payload received & logged.')}
+                      disabled={selectedOrder.status === 'Order received'}
+                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        selectedOrder.status === 'Order received'
+                          ? 'bg-blue-600 border-blue-600 text-white'
                           : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
                       }`}
                     >
-                      <Activity className="h-3.5 w-3.5" />
-                      <span>Processing</span>
+                      <Clipboard className="h-3.5 w-3.5" />
+                      <span>1. Received</span>
                     </button>
 
                     <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Printing', 'Loaded designs onto laser cutting bed.')}
-                      disabled={selectedOrder.status === 'Printing'}
-                      className={`py-2 px-3 rounded-xl border text-[11px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        selectedOrder.status === 'Printing'
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Payment success', 'Prepaid payment verified.')}
+                      disabled={selectedOrder.status === 'Payment success' || selectedOrder.status === 'Paid'}
+                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        selectedOrder.status === 'Payment success' || selectedOrder.status === 'Paid'
+                          ? 'bg-emerald-600 border-emerald-600 text-white'
+                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
+                      }`}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span>2. Paid</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Printing started', 'UV printing & precision laser cutting started.')}
+                      disabled={selectedOrder.status === 'Printing started' || selectedOrder.status === 'Printing'}
+                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        selectedOrder.status === 'Printing started' || selectedOrder.status === 'Printing'
                           ? 'bg-amber-500 border-amber-500 text-white'
                           : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
                       }`}
                     >
                       <Printer className="h-3.5 w-3.5" />
-                      <span>Start Print</span>
+                      <span>3. Printing</span>
                     </button>
 
                     <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Quality Check', 'Engraving and magnets tested.')}
-                      disabled={selectedOrder.status === 'Quality Check'}
-                      className={`py-2 px-3 rounded-xl border text-[11px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        selectedOrder.status === 'Quality Check'
-                          ? 'bg-purple-600 border-purple-600 text-white'
-                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
-                      }`}
-                    >
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>QA Pass</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Packed', 'Magnet boxed in safe-foam mailer.')}
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Packed', 'Quality checked & packed in foam box.')}
                       disabled={selectedOrder.status === 'Packed'}
-                      className={`py-2 px-3 rounded-xl border text-[11px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
                         selectedOrder.status === 'Packed'
                           ? 'bg-orange-500 border-orange-500 text-white'
                           : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
                       }`}
                     >
                       <Box className="h-3.5 w-3.5" />
-                      <span>Pack Box</span>
+                      <span>4. Packed</span>
                     </button>
 
                     <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Shipped', 'Handed off package to courier team.')}
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Shipped', 'Handed over to courier with tracking AWB.')}
                       disabled={selectedOrder.status === 'Shipped'}
-                      className={`py-2 px-3 rounded-xl border text-[11px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer col-span-2 ${
+                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
                         selectedOrder.status === 'Shipped'
-                          ? 'bg-emerald-600 border-emerald-600 text-white'
+                          ? 'bg-indigo-600 border-indigo-600 text-white'
                           : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
                       }`}
                     >
                       <Truck className="h-3.5 w-3.5" />
-                      <span>Mark Shipped</span>
+                      <span>5. Shipped</span>
                     </button>
+
+                    <button
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Delivered', 'Order delivered to customer address.')}
+                      disabled={selectedOrder.status === 'Delivered'}
+                      className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        selectedOrder.status === 'Delivered'
+                          ? 'bg-emerald-700 border-emerald-700 text-white'
+                          : 'bg-white border-neutral-300 hover:bg-neutral-50 text-neutral-800'
+                      }`}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span>6. Delivered</span>
+                    </button>
+                  </div>
+
+                  {/* Multi-Channel Automated Notification Badge */}
+                  <div className="p-2.5 bg-white border border-neutral-200 rounded-xl text-[10px] font-mono text-neutral-600 flex items-center justify-between">
+                    <span className="font-bold text-neutral-900 uppercase">AUTOMATED ALERTS</span>
+                    <div className="flex items-center gap-2 text-[9px] font-bold">
+                      <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">💬 WhatsApp</span>
+                      <span className="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">📧 Email</span>
+                      <span className="text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">📱 SMS</span>
+                    </div>
                   </div>
 
                   {/* Shiprocket Sync trigger */}
