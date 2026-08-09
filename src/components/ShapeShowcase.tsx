@@ -117,8 +117,8 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
           </button>
         </div>
 
-        {/* Shapes Grid Layout - Compact 2-Column Mobile Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-5">
+        {/* Shapes Grid Layout - 3-Column Mobile Grid for maximum browsing density */}
+        <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-1.5 sm:gap-4">
           {filteredShapes.map((shape: any) => {
             const baseShape = baseShapeLookup.get(shape.id) || BASE_SHAPES.find((item) => item.id === shape.id);
             const sampleImage = shapeSampleImages[shape.id as MagnetShapeId] || shapeSampleImages[baseShape?.id as MagnetShapeId] || shapeSampleImages.arch;
@@ -131,21 +131,21 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
             return (
               <div
                 key={shape.id}
-                className="group bg-white rounded-2xl p-2.5 sm:p-4 border border-neutral-200/80 transition-all duration-300 hover:shadow-lg hover:border-neutral-300 flex flex-col justify-between"
+                className="group bg-white rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border border-neutral-200/80 transition-all duration-300 hover:shadow-lg hover:border-neutral-300 flex flex-col justify-between"
               >
                 {/* Image Preview Container */}
                 <div>
-                  <div className="relative w-full aspect-[4/3] bg-[#FAF8F5] rounded-xl overflow-hidden mb-2 flex items-center justify-center p-1.5 border border-neutral-100">
-                    <div className={`relative ${shape.frameRatio || baseShape?.frameRatio || 'aspect-[4/5]'} w-[75%] sm:w-[65%] max-w-[110px] select-none group-hover:scale-105 transition-all duration-300`}>
-                      <div className={`w-full h-full bg-white p-1 shadow-xs ring-1 ring-black/5 overflow-hidden relative ${
+                  <div className="relative w-full aspect-[4/3] bg-[#FAF8F5] rounded-lg sm:rounded-xl overflow-hidden mb-1.5 sm:mb-2 flex items-center justify-center p-1 border border-neutral-100">
+                    <div className={`relative ${shape.frameRatio || baseShape?.frameRatio || 'aspect-[4/5]'} w-[85%] sm:w-[65%] max-w-[110px] select-none group-hover:scale-105 transition-all duration-300`}>
+                      <div className={`w-full h-full bg-white p-0.5 sm:p-1 shadow-xs ring-1 ring-black/5 overflow-hidden relative ${
                         shape.id === 'arch' ? 'shape-arch' :
                         shape.id === 'circle' ? 'rounded-full' :
-                        shape.id === 'polaroid' ? 'shape-polaroid bg-white pb-3 pt-1 px-1' :
+                        shape.id === 'polaroid' ? 'shape-polaroid bg-white pb-2 sm:pb-3 pt-0.5 px-0.5' :
                         shape.id === 'love' ? 'shape-heart' :
-                        shape.id === 'filmstrip' ? 'bg-zinc-950 p-[2px] rounded' :
-                        shape.id === 'scalloped-stand' ? 'shape-scalloped border-2 border-[#8B0000] p-1' :
+                        shape.id === 'filmstrip' ? 'bg-zinc-950 p-[1px] rounded' :
+                        shape.id === 'scalloped-stand' ? 'shape-scalloped border border-[#8B0000] p-0.5' :
                         shape.id === 'hexagon' ? 'shape-hexagon' :
-                        shape.id === 'oval' ? 'shape-oval' : 'rounded-xl'
+                        shape.id === 'oval' ? 'shape-oval' : 'rounded-lg sm:rounded-xl'
                       }`}>
                         
                         <div className="w-full h-full overflow-hidden rounded-xs relative">
@@ -167,8 +167,8 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
                         </div>
 
                         {shape.id === 'polaroid' && (
-                          <div className="absolute bottom-0.5 left-0 w-full text-center text-[5px] font-serif italic text-stone-500">
-                            Paris Sunshine
+                          <div className="absolute bottom-0.5 left-0 w-full text-center text-[4px] sm:text-[5px] font-serif italic text-stone-500 truncate">
+                            Memory
                           </div>
                         )}
                       </div>
@@ -176,21 +176,17 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
                   </div>
 
                   {/* Pricing and Compact Details */}
-                  <div className="space-y-1 text-left">
+                  <div className="space-y-0.5 sm:space-y-1 text-left">
+                    <h3 className="font-serif text-[11px] sm:text-base font-bold text-[#111111] leading-tight truncate">
+                      {displayName}
+                    </h3>
                     <div className="flex items-center justify-between gap-1">
-                      <h3 className="font-serif text-xs sm:text-base font-bold text-[#111111] leading-tight truncate">
-                        {displayName}
-                      </h3>
-                      <span className="font-mono text-[10px] sm:text-xs font-bold text-[#111111] bg-neutral-100 px-1.5 py-0.5 rounded-md shrink-0">
+                      <span className="font-mono text-[10px] sm:text-xs font-bold text-[#111111]">
                         ₹{displayPrice}
                       </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[9px] font-mono text-neutral-400">
-                      <span>SIZE: {displayDimensions}</span>
-                      {(isTrending || shape.id === 'polaroid' || shape.id === 'arch') && (
-                        <span className="text-amber-800 font-bold">🔥 POPULAR</span>
-                      )}
+                      <span className="font-mono text-[8px] sm:text-[10px] text-neutral-400 uppercase hidden xs:inline">
+                        {displayDimensions}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -198,9 +194,9 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
                 {/* Compact Order Trigger Button */}
                 <button
                   onClick={() => onSelectShape(shape.id)}
-                  className="mt-2.5 w-full cursor-pointer bg-neutral-900 hover:bg-black text-white transition-all py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95"
+                  className="mt-1.5 sm:mt-2.5 w-full cursor-pointer bg-neutral-900 hover:bg-black text-white transition-all py-1 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95"
                 >
-                  Order Now
+                  Order
                 </button>
 
               </div>
