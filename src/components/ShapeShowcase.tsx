@@ -69,18 +69,18 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
   };
 
   return (
-    <section id="shapes-showcase" className="select-none py-12 sm:py-20">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-8">
+    <section id="shapes-showcase" className="select-none py-6 sm:py-10">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-6">
         
         {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto space-y-2">
-          <span className="text-xs font-mono tracking-widest text-neutral-400 uppercase font-semibold">
-            DISTINCTIVE ACRYLIC SHAPES
+        <div className="text-center max-w-3xl mx-auto space-y-1.5">
+          <span className="text-xs font-mono tracking-widest text-[#6B1D2F] uppercase font-bold">
+            POPULAR PRODUCTS
           </span>
-          <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#111111] tracking-tight">
-            Curate Your Wall in <span className="italic font-serif font-medium">Distinctive Shapes</span>
+          <h2 className="font-serif text-3xl sm:text-4xl font-light text-[#111111] tracking-tight">
+            Explore <span className="italic font-serif font-medium">Popular Products</span>
           </h2>
-          <div className="w-12 h-[1px] bg-neutral-400 mx-auto my-2"></div>
+          <div className="w-12 h-[1px] bg-neutral-300 mx-auto my-2"></div>
         </div>
 
         {/* Category Filter Chips - Quick Mobile Tap Navigation */}

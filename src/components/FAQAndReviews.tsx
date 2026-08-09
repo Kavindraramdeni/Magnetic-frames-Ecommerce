@@ -83,8 +83,8 @@ export default function FAQAndReviews() {
   };
 
   return (
-    <section id="faqs" className="select-none py-16 sm:py-24 bg-[#FAF8F5]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+    <section id="faqs" className="select-none py-8 sm:py-12 bg-[#FAF8F5]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12">
         
         {/* SECTION 1: CUSTOMER PHOTO REVIEWS */}
         <div className="space-y-8">

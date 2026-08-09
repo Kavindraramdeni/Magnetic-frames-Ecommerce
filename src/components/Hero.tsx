@@ -9,24 +9,16 @@ interface HeroProps {
 
 const HERO_SLIDES = [
   {
-    imageUrl: '/images/lifestyle_gallery_workspace_1779653492345.png',
-    label: 'Hand-polished 4mm Optical Acrylic'
-  },
-  {
     imageUrl: '/images/banner_memory_deserves_place.png',
     label: 'Every Memory Deserves a Place'
-  },
-  {
-    imageUrl: '/images/banner_easy_4step_installation.png',
-    label: 'Easy 4 Step Installation'
   },
   {
     imageUrl: '/images/banner_premium_design_made_to_last.png',
     label: 'Premium Design, Made to Last'
   },
   {
-    imageUrl: '/images/banner_perfect_for_magnetic_surfaces.png',
-    label: 'Perfect for Every Magnetic Surface'
+    imageUrl: '/images/banner_easy_4step_installation.png',
+    label: 'Easy 4-Step Installation'
   }
 ];
 
@@ -34,18 +26,18 @@ export default function Hero({ onScrollToCustomizer, onScrollToShapes, onOpenSty
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-play transitions every 2 seconds (2000ms) as requested
+  // Auto-play transitions every 2.5 seconds (2500ms)
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 2000);
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [isPaused]);
 
   return (
-    <section className="relative overflow-hidden select-none py-12 lg:py-20 bg-[#FAF8F5]">
+    <section className="relative overflow-hidden select-none py-6 sm:py-10 bg-[#FAF8F5]">
       {/* Background soft ambient image & blur overlays as in shared image */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none mix-blend-multiply"

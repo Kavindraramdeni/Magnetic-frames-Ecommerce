@@ -26,11 +26,11 @@ export default function LifestyleGallery() {
     : LIFESTYLE_GALLERY.filter((item) => item.category === selectedCategory);
 
   return (
-    <section id="lifestyle-gallery" className="select-none py-20">
+    <section id="lifestyle-gallery" className="select-none py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Headings */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 sm:mb-8 gap-4">
           <div className="space-y-3">
             <span className="text-xs font-mono tracking-widest text-[#666666] font-semibold uppercase flex items-center gap-1.5">
               <Camera className="h-3.5 w-3.5 text-neutral-400" />
