@@ -67,6 +67,25 @@ export default function Customizer({
   const [isShapeDropdownOpen, setIsShapeDropdownOpen] = useState<boolean>(false);
   const [quantity, setQuantity] = useState<number>(1);
   const [customCaption, setCustomCaption] = useState<string>('Precious Moments');
+  
+  // Carousel scroll ref and smooth auto-centering
+  const shapeCarouselRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (shapeCarouselRef.current) {
+      const activeBtn = shapeCarouselRef.current.querySelector(`[data-shape-id="${selectedShapeId}"]`);
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
+  }, [selectedShapeId]);
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (shapeCarouselRef.current) {
+      const scrollAmount = direction === 'left' ? -260 : 260;
+      shapeCarouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   const handlePrevShape = () => {
     const currentIndex = shapesCatalog.findIndex(s => s.id === selectedShapeId);
@@ -835,29 +854,47 @@ export default function Customizer({
 
         {/* 2. LIVE SHAPE MULTI-PREVIEW (Instant photo rendering across all acrylic shapes) */}
         <div className={`max-w-7xl mx-auto space-y-3 ${mobileStep === 2 ? 'hidden sm:block' : 'block'}`}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-            <div className="flex items-center gap-2.5">
+          <div className="flex flex-row items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-[#6B1D2F] text-white font-sans font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                 2
               </div>
-              <h3 className="font-sans font-bold text-base sm:text-lg text-[#111111] tracking-tight">
+              <h3 className="font-sans font-bold text-sm sm:text-lg text-[#111111] tracking-tight truncate">
                 Choose Shape for Active Photo
               </h3>
-              <span className="bg-[#E8DCCF] text-neutral-900 font-mono text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                Live Preview
-              </span>
             </div>
-            <span className="font-sans text-[11px] text-neutral-500 font-light">
-              Click any acrylic shape to switch frame style.
-            </span>
+            
+            {/* Horizontal Carousel Navigation Arrow Buttons */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => scrollCarousel('left')}
+                className="bg-white hover:bg-neutral-900 hover:text-white text-neutral-800 p-1.5 rounded-full border border-neutral-300 shadow-2xs transition active:scale-95 cursor-pointer"
+                title="Scroll shapes left"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollCarousel('right')}
+                className="bg-white hover:bg-neutral-900 hover:text-white text-neutral-800 p-1.5 rounded-full border border-neutral-300 shadow-2xs transition active:scale-95 cursor-pointer"
+                title="Scroll shapes right"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="w-full flex gap-3 sm:gap-4 overflow-x-auto pb-3 pt-1 px-1 scrollbar-thin">
+          <div 
+            ref={shapeCarouselRef}
+            className="w-full flex gap-3 sm:gap-4 overflow-x-auto pb-3 pt-1 px-1 scroll-smooth scrollbar-thin"
+          >
             {BASE_SHAPES.map((shape) => {
               const isSelected = selectedShapeId === shape.id;
               return (
                 <button
                   key={shape.id}
+                  data-shape-id={shape.id}
                   type="button"
                   onClick={() => {
                     setSelectedShapeId(shape.id);
