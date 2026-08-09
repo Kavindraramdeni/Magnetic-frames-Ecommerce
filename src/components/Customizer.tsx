@@ -968,8 +968,27 @@ export default function Customizer({
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleMouseUpOrLeave}
-                className="relative z-10 transition-transform duration-300 flex flex-col items-center group cursor-grab active:cursor-grabbing scale-[0.65] xs:scale-[0.8] sm:scale-90 lg:scale-100 origin-center touch-none"
+                className="relative z-10 transition-transform duration-300 flex flex-col items-center group cursor-grab active:cursor-grabbing scale-[0.65] xs:scale-[0.8] sm:scale-90 lg:scale-100 origin-center touch-none my-6"
               >
+                {/* Top Width Dimension Arrow (Pure Inches) */}
+                <div className="absolute -top-7 inset-x-0 flex items-center justify-center gap-2 z-30 pointer-events-none select-none">
+                  <span className="h-[1px] bg-neutral-400 w-10 sm:w-16" />
+                  <span className="font-mono text-[10px] font-bold text-neutral-900 bg-white border border-neutral-300/90 px-2 py-0.5 rounded-full shadow-xs">
+                    ← {activeShape.dimensions.includes('×') ? activeShape.dimensions.split('×')[0].trim() : activeShape.dimensions} →
+                  </span>
+                  <span className="h-[1px] bg-neutral-400 w-10 sm:w-16" />
+                </div>
+
+                {/* Left Height Dimension Arrow (Pure Inches) */}
+                {activeShape.dimensions.includes('×') && (
+                  <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2 z-30 pointer-events-none select-none">
+                    <span className="w-[1px] bg-neutral-400 h-8 sm:h-12" />
+                    <span className="font-mono text-[9px] font-bold text-neutral-900 bg-white border border-neutral-300/90 px-1.5 py-0.5 rounded-full shadow-xs whitespace-nowrap -rotate-90">
+                      ↑ {activeShape.dimensions.split('×')[1].trim()} ↓
+                    </span>
+                    <span className="w-[1px] bg-neutral-400 h-8 sm:h-12" />
+                  </div>
+                )}
                 
                 {/* Simulated Glass Acrylic Frame Outer Border */}
                 <div 

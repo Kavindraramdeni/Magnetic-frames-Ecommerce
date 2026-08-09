@@ -16,7 +16,7 @@ export const BASE_SHAPES: MagnetShape[] = [
     id: 'circle',
     name: 'Minimal Circle',
     price: SHAPE_PRICES.circle,
-    dimensions: '3.0 inch Diameter',
+    dimensions: '3.0 inch × 3.0 inch',
     description: 'Pure, modern, and perfectly balanced. Strips away the noise to draw immediate focus to your favorite faces or macro food and flower captures.',
     shapeClass: 'rounded-full border-2 border-white/40',
     frameRatio: 'aspect-square',

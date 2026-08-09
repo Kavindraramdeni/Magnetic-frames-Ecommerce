@@ -180,12 +180,12 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
                     <h3 className="font-serif text-[11px] sm:text-base font-bold text-[#111111] leading-tight truncate">
                       {displayName}
                     </h3>
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="font-mono text-[9px] sm:text-xs font-semibold text-[#6B1D2F] block truncate">
+                      📐 {displayDimensions}
+                    </div>
+                    <div className="flex items-center justify-between gap-1 pt-0.5">
                       <span className="font-mono text-[10px] sm:text-xs font-bold text-[#111111]">
                         ₹{displayPrice}
-                      </span>
-                      <span className="font-mono text-[8px] sm:text-[10px] text-neutral-400 uppercase hidden xs:inline">
-                        {displayDimensions}
                       </span>
                     </div>
                   </div>

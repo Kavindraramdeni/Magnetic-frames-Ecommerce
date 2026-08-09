@@ -2051,21 +2051,39 @@ app.delete("/api/admin/coupons/:code", requireAdmin, (req, res) => {
 });
 
 const DEFAULT_REVIEWS = [
-  { id: "rev-1", name: "Ananya Sharma", location: "Mumbai, MH", rating: 5, comment: "I ordered the arch shapes for our travel wall. They are thick, gorgeous, and the magnetic grip is super strong. They feel like little pieces of fine art on our fridge!", photoUrl: "/images/shape_arch_magnet_1779653475722.png" },
-  { id: "rev-2", name: "Kabir Mehta", location: "New Delhi, DL", rating: 5, comment: "The polaroid cutouts let me add custom captions for my cat photos. They look so elegant and minimalist! Will definitely order more as anniversary gifts.", photoUrl: "/images/shape_polaroid_magnet_1780939416510.png" },
-  { id: "rev-3", name: "Pooja Iyer", location: "Bangalore, KA", rating: 5, comment: "Absolutely love the glass-like acrylic edges! The silhouette contour of my daughter was custom cut with such high precision. 10/10 quality!", photoUrl: "/images/shape_heart_magnet_1780939430998.png" }
+  { 
+    id: "rev-1", 
+    name: "Sneha Reddi", 
+    location: "Hyderabad, Telangana", 
+    rating: 5, 
+    comment: "Ordered 5 arch magnets for our fridge. Print quality is super clear and shiny! The magnetic grip is strong, doesn't slide down at all when opening the door. Received in 2 days in HYD. Really happy!", 
+    photoUrl: "/images/shape_arch_magnet_1779653475722.png" 
+  },
+  { 
+    id: "rev-2", 
+    name: "Vikram Malhotra", 
+    location: "Mumbai, Maharashtra", 
+    rating: 5, 
+    comment: "Got these heart and polaroid shapes for my wife's birthday. Acrylic finish looks premium like glass, not cheap plastic. Customized text came out exactly how I typed it. Loved it!", 
+    photoUrl: "/images/shape_polaroid_magnet_1780939416510.png" 
+  },
+  { 
+    id: "rev-3", 
+    name: "Ritu Verma", 
+    location: "Bengaluru, Karnataka", 
+    rating: 5, 
+    comment: "Was worried if photo would get blurry, but printing quality is crisp and 4mm thickness feels solid in hand. Packing was very safe with bubble wrap. Will order again for gifting!", 
+    photoUrl: "/images/shape_heart_magnet_1780939430998.png" 
+  }
 ];
 
 app.get("/api/reviews", (_req, res) => {
   try {
-    let reviews = db.prepare("SELECT * FROM reviews WHERE is_approved = 1 ORDER BY created_at DESC").all();
-    if (reviews.length === 0) {
-      const stmt = db.prepare(`INSERT OR REPLACE INTO reviews (id, name, location, rating, comment, photo_url, is_approved, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`);
-      for (const r of DEFAULT_REVIEWS) {
-        stmt.run(r.id, r.name, r.location, r.rating, r.comment, r.photoUrl, new Date().toISOString());
-      }
-      reviews = db.prepare("SELECT * FROM reviews WHERE is_approved = 1 ORDER BY created_at DESC").all();
+    const stmt = db.prepare(`INSERT OR REPLACE INTO reviews (id, name, location, rating, comment, photo_url, is_approved, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`);
+    for (const r of DEFAULT_REVIEWS) {
+      stmt.run(r.id, r.name, r.location, r.rating, r.comment, r.photoUrl, new Date().toISOString());
     }
+    const reviews = db.prepare("SELECT * FROM reviews WHERE is_approved = 1 ORDER BY created_at DESC").all();
     const formatted = reviews.map((r: any) => ({
       id: r.id,
       name: r.name,
