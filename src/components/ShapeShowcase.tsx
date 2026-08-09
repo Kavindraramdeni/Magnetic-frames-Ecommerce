@@ -75,7 +75,7 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
         {/* Section Heading */}
         <div className="text-center max-w-3xl mx-auto space-y-1.5">
           <span className="text-xs font-mono tracking-widest text-[#6B1D2F] uppercase font-bold">
-            POPULAR PRODUCTS
+            OUR BESTSELLERS
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl font-light text-[#111111] tracking-tight">
             Explore <span className="italic font-serif font-medium">Popular Products</span>

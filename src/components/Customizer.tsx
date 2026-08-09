@@ -1126,11 +1126,96 @@ export default function Customizer({
 
           </div>
 
-          {/* RIGHT COLUMN: INTERACTIVE DESIGN PANEL (7 cols) */}
-          <div className="lg:col-span-7 space-y-5">
+          {/* RIGHT COLUMN: UPLOAD & INTERACTIVE DESIGN PANEL (7 cols) */}
+          <div className="lg:col-span-7 space-y-6">
             
+            {/* 1. UPLOAD YOUR PHOTO BLOCK */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-7 h-7 rounded-full bg-[#6B1D2F] text-white font-sans font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                  1
+                </div>
+                <h3 className="font-serif text-xl sm:text-2xl font-light text-[#111111] tracking-tight">
+                  Upload your photo
+                </h3>
+              </div>
+              
+              <div className="w-full bg-[#FAF8F5] border border-neutral-200/80 rounded-3xl p-4 sm:p-5 shadow-xs space-y-3">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+
+                {/* Horizontal Row: Upload Button + Uploaded Photos Thumbnails */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Dashed Square "+ Add photo" Upload Box */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-dashed border-[#D3C5B5] bg-white hover:bg-[#F5EFE8] hover:border-[#6B1D2F] transition-all flex flex-col items-center justify-center gap-1 cursor-pointer text-neutral-400 hover:text-neutral-700 shrink-0 group/upload"
+                  >
+                    {isUploading ? (
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-600 border-t-transparent" />
+                    ) : (
+                      <>
+                        <Plus className="h-5 w-5 stroke-[1.5] text-neutral-400 group-hover/upload:scale-110 transition-transform" />
+                        <span className="font-sans text-[11px] font-medium text-neutral-600">Add photo</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Uploaded Photos Thumbnails Side-by-Side */}
+                  {photoPool.map((photo) => {
+                    const isActive = activePhotoId === photo.id;
+                    return (
+                      <div
+                        key={photo.id}
+                        onClick={() => handleSelectPhotoFromPool(photo)}
+                        className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer group shrink-0 bg-neutral-100 ${
+                          isActive 
+                            ? 'border-neutral-900 ring-2 ring-neutral-900/10 shadow-md scale-[1.02]' 
+                            : 'border-neutral-200/90 hover:border-neutral-400'
+                        }`}
+                      >
+                        <img src={photo.url} alt={photo.name} className="w-full h-full object-cover" />
+                        
+                        {/* Delete Photo Button */}
+                        {photoPool.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemovePhotoFromPool(photo.id, e)}
+                            className="absolute top-1 right-1 bg-neutral-900/80 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                            title="Remove photo"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+
+                        {isActive && (
+                          <div className="absolute bottom-1 left-1 right-1 bg-neutral-900/90 text-white text-[8px] font-mono font-bold py-0.5 px-1 rounded text-center truncate">
+                            Active
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Helper footer bar */}
+                <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-200/50 text-[11px] font-sans text-neutral-500">
+                  <span>Select any photo to edit shape and fine-tune zoom.</span>
+                  <span className="font-mono text-[9px] text-neutral-400 uppercase tracking-wider">Multiple Uploads Supported</span>
+                </div>
+              </div>
+            </div>
+
             {/* Step 3: Perfect the fit */}
-            <div className="space-y-4">
+            <div className="space-y-4 pt-2">
               <div className="flex items-center gap-3 border-b border-neutral-200/60 pb-3">
                 <div className="w-7 h-7 rounded-full bg-[#6B1D2F] text-white font-sans font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                   3
