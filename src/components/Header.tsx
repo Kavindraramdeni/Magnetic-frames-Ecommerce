@@ -87,8 +87,14 @@ export default function Header({
           </button>
         </div>
 
-        {/* Mobile Menu Trigger */}
-        <div className="md:hidden flex items-center gap-3">
+        {/* Mobile Menu Trigger & B2B Wholesale Quick Link */}
+        <div className="md:hidden flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={onOpenB2B}
+            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-950 text-[10px] font-mono font-bold tracking-wider px-2.5 py-1.5 rounded-full border border-emerald-300 flex items-center gap-1 active:scale-95 transition-all shadow-2xs"
+          >
+            💼 B2B (MOQ 5+)
+          </button>
           <button
             onClick={onOpenCart || onScrollToCustomizer}
             className="relative p-2.5 bg-[#111111] text-white rounded-full active:scale-95 transition-transform flex items-center justify-center"
