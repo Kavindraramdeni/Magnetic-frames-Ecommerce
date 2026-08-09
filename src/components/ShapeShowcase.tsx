@@ -175,16 +175,18 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
                     </div>
                   </div>
 
-                  {/* Pricing and Compact Details */}
-                  <div className="space-y-0.5 sm:space-y-1 text-left">
+                  {/* Title, Size (Left Bottom) & Price (Right Bottom) */}
+                  <div className="space-y-1 text-left pt-0.5">
                     <h3 className="font-serif text-[11px] sm:text-base font-bold text-[#111111] leading-tight truncate">
                       {displayName}
                     </h3>
-                    <div className="font-mono text-[9px] sm:text-xs font-semibold text-[#6B1D2F] block truncate">
-                      📐 {displayDimensions}
-                    </div>
-                    <div className="flex items-center justify-between gap-1 pt-0.5">
-                      <span className="font-mono text-[10px] sm:text-xs font-bold text-[#111111]">
+                    <div className="flex items-center justify-between gap-1 pt-0.5 font-mono text-[9px] sm:text-xs">
+                      {/* Left Bottom Size Label */}
+                      <span className="font-bold text-[#6B1D2F]">
+                        📐 {displayDimensions}
+                      </span>
+                      {/* Right Bottom Price Label */}
+                      <span className="font-bold text-[#111111] bg-neutral-100 px-1.5 py-0.5 rounded-md shrink-0">
                         ₹{displayPrice}
                       </span>
                     </div>

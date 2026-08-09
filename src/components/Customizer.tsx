@@ -911,15 +911,6 @@ export default function Customizer({
             {/* Visualizer Frame Container */}
             <div className="w-full h-[280px] xs:h-[320px] sm:h-[400px] md:h-[460px] bg-[#FAF8F5] rounded-3xl border border-neutral-200/80 p-2 sm:p-8 flex flex-col items-center justify-center relative shadow-inner overflow-hidden group/visualizer">
               
-              {/* Top Physical Dimension & Spec Badge */}
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-white/95 text-neutral-900 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full z-30 flex items-center gap-2 shadow-sm border border-neutral-200/80 backdrop-blur-md">
-                <span className="text-[#6B1D2F] font-extrabold flex items-center gap-1">
-                  📐 {activeShape.dimensions}
-                </span>
-                <span className="text-neutral-300">|</span>
-                <span className="text-neutral-600 font-semibold">4mm Optic Acrylic</span>
-              </div>
-
               <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-neutral-200/20 to-transparent pointer-events-none" />
 
               <div className="absolute inset-0 border border-neutral-200/20 grid grid-cols-6 grid-rows-6 opacity-30 pointer-events-none">
@@ -959,38 +950,42 @@ export default function Customizer({
               </div>
 
               {/* Interactive Laser-Cut Acrylic Frame Preview Canvas (Direct Mouse & Touch Dragging / Scroll / Pinch) */}
-              <div 
-                ref={previewContainerRef}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUpOrLeave}
-                onMouseLeave={handleMouseUpOrLeave}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleMouseUpOrLeave}
-                className="relative z-10 transition-transform duration-300 flex flex-col items-center group cursor-grab active:cursor-grabbing scale-[0.65] xs:scale-[0.8] sm:scale-90 lg:scale-100 origin-center touch-none my-6"
-              >
-                {/* Top Width Dimension Arrow (Pure Inches) */}
-                <div className="absolute -top-7 inset-x-0 flex items-center justify-center gap-2 z-30 pointer-events-none select-none">
-                  <span className="h-[1px] bg-neutral-400 w-10 sm:w-16" />
-                  <span className="font-mono text-[10px] font-bold text-neutral-900 bg-white border border-neutral-300/90 px-2 py-0.5 rounded-full shadow-xs">
-                    ← {activeShape.dimensions.includes('×') ? activeShape.dimensions.split('×')[0].trim() : activeShape.dimensions} →
-                  </span>
-                  <span className="h-[1px] bg-neutral-400 w-10 sm:w-16" />
-                </div>
+              {(() => {
+                const parts = activeShape.dimensions.replace(/inch|in|cm|diameter/gi, '').split(/×|x/i).map(s => s.trim());
+                const widthInches = parseInt(parts[0], 10) || 3;
+                const heightInches = parseInt(parts[1], 10) || widthInches;
 
-                {/* Left Height Dimension Arrow (Pure Inches) */}
-                {activeShape.dimensions.includes('×') && (
-                  <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2 z-30 pointer-events-none select-none">
-                    <span className="w-[1px] bg-neutral-400 h-8 sm:h-12" />
-                    <span className="font-mono text-[9px] font-bold text-neutral-900 bg-white border border-neutral-300/90 px-1.5 py-0.5 rounded-full shadow-xs whitespace-nowrap -rotate-90">
-                      ↑ {activeShape.dimensions.split('×')[1].trim()} ↓
-                    </span>
-                    <span className="w-[1px] bg-neutral-400 h-8 sm:h-12" />
-                  </div>
-                )}
-                
-                {/* Simulated Glass Acrylic Frame Outer Border */}
+                return (
+                  <div 
+                    ref={previewContainerRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUpOrLeave}
+                    onMouseLeave={handleMouseUpOrLeave}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleMouseUpOrLeave}
+                    className="relative z-10 transition-transform duration-300 flex flex-col items-center group cursor-grab active:cursor-grabbing scale-[0.65] xs:scale-[0.8] sm:scale-90 lg:scale-100 origin-center touch-none my-6"
+                  >
+                    {/* Top Width Dimension Arrow (Pure Whole Inches) */}
+                    <div className="absolute -top-7 inset-x-0 flex items-center justify-center gap-2 z-30 pointer-events-none select-none">
+                      <span className="h-[1px] bg-neutral-400 w-10 sm:w-16" />
+                      <span className="font-mono text-[10px] font-bold text-neutral-900 bg-white border border-neutral-300/90 px-2 py-0.5 rounded-full shadow-xs">
+                        ← {widthInches} in →
+                      </span>
+                      <span className="h-[1px] bg-neutral-400 w-10 sm:w-16" />
+                    </div>
+
+                    {/* Left Height Dimension Arrow (Pure Whole Inches) */}
+                    <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2 z-30 pointer-events-none select-none">
+                      <span className="w-[1px] bg-neutral-400 h-8 sm:h-12" />
+                      <span className="font-mono text-[9px] font-bold text-neutral-900 bg-white border border-neutral-300/90 px-1.5 py-0.5 rounded-full shadow-xs whitespace-nowrap -rotate-90">
+                        ↑ {heightInches} in ↓
+                      </span>
+                      <span className="w-[1px] bg-neutral-400 h-8 sm:h-12" />
+                    </div>
+                    
+                    {/* Simulated Glass Acrylic Frame Outer Border */}
                 <div 
                   className={`relative overflow-hidden transition-all duration-500 bg-neutral-300/10 ${
                     selectedShapeId === 'arch' ? 'shape-arch aspect-[3/4] w-64 h-80' :
@@ -1072,6 +1067,8 @@ export default function Customizer({
                   <div className="absolute inset-0 border-2 border-white/40 pointer-events-none" />
                 </div>
               </div>
+              );
+            })()}
 
               {/* Floating Instruction Overlay Badge */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-neutral-900/90 text-white text-[10px] font-mono uppercase tracking-wider px-3.5 py-1.5 rounded-full pointer-events-none z-30 flex items-center gap-2 shadow-lg backdrop-blur-md">
