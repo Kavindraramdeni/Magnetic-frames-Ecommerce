@@ -166,24 +166,24 @@ export default function WholesaleB2BPage({ onBackToHome, onAddToCart, onOpenCart
       </header>
 
       {/* Hero Banner Section */}
-      <section className="bg-[#111111] text-white py-12 px-4 text-center relative overflow-hidden">
+      <section className="bg-[#111111] text-white py-8 sm:py-12 px-4 text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto space-y-3 relative z-10">
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-amber-500/20 text-amber-300 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest border border-amber-500/40">
             <Building2 className="h-3.5 w-3.5 text-amber-400" />
-            B2B Wholesale & Bulk Supply Portal
+            Wholesale Catalog & Bulk Orders
           </span>
-          <h1 className="font-serif text-3xl sm:text-5xl font-light tracking-tight text-white">
-            Direct Factory Bulk Supply for <span className="italic font-serif text-[#E8DCCF]">Businesses & Resellers</span>
+          <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl font-light tracking-tight text-white">
+            Custom Acrylic <span className="italic font-serif text-[#E8DCCF]">Magnet Collection</span>
           </h1>
           <p className="font-sans text-xs sm:text-sm text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-            Order raw acrylic magnet stock or custom UV printed bulk orders directly with Tiered Volume Discounts starting at <strong>MOQ 5 Pcs</strong>. GST Invoicing provided.
+            Order acrylic magnet stock or custom printed orders with Tiered Volume Discounts starting at <strong>MOQ 5 Pcs</strong>. GST Invoicing provided.
           </p>
 
-          <div className="pt-2 flex items-center justify-center gap-4 text-[10px] font-mono uppercase tracking-wider text-neutral-400 flex-wrap">
-            <span className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> 100% High-Grade Neodymium Magnets</span>
-            <span>•</span>
+          <div className="pt-2 flex items-center justify-center gap-3 sm:gap-4 text-[10px] font-mono uppercase tracking-wider text-neutral-400 flex-wrap">
+            <span className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> High-Grade Neodymium Magnets</span>
+            <span className="hidden sm:inline">•</span>
             <span className="flex items-center gap-1"><FileText className="h-3.5 w-3.5 text-amber-400" /> Tax GST Invoice Available</span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <span className="flex items-center gap-1"><Sparkles className="h-3.5 w-3.5 text-amber-300" /> Tiered Bulk Discounts</span>
           </div>
         </div>
