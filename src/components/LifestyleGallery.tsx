@@ -142,16 +142,6 @@ export default function LifestyleGallery() {
           })}
         </div>
 
-        {/* Small Instagram UGC Hook */}
-        <div className="mt-16 text-center max-w-lg mx-auto p-8 rounded-3xl bg-neutral-50/50 border border-dashed border-neutral-300/80">
-          <p className="font-serif italic text-base text-neutral-700">
-            "We spent hours moving these magnets around our office grid and kitchen. The gloss acrylic adds an incredible premium glare whenever the morning light strikes."
-          </p>
-          <div className="mt-4 font-sans text-xs text-neutral-500 uppercase tracking-widest">
-            — @TheAestheticApartment
-          </div>
-        </div>
-
       </div>
     </section>
   );
