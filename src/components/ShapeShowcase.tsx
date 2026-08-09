@@ -125,7 +125,21 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
             const displayName = shape.name || baseShape?.name || 'Custom Frame';
             const displayPrice = Number(shape.price ?? baseShape?.price ?? 0);
             const displayOriginalPrice = Number(shape.originalPrice ?? baseShape?.originalPrice ?? 0);
-            const displayDimensions = shape.dimensions || baseShape?.dimensions || 'Standard';
+            
+            // Hardcode 100% clean whole inch dimensions mapping to override any legacy CM database strings
+            const inchMap: Record<string, string> = {
+              love: '3 × 3 in',
+              circle: '3 × 3 in',
+              polaroid: '3 × 4 in',
+              'scalloped-stand': '5 × 7 in',
+              arch: '3 × 4 in',
+              landscape: '4 × 3 in',
+              filmstrip: '2 × 6 in',
+              hexagon: '3 × 3 in',
+              oval: '3 × 4 in',
+              grande: '4 × 6 in',
+            };
+            const displayDimensions = inchMap[shape.id] || baseShape?.dimensions?.replace(/CM|cm|Diameter/g, 'in') || '3 × 4 in';
             const isTrending = Boolean(shape.isTrending ?? true);
             
             return (

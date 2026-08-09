@@ -1942,16 +1942,16 @@ app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
 });
 
 const DEFAULT_CATALOG_PRODUCTS = [
-  { id: "love", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "10.0 × 10.0 CM", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
-  { id: "circle", name: "Minimal Circle", price: 299, originalPrice: 399, dimensions: "7.5 CM Diameter", description: "Pure round 1:1 focus frame.", tagline: "Pure round focus frame.", isTrending: 1 },
-  { id: "polaroid", name: "Classic Polaroid", price: 299, originalPrice: 500, dimensions: "7.0 × 7.0 CM", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
-  { id: "scalloped-stand", name: "Scalloped Desk Stand", price: 449, originalPrice: 599, dimensions: "12.5 × 17.5 CM", description: "Luxury scalloped desktop frame with clear stand.", tagline: "Desktop display stand.", isTrending: 1 },
-  { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "7.5 × 10.0 CM", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
-  { id: "landscape", name: "Horizontal Snapshot", price: 299, originalPrice: 369, dimensions: "8.8 × 6.3 CM", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
-  { id: "filmstrip", name: "Vintage Film Strip", price: 349, originalPrice: 499, dimensions: "5.7 × 15.2 CM", description: "A narrative strip holding 3 of your snapshots.", tagline: "3-photo narrative filmstrip.", isTrending: 1 },
-  { id: "hexagon", name: "Modern Hexagon", price: 299, originalPrice: 429, dimensions: "10.0 × 8.6 CM", description: "Geometric 6-sided acrylic frame.", tagline: "Geometric 6-sided frame.", isTrending: 1 },
-  { id: "oval", name: "Classic Oval", price: 299, originalPrice: 429, dimensions: "7.5 × 10.5 CM", description: "Smooth continuous oval curves.", tagline: "Smooth continuous oval curves.", isTrending: 1 },
-  { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "10.0 × 15.0 CM", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 }
+  { id: "love", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "3 × 3 in", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
+  { id: "circle", name: "Minimal Circle", price: 299, originalPrice: 399, dimensions: "3 × 3 in", description: "Pure round 1:1 focus frame.", tagline: "Pure round focus frame.", isTrending: 1 },
+  { id: "polaroid", name: "Classic Polaroid", price: 299, originalPrice: 500, dimensions: "3 × 4 in", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
+  { id: "scalloped-stand", name: "Scalloped Desk Stand", price: 449, originalPrice: 599, dimensions: "5 × 7 in", description: "Luxury scalloped desktop frame with clear stand.", tagline: "Desktop display stand.", isTrending: 1 },
+  { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "3 × 4 in", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
+  { id: "landscape", name: "Horizontal Snapshot", price: 299, originalPrice: 369, dimensions: "4 × 3 in", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
+  { id: "filmstrip", name: "Vintage Film Strip", price: 349, originalPrice: 499, dimensions: "2 × 6 in", description: "A narrative strip holding 3 of your snapshots.", tagline: "3-photo narrative filmstrip.", isTrending: 1 },
+  { id: "hexagon", name: "Modern Hexagon", price: 299, originalPrice: 429, dimensions: "3 × 3 in", description: "Geometric 6-sided acrylic frame.", tagline: "Geometric 6-sided frame.", isTrending: 1 },
+  { id: "oval", name: "Classic Oval", price: 299, originalPrice: 429, dimensions: "3 × 4 in", description: "Smooth continuous oval curves.", tagline: "Smooth continuous oval curves.", isTrending: 1 },
+  { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "4 × 6 in", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 }
 ];
 
 app.get("/api/products", (_req, res) => {
