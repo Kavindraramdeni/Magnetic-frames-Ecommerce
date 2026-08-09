@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LIFESTYLE_GALLERY } from '../data';
-import { Camera, Eye, Heart, HelpCircle, LayoutGrid } from 'lucide-react';
+import { Camera, Eye, Heart, HelpCircle, LayoutGrid, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const REFRIGERATOR_IMAGES = [
@@ -9,8 +9,8 @@ const REFRIGERATOR_IMAGES = [
 ];
 
 export default function LifestyleGallery() {
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [refrigeratorIndex, setRefrigeratorIndex] = useState(0);
+  const [isExpandedMobile, setIsExpandedMobile] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -19,20 +19,14 @@ export default function LifestyleGallery() {
     return () => clearInterval(interval);
   }, []);
 
-  const categories = ['All', 'Refrigerator', 'Workspace', 'Product Detail'];
-
-  const filteredItems = selectedCategory === 'All' 
-    ? LIFESTYLE_GALLERY 
-    : LIFESTYLE_GALLERY.filter((item) => item.category === selectedCategory);
-
   return (
     <section id="lifestyle-gallery" className="select-none py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Headings */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 sm:mb-8 gap-4">
-          <div className="space-y-3">
-            <span className="text-xs font-mono tracking-widest text-[#666666] font-semibold uppercase flex items-center gap-1.5">
+          <div className="space-y-2 text-center md:text-left mx-auto md:mx-0">
+            <span className="text-xs font-mono tracking-widest text-[#666666] font-semibold uppercase flex items-center justify-center md:justify-start gap-1.5">
               <Camera className="h-3.5 w-3.5 text-neutral-400" />
               IN-HOME PLACEMENT
             </span>
@@ -43,38 +37,21 @@ export default function LifestyleGallery() {
               Elevate standard metallic settings into meaningful gallery displays. Spot our custom magnets across high-end refrigerators, lockers, and desktop workspace grid panels.
             </p>
           </div>
-
-          {/* Filtering controls */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-sans tracking-wide transition-all cursor-pointer ${
-                  selectedCategory === cat 
-                    ? 'bg-[#111111] text-[#FAF8F5] font-semibold shadow-sm' 
-                    : 'bg-white hover:bg-neutral-100 text-[#666666] border border-neutral-200'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Bento Grid Gallery Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredItems.map((item, idx) => {
-            // Give some items structural span variance to make the grid look dynamic and natural like Pinterest
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {LIFESTYLE_GALLERY.map((item, idx) => {
             const isTall = idx % 3 === 1;
             const isRefrigerator = item.category === 'Refrigerator';
+            const isHiddenOnMobile = !isExpandedMobile && idx >= 2;
 
             return (
               <div 
                 key={item.id}
                 className={`group relative bg-white rounded-3xl overflow-hidden border border-neutral-200/50 shadow-sm hover:shadow-xl transition-all duration-300 md:col-span-1 ${
                   isTall ? 'h-full flex flex-col' : ''
-                }`}
+                } ${isHiddenOnMobile ? 'hidden sm:flex' : 'flex flex-col'}`}
               >
                 {/* Photo wrapper */}
                 <div className="relative w-full aspect-[4/3] sm:aspect-square md:aspect-auto md:h-80 overflow-hidden flex-grow bg-neutral-100">
@@ -141,6 +118,20 @@ export default function LifestyleGallery() {
             );
           })}
         </div>
+
+        {/* Mobile See More Expand Button */}
+        {LIFESTYLE_GALLERY.length > 2 && (
+          <div className="mt-6 text-center sm:hidden">
+            <button
+              type="button"
+              onClick={() => setIsExpandedMobile(!isExpandedMobile)}
+              className="w-full max-w-xs mx-auto bg-white hover:bg-neutral-900 hover:text-white text-neutral-900 border border-neutral-300 font-mono text-xs font-bold uppercase tracking-wider py-3 px-6 rounded-full flex items-center justify-center gap-2 shadow-xs active:scale-95 transition-all cursor-pointer"
+            >
+              <span>{isExpandedMobile ? 'Show Less ↑' : 'See More Placement Photos ↓'}</span>
+              <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isExpandedMobile ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        )}
 
       </div>
     </section>
