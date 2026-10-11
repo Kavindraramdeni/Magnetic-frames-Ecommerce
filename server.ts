@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import * as DB from "./src/db.js";
 import { SHAPE_PRICES } from "./src/catalog.js";
 import { fetchAndVerifyRazorpayPayment } from "./src/lib/razorpay.js";
+import { renderAdjustedImage } from "./src/lib/cropUtils.js";
 
 const UPLOAD_DIR = path.join(process.cwd(), ".user_uploaded");
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -505,8 +506,60 @@ const uploadRateBuckets = new Map<string, { count: number; resetAt: number }>();
 const UPLOAD_RATE_LIMIT = 10;
 const UPLOAD_RATE_WINDOW_MS = 60_000;
 
+// ── Public Marketing Asset Upload (Admin Authenticated) ──────────────────────
+app.post("/api/admin/uploads/public", requireAdmin, async (req, res) => {
+  const { dataUrl, fileName } = req.body || {};
+  if (!dataUrl || typeof dataUrl !== "string") return res.status(400).json({ error: "Missing image payload." });
+
+  let base64Data = "";
+  let ext = "png";
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.-]+);base64,([\s\S]+)$/i);
+  if (match) {
+    const mime = match[1].toLowerCase();
+    ext = mime.includes("jpeg") || mime.includes("jpg") ? "jpg" : mime.includes("webp") ? "webp" : "png";
+    base64Data = match[2].trim();
+  } else if (dataUrl.includes(";base64,")) {
+    base64Data = dataUrl.split(";base64,")[1].trim();
+  } else {
+    base64Data = dataUrl.trim();
+  }
+
+  try {
+    const buffer = Buffer.from(base64Data, "base64");
+    if (buffer.length > 25 * 1024 * 1024) return res.status(400).json({ error: "Image must be under 25MB." });
+
+    const isJpeg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const isPng  = buffer.length >= 8 &&
+      buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 &&
+      buffer[4] === 0x0d && buffer[5] === 0x0a && buffer[6] === 0x1a && buffer[7] === 0x0a;
+    const isWebp = buffer.length >= 12 &&
+      buffer.slice(0, 4).toString("ascii") === "RIFF" &&
+      buffer.slice(8, 12).toString("ascii") === "WEBP";
+    if (!isJpeg && !isPng && !isWebp) {
+      return res.status(400).json({ error: "Unsupported image format. Only JPEG, PNG, and WebP files are accepted." });
+    }
+
+    const id = crypto.randomUUID();
+    const safeName = String(fileName || "asset").replace(/[^a-z0-9._-]/gi, "-").slice(0, 80);
+    const storedName = `${id}-${safeName}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage.from("images").upload(storedName, buffer, {
+      contentType: `image/${ext}`,
+      upsert: true
+    });
+    if (uploadError) throw uploadError;
+
+    const { data: publicUrlData } = supabase.storage.from("images").getPublicUrl(storedName);
+    return res.json({ url: publicUrlData.publicUrl, objectKey: storedName, bucket: "images", isPrivate: false });
+  } catch (err: any) {
+    console.error("Admin public upload error:", err);
+    return res.status(500).json({ error: "Failed to upload public asset: " + (err.message || "Unknown error") });
+  }
+});
+
+// ── Customer Photo Upload (Strictly Private customer-photos Bucket) ─────────
 app.post("/api/uploads/image", async (req, res) => {
-  // Enforce upload-specific rate limit (tighter than global 120 RPM)
+  // Enforce upload-specific rate limit (10 RPM per IP)
   const uploadKey = String(req.ip || "unknown");
   const now = Date.now();
   const uploadBucket = uploadRateBuckets.get(uploadKey);
@@ -518,7 +571,10 @@ app.post("/api/uploads/image", async (req, res) => {
       return res.status(429).json({ error: "Too many uploads. Please wait a moment and try again." });
     }
   }
-  const { dataUrl, fileName, isPublic = false } = req.body || {};
+
+  // Notice: Customer photos are strictly stored in private 'customer-photos' bucket.
+  // The caller cannot override this with isPublic: true.
+  const { dataUrl, fileName } = req.body || {};
   if (!dataUrl || typeof dataUrl !== "string") return res.status(400).json({ error: "Missing image payload." });
 
   let base64Data = "";
@@ -540,9 +596,6 @@ app.post("/api/uploads/image", async (req, res) => {
     if (buffer.length > 25 * 1024 * 1024) return res.status(400).json({ error: "Image must be under 25MB." });
 
     // ── Magic-byte (file signature) verification ──────────────────────────────
-    // Reject files whose binary header does not match an allowed image format.
-    // This defends against polyglot files that pass MIME regex but carry
-    // malicious payloads disguised as images.
     const isJpeg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
     const isPng  = buffer.length >= 8 &&
       buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 &&
@@ -558,53 +611,37 @@ app.post("/api/uploads/image", async (req, res) => {
     const safeName = String(fileName || "photo").replace(/[^a-z0-9._-]/gi, "-").slice(0, 80);
     const storedName = `${id}-${safeName}.${ext}`;
     
-    // Distinguish private customer photos from public banners/product assets
-    const bucket = isPublic ? "images" : "customer-photos";
-
-    // Attempt upload to target bucket, falling back gracefully if bucket not yet created
-    let uploadRes = await supabase.storage.from(bucket).upload(storedName, buffer, {
+    // Always upload customer photos to the private 'customer-photos' bucket
+    const uploadRes = await supabase.storage.from("customer-photos").upload(storedName, buffer, {
       contentType: `image/${ext}`,
       upsert: true
     });
 
-    let effectiveBucket = bucket;
-    if (uploadRes.error && uploadRes.error.message?.includes("Bucket not found") && bucket === "customer-photos") {
-      // Fallback to images bucket if customer-photos migration has not been applied in Supabase dashboard
-      console.warn("⚠️ 'customer-photos' bucket not found. Run supabase/storage-setup.sql! Falling back to 'images'.");
-      uploadRes = await supabase.storage.from("images").upload(storedName, buffer, {
-        contentType: `image/${ext}`,
-        upsert: true
-      });
-      effectiveBucket = "images";
-    }
-
-    if (uploadRes.error) throw uploadRes.error;
-
-    if (effectiveBucket === "customer-photos") {
-      // Generate short-lived signed URL (3600 seconds = 1 hour) for private customer image
-      const { data: signedData, error: signedError } = await supabase.storage
-        .from("customer-photos")
-        .createSignedUrl(storedName, 3600);
-
-      if (signedError || !signedData?.signedUrl) {
-        throw signedError || new Error("Failed to create signed URL.");
+    if (uploadRes.error) {
+      if (uploadRes.error.message?.includes("Bucket not found")) {
+        console.error("FATAL STORAGE ERROR: 'customer-photos' bucket not found in Supabase. Customer uploads blocked to prevent privacy leakage.");
+        return res.status(503).json({ 
+          error: "Storage configuration error: Private 'customer-photos' storage bucket is not configured. Please run supabase/storage-setup.sql in your Supabase project." 
+        });
       }
-
-      return res.json({
-        url: signedData.signedUrl,
-        objectKey: storedName,
-        bucket: "customer-photos",
-        isPrivate: true
-      });
-    } else {
-      const { data: publicUrlData } = supabase.storage.from("images").getPublicUrl(storedName);
-      return res.json({
-        url: publicUrlData.publicUrl,
-        objectKey: storedName,
-        bucket: "images",
-        isPrivate: false
-      });
+      throw uploadRes.error;
     }
+
+    // Generate short-lived signed URL (3600 seconds = 1 hour) for private customer image
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("customer-photos")
+      .createSignedUrl(storedName, 3600);
+
+    if (signedError || !signedData?.signedUrl) {
+      throw signedError || new Error("Failed to create signed URL.");
+    }
+
+    return res.json({
+      url: signedData.signedUrl,
+      objectKey: storedName,
+      bucket: "customer-photos",
+      isPrivate: true
+    });
   } catch (err: any) {
     console.error("Image upload processing error:", err);
     return res.status(500).json({ error: "Failed to save image to cloud storage: " + (err.message || "Unknown error") });
@@ -613,21 +650,99 @@ app.post("/api/uploads/image", async (req, res) => {
 
 // Endpoint for authorized staff to generate fresh signed URLs for customer photos
 app.post("/api/admin/photos/signed-url", requireAdmin, async (req, res) => {
-  const { objectKey, bucket = "customer-photos" } = req.body || {};
+  const { objectKey, bucket = "customer-photos", orderId } = req.body || {};
   if (!objectKey || typeof objectKey !== "string") {
     return res.status(400).json({ error: "objectKey is required." });
   }
 
+  // Prevent path traversal or foreign bucket access
+  const safeBucket = bucket === "customer-photos" ? "customer-photos" : "images";
+
+  // If orderId is provided, verify ownership of the asset
+  if (orderId && typeof orderId === "string") {
+    const orders = await DB.getOrders();
+    const order = orders.find((o: any) => o.id === orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+    const ownsPhoto = (order.cart || []).some((item: any) => 
+      item.objectKey === objectKey || 
+      item.originalObjectKey === objectKey || 
+      item.adjustedObjectKey === objectKey ||
+      (item.previewUrl && item.previewUrl.includes(objectKey))
+    );
+    if (!ownsPhoto) {
+      return res.status(403).json({ error: "Photo does not belong to the requested order." });
+    }
+  }
+
   try {
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(objectKey, 7200); // 2 hours
+    const { data, error } = await supabase.storage.from(safeBucket).createSignedUrl(objectKey, 7200); // 2 hours
     if (error || !data?.signedUrl) {
-      // If not in customer-photos, check images bucket
-      const { data: pubData } = supabase.storage.from("images").getPublicUrl(objectKey);
-      return res.json({ signedUrl: pubData.publicUrl });
+      return res.status(404).json({ error: `Asset not found in storage bucket '${safeBucket}'.` });
     }
     return res.json({ signedUrl: data.signedUrl });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to generate signed URL." });
+  }
+});
+
+// High-resolution cropped image generator for order item (Admin Only)
+app.get("/api/admin/orders/:id/items/:itemIndex/adjusted-image", requireAdmin, async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const idx = parseInt(itemIndex, 10);
+    const orders = await DB.getOrders();
+    const order = orders.find((o: any) => o.id === id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
+
+    const item = (order.cart || [])[idx];
+    if (!item) return res.status(404).json({ error: "Order item not found." });
+
+    let sourceBuffer: Buffer | null = null;
+    const objectKey = item.objectKey || item.originalObjectKey;
+
+    if (objectKey) {
+      const { data, error } = await supabase.storage.from("customer-photos").download(objectKey);
+      if (!error && data) {
+        sourceBuffer = Buffer.from(await data.arrayBuffer());
+      }
+    }
+
+    // Fallback: If not in private bucket or download failed, try local file or fetch previewUrl
+    if (!sourceBuffer && item.previewUrl) {
+      if (item.previewUrl.startsWith("http://") || item.previewUrl.startsWith("https://")) {
+        const fetchRes = await fetch(item.previewUrl);
+        if (fetchRes.ok) {
+          sourceBuffer = Buffer.from(await fetchRes.arrayBuffer());
+        }
+      } else if (item.previewUrl.startsWith("/uploads/")) {
+        const localPath = path.join(UPLOAD_DIR, path.basename(item.previewUrl));
+        if (fs.existsSync(localPath)) {
+          sourceBuffer = fs.readFileSync(localPath);
+        }
+      }
+    }
+
+    if (!sourceBuffer) {
+      return res.status(404).json({ error: "Original source image asset not accessible for processing." });
+    }
+
+    const cropSpec = item.cropSpec || {
+      scale: item.photoScale || 1.0,
+      panX: item.photoPanX || 0,
+      panY: item.photoPanY || 0,
+      aspectRatio: 1.0
+    };
+
+    const croppedBuffer = await renderAdjustedImage(sourceBuffer, cropSpec, 1200, 1200);
+
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Disposition", `attachment; filename="Order_${id}_Frame_${idx + 1}_Adjusted.png"`);
+    return res.send(croppedBuffer);
+  } catch (err: any) {
+    console.error("Failed to generate adjusted image:", err);
+    return res.status(500).json({ error: err.message || "Failed to generate adjusted image." });
   }
 });
 
@@ -673,6 +788,18 @@ app.get("/api/admin/production-jobs", requireAdmin, async (req, res) => {
     return res.json({ jobs });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to fetch production jobs." });
+  }
+});
+
+// Update production job stage (Admin Protected)
+app.patch("/api/admin/production-jobs/:id/status", requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    if (!status) return res.status(400).json({ error: "Stage status is required." });
+    const updated = await DB.updateProductionJobStatus(req.params.id, status);
+    return res.json({ success: true, job: updated });
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message || "Failed to update production stage." });
   }
 });
 
@@ -776,14 +903,20 @@ async function syncOrderToShiprocket(order: any) {
         }
       }
 
-      order.trackingNumber = finalAwb || shipData.awb_code || order.trackingNumber || `SR-${shipmentId || shipData.order_id}`;
-      order.courierName = finalCourier;
+      if (finalAwb) {
+        order.trackingNumber = finalAwb;
+      }
+      if (finalCourier) {
+        order.courierName = finalCourier;
+      }
       order.shipmentId = shipmentId;
       order.shiprocketOrderId = shipData.order_id;
       order.history.push({ 
         status: order.status, 
         timestamp: new Date().toISOString(), 
-        note: `Shiprocket live shipment #${shipData.order_id} created automatically with AWB ${order.trackingNumber} (${finalCourier})` 
+        note: finalAwb 
+          ? `Shiprocket live shipment #${shipData.order_id} created with AWB ${finalAwb} (${finalCourier})`
+          : `Shiprocket live shipment #${shipData.order_id} created. AWB assignment pending.`
       });
       await DB.saveOrder(order);
       return true;
@@ -801,21 +934,23 @@ async function createPaidOrderFromSession(session: any, paymentId: string, isMoc
   const existing = await DB.getOrderByTransactionId(paymentId);
   if (existing) return existing;
 
-  const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(session.cart);
-  const order = {
+  const totals = session.totals || calculateOrderTotals(session.cart);
+  const order: any = {
     id: await DB.generateOrderId("KRIA-ORD"),
     status: "Paid",
     cart: session.cart,
     shippingDetails: session.shippingDetails,
-    trackingNumber: `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`,
+    trackingNumber: undefined,
     courierName: "Delhivery Air",
     deliveryEstimate: "2-3 Business Days",
     transactionId: paymentId,
     createdAt: new Date().toISOString(),
-    grandTotal,
-    subtotal,
-    bulkDiscount,
-    deliveryCharge,
+    grandTotal: totals.grandTotal,
+    subtotal: totals.subtotal,
+    bulkDiscount: totals.bulkDiscount || 0,
+    deliveryCharge: totals.deliveryCharge || 0,
+    couponDiscount: totals.couponDiscount || 0,
+    giftWrapFee: totals.giftWrapFee || 0,
     history: [{ status: "Paid", timestamp: new Date().toISOString(), note: isMock ? "Development mock payment confirmed." : "Razorpay server-side payment confirmation captured." }]
   };
 
@@ -824,8 +959,8 @@ async function createPaidOrderFromSession(session: any, paymentId: string, isMoc
     return saveResult.order;
   }
 
-  // Trigger Shiprocket sync and notifications ONLY on first-time creation
-  syncOrderToShiprocket(order).catch((err) => console.error("Auto Shiprocket sync background error:", err));
+  // Send transactional email notification (Shipment creation is intentionally manual via CMS Orders page)
+  sendTransactionalEmailNotifications(order, 'SUCCESS').catch((err) => console.error("Email notification background error:", err));
 
   return order;
 }
@@ -1003,101 +1138,60 @@ const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.R
     }
     const transactionId = isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id;
 
-    // Compute server-side order totals BEFORE any DB or Razorpay API call so we
-    // can assert the captured amount matches what we actually charged.
-    const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(cart, couponCode);
-
-    // Server-to-server payment verification: assert status=captured, correct
-    // order_id, and exact amount. Skip for mock orders.
-    if (!isMock) {
-      const expectedPaise = Math.round(grandTotal * 100);
-      const verifyResult = await fetchAndVerifyRazorpayPayment(razorpay_payment_id, razorpay_order_id, expectedPaise);
-      if (!verifyResult.ok) {
-        console.error("[payment-verify] Razorpay server-to-server check failed:", verifyResult.reason);
-        return res.status(verifyResult.httpStatus || 402).json({ error: verifyResult.reason });
-      }
-      console.log(`[payment-verify] ✅ Payment ${razorpay_payment_id} verified: captured ₹${grandTotal}`);
-    }
-
-    // Concurrency / Idempotency check: Return existing order if already processed by webhook
+    // 1. Concurrency / Idempotency check: Return existing order if already processed by webhook
     const existingOrder = await DB.getOrderByTransactionId(transactionId);
     if (existingOrder) {
       return res.json({
         success: true,
         transactionId: existingOrder.transactionId,
-        trackingNumber: existingOrder.trackingNumber,
+        trackingNumber: existingOrder.trackingNumber || null,
         courierName: existingOrder.courierName,
         deliveryEstimate: existingOrder.deliveryEstimate,
         isMockCheckout: isMock,
-        isRealShipment: true,
+        isRealShipment: Boolean(existingOrder.shipmentId),
         notification: { success: true },
         grandTotal: existingOrder.grandTotal
       });
     }
-    const shiprocketToken = await getShiprocketToken();
-    let trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
-    let courierName = "Delhivery Surface";
-    let isRealShipment = false;
-    if (shiprocketToken) {
-      try {
-        const pickupLocRes = await fetch("https://apiv2.shiprocket.in/v1/external/settings/company/pickup", { headers: { Authorization: `Bearer ${shiprocketToken}` } });
-        let pickupName = process.env.SHIPROCKET_PICKUP_LOCATION || "Primary";
-        if (pickupLocRes.ok) {
-          const locData: any = await pickupLocRes.json();
-          if (locData.data?.shipping_address?.length > 0) {
-            pickupName = locData.data.shipping_address[0].pickup_location || pickupName;
-          }
-        }
-        const shipResponse = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
-          body: JSON.stringify({
-            order_id: await DB.generateOrderId("KRIA-ORD").replace(/-/g, "_"),
-            order_date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-            pickup_location: pickupName,
-            billing_customer_name: shippingDetails.fullName,
-            billing_last_name: "",
-            billing_address: shippingDetails.address,
-            billing_city: shippingDetails.city,
-            billing_pincode: shippingDetails.pincode,
-            billing_state: shippingDetails.state,
-            billing_country: "India",
-            billing_email: shippingDetails.email,
-            billing_phone: shippingDetails.phone,
-            shipping_is_billing: true,
-            order_items: cart.map((item: any) => ({
-              name: `${item.shapeName} Acrylic Magnet`,
-              sku: `KRIA-${item.shapeId}`,
-              units: item.quantity,
-              selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom
-            })),
-            payment_method: "Prepaid",
-            sub_total: subtotal,
-            length: 15,
-            breadth: 15,
-            height: 5,
-            weight: Number((0.15 * cart.length).toFixed(2))
-          })
-        });
-        if (shipResponse.ok) {
-          const shipData: any = await shipResponse.json();
-          if (shipData.shipment_id || shipData.order_id) {
-            trackingNumber = shipData.awb_code || `SR-${shipData.shipment_id || shipData.order_id}`;
-            courierName = shipData.courier_name || courierName;
-            isRealShipment = true;
-            console.log("✅ Successfully created order in Shiprocket:", shipData.order_id);
-          }
-        } else {
-          console.error("Shiprocket order creation error response:", await shipResponse.text());
-        }
-      } catch (shipErr) { console.error("Shiprocket order failed", shipErr); }
+
+    // 2. Load the checkout session as the absolute single source of truth
+    const session = await DB.getCheckoutSession(razorpay_order_id);
+    if (!session) {
+      return res.status(404).json({ error: "Checkout session expired or not found for this transaction." });
     }
-    const newOrder = { id: await DB.generateOrderId("KRIA-ORD"), status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
-    const saveResult = await DB.saveOrder(newOrder);
-    const finalOrder = saveResult?.order || newOrder;
+
+    const sessionGrandTotal = session.totals?.grandTotal || calculateOrderTotals(session.cart).grandTotal;
+    const expectedPaise = Math.round(sessionGrandTotal * 100);
+
+    // 3. Server-to-server payment verification: assert status=captured, correct order_id, exact paise
+    if (!isMock) {
+      const verifyResult = await fetchAndVerifyRazorpayPayment(razorpay_payment_id, razorpay_order_id, expectedPaise);
+      if (!verifyResult.ok) {
+        console.error("[payment-verify] Razorpay server-to-server check failed:", verifyResult.reason);
+        return res.status(verifyResult.httpStatus || 402).json({ error: verifyResult.reason });
+      }
+      console.log(`[payment-verify] ✅ Payment ${razorpay_payment_id} verified: captured ₹${sessionGrandTotal}`);
+    }
+
+    // 4. Create paid order from session using database-enforced idempotency strategy
+    const finalOrder = await createPaidOrderFromSession(session, transactionId, isMock);
     const notification = await notifyCustomer(finalOrder, "Order confirmed");
-    return res.json({ success: true, transactionId: finalOrder.transactionId, trackingNumber: finalOrder.trackingNumber || trackingNumber, courierName: finalOrder.courierName || courierName, deliveryEstimate: finalOrder.deliveryEstimate || "3-5 Business Days", isMockCheckout: isMock, isRealShipment, notification, grandTotal: finalOrder.grandTotal || grandTotal });
-  } catch (error: any) { res.status(500).json({ error: error.message || "Failed to process final order booking." }); }
+
+    return res.json({ 
+      success: true, 
+      transactionId: finalOrder.transactionId, 
+      trackingNumber: finalOrder.trackingNumber || null, 
+      courierName: finalOrder.courierName || "Delhivery Air", 
+      deliveryEstimate: finalOrder.deliveryEstimate || "3-5 Business Days", 
+      isMockCheckout: isMock, 
+      isRealShipment: Boolean(finalOrder.shipmentId), 
+      notification, 
+      grandTotal: finalOrder.grandTotal 
+    });
+  } catch (error: any) { 
+    console.error("verifyCheckoutPaymentHandler error:", error);
+    res.status(500).json({ error: error.message || "Failed to process final order booking." }); 
+  }
 };
 
 app.post("/api/checkout/verify-payment", verifyCheckoutPaymentHandler);
@@ -1688,7 +1782,8 @@ app.post("/api/admin/settings", requireAdmin, async (req, res) => {
   }
 });
 
-app.get(["/api/admin/warehouses", "/api/warehouses"], async (_req, res) => {
+// Admin Warehouse endpoint (Protected)
+app.get("/api/admin/warehouses", requireAdmin, async (_req, res) => {
   try {
     const { data: warehouses, error } = await supabase.from("warehouses").select("*").order("is_default", { ascending: false }).order("created_at", { ascending: false });
     if (error) throw error;
@@ -1698,26 +1793,54 @@ app.get(["/api/admin/warehouses", "/api/warehouses"], async (_req, res) => {
   }
 });
 
+// Public sanitized warehouse endpoint (city, state, pincode only - hides private tax & contact info)
+app.get("/api/warehouses", async (_req, res) => {
+  try {
+    const { data: warehouses, error } = await supabase
+      .from("warehouses")
+      .select("name, city, state, pincode, is_default")
+      .order("is_default", { ascending: false });
+    if (error) throw error;
+    return res.json(warehouses);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to fetch public warehouse locations." });
+  }
+});
+
 app.post("/api/admin/warehouses", requireAdmin, async (req, res) => {
   try {
     const wh = req.body || {};
+    const fullAddress = wh.address || wh.address1;
+    if (!fullAddress || !wh.city || !wh.state || !wh.pincode) {
+      return res.status(400).json({ error: "Address, city, state, and 6-digit pincode are required." });
+    }
+
+    const cleanPin = String(wh.pincode).trim();
+    if (!/^\d{6}$/.test(cleanPin)) {
+      return res.status(400).json({ error: "Pincode must be a valid 6-digit Indian postal code." });
+    }
+
     const id = wh.id || `wh_${Date.now()}`;
-    await supabase.from("warehouses").upsert({
+    const warehouseData = {
       id,
       name: wh.name || "Main Warehouse",
-      address1: wh.address1 || "Jubilee Tech Zone",
+      address1: fullAddress,
       address2: wh.address2 || "",
-      city: wh.city || "Hyderabad",
-      state: wh.state || "Telangana",
-      pincode: wh.pincode || "500085",
+      city: wh.city.trim(),
+      state: wh.state.trim(),
+      pincode: cleanPin,
       gstin: wh.gstin || "36AAAFK7892P1Z0",
       phone: wh.phone || "+91 93925 76792",
       email: wh.email || "kriatechgroup@gmail.com",
-      shiprocket_pickup_name: wh.shiprocket_pickup_name || "Primary_Hyderabad_500085",
-      is_default: wh.is_default ? 1 : 0,
+      shiprocket_pickup_name: wh.shiprocket_pickup_name || `Primary_${wh.city}_${cleanPin}`,
+      is_default: wh.is_default ? 1 : 1,
       created_at: wh.created_at || new Date().toISOString()
-    });
-    return res.json({ success: true, warehouse: await getWarehouse(id) });
+    };
+
+    const { error: upsertErr } = await supabase.from("warehouses").upsert(warehouseData);
+    if (upsertErr) throw upsertErr;
+
+    return res.json({ success: true, warehouse: warehouseData });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to save warehouse details." });
   }
@@ -1795,33 +1918,29 @@ app.post("/api/shiprocket/create-shipment", requireAdmin, async (req, res) => {
           }
         }
 
-        order.trackingNumber = awbCode || `DEL-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
-        order.courierName = shipData.courier_name || "Delhivery Air Express";
+        if (!awbCode) {
+          return res.status(400).json({ error: "Shipment created, but Shiprocket could not auto-assign an AWB. Please assign courier in Shiprocket panel." });
+        }
+
+        order.trackingNumber = awbCode;
+        order.courierName = shipData.courier_name || "Express Courier";
         order.shiprocketLabelUrl = labelPdfUrl;
         order.shipmentId = shipmentId;
-        order.status = "Packed";
         order.history.push({
-          status: "Packed",
+          status: order.status,
           timestamp: new Date().toISOString(),
-          note: `Production shipment created on Shiprocket. AWB: ${order.trackingNumber}`
+          note: `Production shipment created on Shiprocket. AWB: ${order.trackingNumber} (${order.courierName})`
         });
 
         await DB.saveOrder(order);
         return res.json({ success: true, trackingNumber: order.trackingNumber, labelPdfUrl, shipmentId });
+      } else {
+        const errorText = await shipResponse.text();
+        return res.status(400).json({ error: `Shiprocket error: ${errorText}` });
       }
     }
 
-    // Sandbox / Development fallback if Shiprocket API credentials are offline
-    order.trackingNumber = `DEL-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
-    order.courierName = "Delhivery Air Express";
-    order.status = "Packed";
-    order.history.push({
-      status: "Packed",
-      timestamp: new Date().toISOString(),
-      note: `Shipment packed & manifest generated. Real AWB: ${order.trackingNumber}`
-    });
-    await DB.saveOrder(order);
-    return res.json({ success: true, trackingNumber: order.trackingNumber, courierName: order.courierName });
+    return res.status(503).json({ error: "Shiprocket credentials missing. Set SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD." });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to create shipment." });
   }
@@ -1834,39 +1953,34 @@ app.post("/api/shiprocket/schedule-pickup", requireAdmin, async (req, res) => {
     const orders = await DB.getOrders();
     const order = orders.find((o: any) => o.id === orderId);
     if (!order) return res.status(404).json({ error: "Order not found." });
+    if (!order.shipmentId) return res.status(400).json({ error: "Cannot schedule pickup: Order has no Shiprocket shipment ID." });
 
     const wh = await DB.getWarehouse();
     const shiprocketToken = await getShiprocketToken();
+    if (!shiprocketToken) return res.status(503).json({ error: "Shiprocket credentials missing or invalid." });
 
-    if (shiprocketToken && order.shipmentId) {
-      const pickupRes = await fetch("https://apiv2.shiprocket.in/v1/external/courier/generate/pickup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
-        body: JSON.stringify({
-          shipment_id: [order.shipmentId],
-          pickup_location: wh.shiprocket_pickup_name || "Primary_Hyderabad_500085"
-        })
-      });
-      if (pickupRes.ok) {
-        order.status = "Shipped";
-        order.history.push({
-          status: "Shipped",
-          timestamp: new Date().toISOString(),
-          note: `Courier pickup scheduled from ${wh.city} (${wh.pincode}) warehouse.`
-        });
-        await DB.saveOrder(order);
-        return res.json({ success: true, message: "Pickup scheduled with courier executive." });
-      }
-    }
-
-    order.status = "Shipped";
-    order.history.push({
-      status: "Shipped",
-      timestamp: new Date().toISOString(),
-      note: `Pickup scheduled for courier collection at ${wh.pincode}.`
+    const pickupRes = await fetch("https://apiv2.shiprocket.in/v1/external/courier/generate/pickup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+      body: JSON.stringify({
+        shipment_id: [order.shipmentId],
+        pickup_location: wh.shiprocket_pickup_name || "Primary_Hyderabad_500085"
+      })
     });
-    await DB.saveOrder(order);
-    return res.json({ success: true, message: "Pickup scheduled successfully." });
+
+    const pickupData = await pickupRes.json().catch(() => ({}));
+    if (pickupRes.ok) {
+      order.status = "Pickup Requested";
+      order.history.push({
+        status: "Pickup Requested",
+        timestamp: new Date().toISOString(),
+        note: `Courier pickup scheduled from ${wh.city} (${wh.pincode}) warehouse. Collection pending.`
+      });
+      await DB.saveOrder(order);
+      return res.json({ success: true, message: "Pickup scheduled with courier executive.", shiprocket: pickupData });
+    } else {
+      return res.status(400).json({ error: pickupData.message || "Shiprocket rejected pickup request." });
+    }
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to schedule pickup." });
   }
@@ -1974,106 +2088,140 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
   const order = await DB.getOrders().find((o: any) => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: "Order record not found." });
 
-  const shiprocketToken = await getShiprocketToken();
-  if (shiprocketToken) {
-    try {
-      const pickupLocRes = await fetch("https://apiv2.shiprocket.in/v1/external/settings/company/pickup", { headers: { Authorization: `Bearer ${shiprocketToken}` } });
-      let pickupName = process.env.SHIPROCKET_PICKUP_LOCATION || "Primary";
-      if (pickupLocRes.ok) {
-        const locData: any = await pickupLocRes.json();
-        if (locData.data?.shipping_address?.length > 0) {
-          pickupName = locData.data.shipping_address[0].pickup_location || pickupName;
-        }
-      }
-
-      const shipResponse = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
-        body: JSON.stringify({
-          order_id: order.id.replace(/-/g, "_"),
-          order_date: new Date(order.createdAt || Date.now()).toISOString().replace("T", " ").substring(0, 16),
-          pickup_location: pickupName,
-          billing_customer_name: order.shippingDetails.fullName,
-          billing_last_name: "",
-          billing_address: order.shippingDetails.address,
-          billing_city: order.shippingDetails.city,
-          billing_pincode: order.shippingDetails.pincode,
-          billing_state: order.shippingDetails.state,
-          billing_country: "India",
-          billing_email: order.shippingDetails.email,
-          billing_phone: order.shippingDetails.phone,
-          shipping_is_billing: true,
-          order_items: (order.cart || []).map((item: any, idx: number) => ({
-            name: `${item.shapeName || 'Custom'} Acrylic Magnet`,
-            sku: `KRIA-${item.shapeId || 'custom'}-${idx + 1}`,
-            units: item.quantity || 1,
-            selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom
-          })),
-          payment_method: "Prepaid",
-          sub_total: order.subtotal || order.grandTotal,
-          length: 15,
-          breadth: 15,
-          height: 5,
-          weight: Number((0.15 * order.cart.length).toFixed(2))
-        })
-      });
-
-      const shipData: any = await shipResponse.json().catch(() => ({}));
-      if (shipResponse.ok && (shipData.shipment_id || shipData.order_id)) {
-        const shipmentId = shipData.shipment_id;
-        let finalAwb = shipData.awb_code || "";
-        let finalCourier = shipData.courier_name || "Express Air";
-
-        // Step 5 from Helpsheet: Call assign/awb to get exact AWB code and Courier Name
-        if (!finalAwb && shipmentId) {
-          try {
-            const awbRes = await fetch("https://apiv2.shiprocket.in/v1/external/courier/assign/awb", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
-              body: JSON.stringify({ shipment_id: shipmentId })
-            });
-            if (awbRes.ok) {
-              const awbData: any = await awbRes.json();
-              if (awbData.response?.data?.awb_code) {
-                finalAwb = awbData.response.data.awb_code;
-                finalCourier = awbData.response.data.courier_name || finalCourier;
-              }
-            }
-          } catch (awbErr) {
-            console.error("Shiprocket assign AWB step failed:", awbErr);
-          }
-        }
-
-        // Step 6 from Helpsheet: Call courier/generate/pickup to schedule courier pickup
-        if (shipmentId) {
-          try {
-            await fetch("https://apiv2.shiprocket.in/v1/external/courier/generate/pickup", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
-              body: JSON.stringify({ shipment_id: [shipmentId] })
-            });
-          } catch (pickupErr) {
-            console.error("Shiprocket pickup schedule step failed:", pickupErr);
-          }
-        }
-
-        order.trackingNumber = finalAwb || shipData.awb_code || order.trackingNumber || `SR-${shipmentId || shipData.order_id}`;
-        order.courierName = finalCourier;
-        order.shipmentId = shipmentId;
-        order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Live Shiprocket AWB ${order.trackingNumber} assigned via ${finalCourier}` });
-        await DB.saveOrder(order);
-        return res.json({ success: true, order, isRealShipment: true, shiprocket: { ...shipData, awb_code: order.trackingNumber, courier_name: finalCourier } });
-      } else {
-        const errorMsg = shipData.message || (shipData.errors ? JSON.stringify(shipData.errors) : "Shiprocket rejected shipment creation.");
-        return res.status(400).json({ error: `Shiprocket Error: ${errorMsg}` });
-      }
-    } catch (shipErr: any) {
-      console.error("Shiprocket sync error:", shipErr);
-      return res.status(500).json({ error: `Shiprocket connection failed: ${shipErr.message || "Unknown error"}` });
-    }
+  // Retries aware of partial success: do not recreate if shipment was already established
+  if (order.shipmentId) {
+    return res.status(400).json({ 
+      error: `Order already has an active Shiprocket shipment (#${order.shipmentId}). AWB: ${order.trackingNumber || 'Pending assignment'}. Use Print Label or Request Pickup.` 
+    });
   }
 
-  return res.status(503).json({ error: "Shiprocket credentials missing. Set SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD." });
+  // Validate parcel dimensions passed from CMS or fallback to confirmed package defaults
+  const customWeight = Number(req.body?.weight);
+  const customLength = Number(req.body?.length);
+  const customBreadth = Number(req.body?.breadth);
+  const customHeight = Number(req.body?.height);
+
+  const parcelWeight = (customWeight > 0) ? customWeight : Number((0.15 * Math.max(1, (order.cart || []).length)).toFixed(2));
+  const parcelLength = (customLength > 0) ? customLength : 15;
+  const parcelBreadth = (customBreadth > 0) ? customBreadth : 15;
+  const parcelHeight = (customHeight > 0) ? customHeight : 5;
+
+  const shiprocketToken = await getShiprocketToken();
+  if (!shiprocketToken) {
+    return res.status(503).json({ error: "Shiprocket credentials missing or authentication failed. Set SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD." });
+  }
+
+  try {
+    const pickupLocRes = await fetch("https://apiv2.shiprocket.in/v1/external/settings/company/pickup", { 
+      headers: { Authorization: `Bearer ${shiprocketToken}` } 
+    });
+    let pickupName = process.env.SHIPROCKET_PICKUP_LOCATION || "Primary";
+    if (pickupLocRes.ok) {
+      const locData: any = await pickupLocRes.json();
+      if (locData.data?.shipping_address?.length > 0) {
+        pickupName = locData.data.shipping_address[0].pickup_location || pickupName;
+      }
+    }
+
+    // Step 1: Create adhoc order & shipment in Shiprocket with validated parcel specs
+    const shipResponse = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+      body: JSON.stringify({
+        order_id: order.id.replace(/-/g, "_"),
+        order_date: new Date(order.createdAt || Date.now()).toISOString().replace("T", " ").substring(0, 16),
+        pickup_location: pickupName,
+        billing_customer_name: order.shippingDetails?.fullName || "Valued Customer",
+        billing_last_name: "",
+        billing_address: order.shippingDetails?.address || "Main Street",
+        billing_city: order.shippingDetails?.city || "Hyderabad",
+        billing_pincode: order.shippingDetails?.pincode || "500085",
+        billing_state: order.shippingDetails?.state || "Telangana",
+        billing_country: "India",
+        billing_email: order.shippingDetails?.email || "customer@kria.in",
+        billing_phone: order.shippingDetails?.phone || "9876543210",
+        shipping_is_billing: true,
+        order_items: (order.cart || []).map((item: any, idx: number) => ({
+          name: `${item.shapeName || 'Custom'} Acrylic Magnet`,
+          sku: `KRIA-${item.shapeId || 'custom'}-${idx + 1}`,
+          units: item.quantity || 1,
+          selling_price: SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom
+        })),
+        payment_method: "Prepaid",
+        sub_total: order.subtotal || order.grandTotal,
+        length: parcelLength,
+        breadth: parcelBreadth,
+        height: parcelHeight,
+        weight: parcelWeight
+      })
+    });
+
+    const shipData: any = await shipResponse.json().catch(() => ({}));
+    if (!shipResponse.ok || (!shipData.shipment_id && !shipData.order_id)) {
+      const errorMsg = shipData.message || (shipData.errors ? JSON.stringify(shipData.errors) : "Shiprocket rejected order creation.");
+      return res.status(400).json({ error: `Shiprocket Error: ${errorMsg}` });
+    }
+
+    const shipmentId = shipData.shipment_id;
+    let finalAwb = shipData.awb_code || "";
+    let finalCourier = shipData.courier_name || "";
+
+    // Step 2: Explicitly request and verify real AWB assignment from Shiprocket
+    if (!finalAwb && shipmentId) {
+      try {
+        const awbRes = await fetch("https://apiv2.shiprocket.in/v1/external/courier/assign/awb", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
+          body: JSON.stringify({ shipment_id: shipmentId })
+        });
+        const awbData: any = await awbRes.json().catch(() => ({}));
+        if (awbRes.ok && awbData.response?.data?.awb_code) {
+          finalAwb = awbData.response.data.awb_code;
+          finalCourier = awbData.response.data.courier_name || finalCourier;
+        } else {
+          const awbError = awbData.message || awbData.response?.data?.awb_assign_error || "AWB could not be auto-assigned by courier.";
+          console.warn(`[Shiprocket] AWB assignment pending/failed for shipment ${shipmentId}: ${awbError}`);
+        }
+      } catch (awbErr: any) {
+        console.error("Shiprocket assign AWB network failure:", awbErr);
+      }
+    }
+
+    // Save real identifiers only - never generate placeholder AWBs
+    order.shipmentId = shipmentId;
+    order.shiprocketOrderId = shipData.order_id;
+    if (finalAwb) {
+      order.trackingNumber = finalAwb;
+    }
+    if (finalCourier) {
+      order.courierName = finalCourier;
+    }
+
+    order.history.push({ 
+      status: order.status, 
+      timestamp: new Date().toISOString(), 
+      note: finalAwb 
+        ? `Shiprocket shipment #${shipmentId} created with live AWB ${finalAwb} via ${finalCourier || 'Courier'}.`
+        : `Shiprocket shipment #${shipmentId} created (order #${shipData.order_id}). AWB assignment pending.`
+    });
+    await DB.saveOrder(order);
+
+    return res.json({ 
+      success: true, 
+      order, 
+      isRealShipment: true, 
+      awbAssigned: !!finalAwb,
+      shiprocket: { 
+        ...shipData, 
+        shipment_id: shipmentId, 
+        awb_code: finalAwb || null, 
+        courier_name: finalCourier || null 
+      } 
+    });
+  } catch (shipErr: any) {
+    console.error("Shiprocket sync error:", shipErr);
+    return res.status(500).json({ error: `Shiprocket connection failed: ${shipErr.message || "Unknown error"}` });
+  }
 });
 app.delete("/api/admin/orders/:id", requireAdmin, async (req, res) => {
   await DB.supabase.from("orders").delete().eq("id", req.params.id);
@@ -2194,12 +2342,50 @@ app.get("/api/reviews", async (_req, res) => {
 app.post("/api/reviews", async (req, res) => {
   try {
     const { name, location, rating, comment, photoUrl } = req.body || {};
-    if (!name || !comment || !rating) return res.status(400).json({ error: "Name, rating, and comment are required." });
+    if (!name || !comment || rating === undefined || rating === null) {
+      return res.status(400).json({ error: "Name, rating, and comment are required." });
+    }
+    const numRating = Number(rating);
+    if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
+      return res.status(400).json({ error: "Rating must be an integer between 1 and 5." });
+    }
+    const cleanName = String(name).trim().slice(0, 100);
+    const cleanComment = String(comment).trim().slice(0, 1000);
+    const cleanLocation = String(location || "India").trim().slice(0, 100);
+
     await DB.supabase.from("reviews").insert({
       id: `rev_${Date.now()}`,
-      name, location: location || "India", rating: Number(rating), comment, photo_url: photoUrl || null, is_approved: 1, created_at: new Date().toISOString()
+      name: cleanName,
+      location: cleanLocation,
+      rating: numRating,
+      comment: cleanComment,
+      photo_url: photoUrl ? String(photoUrl).trim() : null,
+      is_approved: 0, // Pending admin moderation
+      created_at: new Date().toISOString()
     });
-    return res.json({ success: true, message: "Review published successfully!" });
+    return res.json({ success: true, message: "Thank you! Your review has been submitted for moderation." });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin reviews list (including pending)
+app.get("/api/admin/reviews", requireAdmin, async (_req, res) => {
+  try {
+    const { data: reviews, error } = await DB.supabase.from("reviews").select("*").order("created_at", { ascending: false });
+    if (error) throw error;
+    return res.json({ success: true, reviews });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin approve review
+app.post("/api/admin/reviews/:id/approve", requireAdmin, async (req, res) => {
+  try {
+    const { error } = await DB.supabase.from("reviews").update({ is_approved: 1 }).eq("id", req.params.id);
+    if (error) throw error;
+    return res.json({ success: true, message: `Review ${req.params.id} approved successfully.` });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

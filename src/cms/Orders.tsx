@@ -61,6 +61,10 @@ export default function Orders() {
   const [isZipping, setIsZipping] = useState(false);
   const [shipActionLoading, setShipActionLoading] = useState<string | null>(null);
   const [shipActionNotice, setShipActionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [parcelWeight, setParcelWeight] = useState<number>(0.3);
+  const [parcelLength, setParcelLength] = useState<number>(15);
+  const [parcelBreadth, setParcelBreadth] = useState<number>(15);
+  const [parcelHeight, setParcelHeight] = useState<number>(5);
 
   useEffect(() => {
     fetchOrders();
@@ -128,6 +132,35 @@ export default function Orders() {
       document.body.removeChild(a);
     } catch (err: any) {
       alert('Download error: ' + err.message);
+    } finally {
+      setDownloadingKey(null);
+    }
+  };
+
+  const handleDownloadAdjusted = async (orderId: string, itemIndex: number, filename: string, fallbackUrl: string) => {
+    try {
+      setDownloadingKey(filename);
+      const token = localStorage.getItem('adminToken') || '';
+      const res = await fetch(`/api/admin/orders/${orderId}/items/${itemIndex}/adjusted-image`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        // Fallback to client-side download if server adjustment fails
+        await handleDownload(fallbackUrl, filename);
+      }
+    } catch (err: any) {
+      console.warn('Falling back to direct download:', err);
+      await handleDownload(fallbackUrl, filename);
     } finally {
       setDownloadingKey(null);
     }
@@ -202,14 +235,26 @@ export default function Orders() {
       const token = localStorage.getItem('adminToken') || '';
       const res = await fetch(`/api/admin/orders/${order.id}/sync-shiprocket`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          weight: Number(parcelWeight),
+          length: Number(parcelLength),
+          breadth: Number(parcelBreadth),
+          height: Number(parcelHeight)
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create Shiprocket shipment.');
 
+      const awbText = data.order?.trackingNumber ? `AWB: ${data.order.trackingNumber}` : 'AWB assignment in progress';
+      const courierText = data.order?.courierName ? `(${data.order.courierName})` : '';
+
       setShipActionNotice({
         type: 'success',
-        message: `Shipment created successfully! AWB: ${data.order?.trackingNumber || 'Assigned'} (${data.order?.courierName || 'Courier Assigned'})`
+        message: `Shipment created successfully! Shipment ID: #${data.order?.shipmentId}. ${awbText} ${courierText}`
       });
       setSelectedOrder(data.order);
       fetchOrders();
@@ -396,6 +441,11 @@ export default function Orders() {
                       onClick={() => {
                         setSelectedOrder(order);
                         setShipActionNotice(null);
+                        const frameCount = order.cart?.length || 1;
+                        setParcelWeight(Math.max(0.2, Number((0.15 * frameCount).toFixed(2))));
+                        setParcelLength(15);
+                        setParcelBreadth(15);
+                        setParcelHeight(Math.max(5, frameCount * 2));
                       }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] hover:bg-black text-white text-xs font-semibold rounded-lg shadow-xs cursor-pointer transition"
                     >
@@ -455,13 +505,63 @@ export default function Orders() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 bg-white p-3.5 rounded-xl border border-neutral-200">
-                    <div className="font-bold text-neutral-800 uppercase tracking-wider text-[11px]">Parcel Shipping Specifications</div>
-                    <div className="grid grid-cols-2 gap-2 text-neutral-700">
-                      <div>Weight: <span className="font-bold font-mono">{(0.15 * (selectedOrder.cart?.length || 1)).toFixed(2)} kg</span></div>
-                      <div>Box Dimensions: <span className="font-bold font-mono">15 × 15 × 5 cm</span></div>
-                      <div>Courier Partner: <span className="font-bold font-mono text-emerald-800">{selectedOrder.courierName || 'Delhivery / Air'}</span></div>
-                      <div>AWB Tracking: <span className="font-bold font-mono text-emerald-800">{selectedOrder.trackingNumber || 'Pending'}</span></div>
+                  <div className="space-y-3 bg-white p-3.5 rounded-xl border border-neutral-200">
+                    <div className="flex items-center justify-between border-b border-neutral-100 pb-1.5">
+                      <div className="font-bold text-neutral-800 uppercase tracking-wider text-[11px]">Parcel Shipping Specifications</div>
+                      <span className="text-[10px] text-neutral-500 font-mono">Editable</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block text-[11px] font-medium text-neutral-600 mb-0.5">Weight (kg):</label>
+                        <input
+                          type="number"
+                          step="0.05"
+                          min="0.05"
+                          value={parcelWeight}
+                          onChange={(e) => setParcelWeight(parseFloat(e.target.value) || 0.2)}
+                          className="w-full px-2 py-1 border border-neutral-300 rounded font-mono text-xs focus:ring-1 focus:ring-neutral-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-neutral-600 mb-0.5">Box L × B × H (cm):</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="1"
+                            value={parcelLength}
+                            onChange={(e) => setParcelLength(parseInt(e.target.value, 10) || 15)}
+                            className="w-1/3 px-1.5 py-1 border border-neutral-300 rounded font-mono text-xs text-center"
+                            title="Length"
+                          />
+                          <span className="text-neutral-400">×</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={parcelBreadth}
+                            onChange={(e) => setParcelBreadth(parseInt(e.target.value, 10) || 15)}
+                            className="w-1/3 px-1.5 py-1 border border-neutral-300 rounded font-mono text-xs text-center"
+                            title="Breadth"
+                          />
+                          <span className="text-neutral-400">×</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={parcelHeight}
+                            onChange={(e) => setParcelHeight(parseInt(e.target.value, 10) || 5)}
+                            className="w-1/3 px-1.5 py-1 border border-neutral-300 rounded font-mono text-xs text-center"
+                            title="Height"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-neutral-500">Courier Partner:</div>
+                        <span className="font-bold font-mono text-emerald-800">{selectedOrder.courierName || 'Delhivery / Air'}</span>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-neutral-500">AWB Tracking:</div>
+                        <span className="font-bold font-mono text-emerald-800">{selectedOrder.trackingNumber || 'Pending'}</span>
+                      </div>
                     </div>
 
                     {/* Shiprocket 3-Step Operations Bar */}
@@ -598,7 +698,7 @@ export default function Orders() {
 
                           <div className="w-full flex gap-2">
                             <button
-                              onClick={() => handleDownload(item.previewUrl, adjFilename)}
+                              onClick={() => handleDownloadAdjusted(selectedOrder.id, idx, adjFilename, item.previewUrl)}
                               disabled={downloadingKey === adjFilename}
                               className="flex-1 py-2.5 px-3 bg-[#111827] hover:bg-black text-white text-xs font-semibold rounded-lg shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition"
                             >

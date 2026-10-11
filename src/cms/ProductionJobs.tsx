@@ -145,38 +145,77 @@ export default function ProductionJobs() {
                       Scale: {job.crop_scale}x | Pan: ({job.crop_pan_x}, {job.crop_pan_y})
                     </td>
                     <td className="px-6 py-4">
-                      {getStatusBadge(job.status)}
+                      <select
+                        value={job.status}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value;
+                          try {
+                            const res = await fetch(`/api/admin/production-jobs/${job.id}/status`, {
+                              method: 'PATCH',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                              },
+                              body: JSON.stringify({ status: newStatus })
+                            });
+                            if (!res.ok) {
+                              const errData = await res.json();
+                              throw new Error(errData.error || 'Failed to update status');
+                            }
+                            fetchJobs();
+                          } catch (err: any) {
+                            alert('Stage update error: ' + err.message);
+                          }
+                        }}
+                        className="text-xs font-semibold px-2 py-1 rounded-md border border-neutral-300 bg-white cursor-pointer"
+                      >
+                        <option value="QUEUED">Queued</option>
+                        <option value="PRINTING">UV Printing</option>
+                        <option value="LASER_CUT">Laser Cut</option>
+                        <option value="QUALITY_CHECK">QC Review</option>
+                        <option value="PACKED">Packed</option>
+                      </select>
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-500">
                       {new Date(job.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={async () => {
-                          try {
-                            const res = await fetch('/api/admin/photos/signed-url', {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                              },
-                              body: JSON.stringify({ objectKey: job.photo_object_key })
-                            });
-                            const data = await res.json();
-                            if (data.signedUrl) {
-                              window.open(data.signedUrl, '_blank');
-                            } else {
-                              alert('Could not generate signed download URL.');
+                      {!job.photo_object_key ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-rose-600 font-semibold bg-rose-50 px-2 py-1 rounded border border-rose-200">
+                          <AlertTriangle className="w-3.5 h-3.5" /> Missing Asset
+                        </span>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/admin/photos/signed-url', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                                },
+                                body: JSON.stringify({ 
+                                  objectKey: job.photo_object_key, 
+                                  bucket: job.photo_bucket || 'customer-photos',
+                                  orderId: job.order_id 
+                                })
+                              });
+                              const data = await res.json();
+                              if (data.signedUrl) {
+                                window.open(data.signedUrl, '_blank');
+                              } else {
+                                alert('Could not generate signed download URL: ' + (data.error || 'Unknown error'));
+                              }
+                            } catch (e: any) {
+                              alert('Export failed: ' + e.message);
                             }
-                          } catch (e: any) {
-                            alert('Export failed: ' + e.message);
-                          }
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                        Print Asset
-                      </button>
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          Print Asset
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

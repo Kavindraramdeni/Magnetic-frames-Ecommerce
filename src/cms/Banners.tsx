@@ -35,11 +35,14 @@ export default function Banners() {
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
         
-        // 1. Upload public banner image
-        const uploadRes = await fetch('/api/uploads/image', {
+        // 1. Upload public banner image via admin endpoint
+        const uploadRes = await fetch('/api/admin/uploads/public', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl, fileName: file.name, isPublic: true })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify({ dataUrl, fileName: file.name })
         });
         
         if (uploadRes.ok) {

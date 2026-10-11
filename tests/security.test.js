@@ -199,10 +199,23 @@ test('Mock checkout production guard', async (t) => {
   });
 });
 
-test('Shiprocket order creation idempotency guard', async (t) => {
+test('Shiprocket order creation idempotency guard and real AWB assignment validation', async (t) => {
   function shouldSyncShiprocket(order) {
     if (order.shipmentId || order.shiprocketOrderId) return false;
     return true;
+  }
+
+  function validateAwbAssignment(shipmentResponse, awbResponse) {
+    const shipmentId = shipmentResponse?.shipment_id;
+    if (!shipmentId && !shipmentResponse?.order_id) {
+      throw new Error(shipmentResponse?.message || "Order rejected by Shiprocket");
+    }
+    const liveAwb = shipmentResponse?.awb_code || awbResponse?.response?.data?.awb_code || null;
+    return {
+      shipmentId,
+      awb: liveAwb,
+      hasRealAwb: !!liveAwb && !String(liveAwb).startsWith('SRW-') && !String(liveAwb).startsWith('SR-')
+    };
   }
 
   await t.test('allows initial sync for unsynced order', () => {
@@ -218,6 +231,30 @@ test('Shiprocket order creation idempotency guard', async (t) => {
   await t.test('blocks duplicate sync if shiprocketOrderId is already present', () => {
     const order = { id: 'KRIA-ORD-101', status: 'Paid', shiprocketOrderId: 'SR_ORD_8888' };
     assert.equal(shouldSyncShiprocket(order), false);
+  });
+
+  await t.test('validates real courier AWB code and rejects placeholder generation', () => {
+    const res = validateAwbAssignment(
+      { shipment_id: 12345, order_id: 67890 },
+      { response: { data: { awb_code: 'DELHIVERY12345678', courier_name: 'Delhivery Surface' } } }
+    );
+    assert.equal(res.hasRealAwb, true);
+    assert.equal(res.awb, 'DELHIVERY12345678');
+  });
+
+  await t.test('handles pending AWB without fabricating fake SRW- AWB', () => {
+    const res = validateAwbAssignment(
+      { shipment_id: 12345, order_id: 67890 },
+      { response: { data: {} } }
+    );
+    assert.equal(res.hasRealAwb, false);
+    assert.equal(res.awb, null);
+  });
+
+  await t.test('throws explicit error when Shiprocket rejects shipment creation', () => {
+    assert.throws(() => {
+      validateAwbAssignment({ message: "Pincode not serviceable for courier pickup" }, null);
+    }, /Pincode not serviceable/);
   });
 });
 

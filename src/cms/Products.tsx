@@ -37,10 +37,13 @@ export default function Products() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        const res = await fetch('/api/uploads/image', {
+        const res = await fetch('/api/admin/uploads/public', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl, fileName: file.name, isPublic: true })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify({ dataUrl, fileName: file.name })
         });
         if (res.ok) {
           const { url } = await res.json();

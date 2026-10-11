@@ -153,13 +153,15 @@ export async function saveOrder(order: any) {
       const item = order.cart[idx];
       try {
         const crop = item.cropSpec || {};
+        const realObjectKey = item.originalObjectKey || item.objectKey || null;
+        // Never enqueue a fake placeholder as if it were a real print asset
         await supabase.from('production_jobs').insert({
           order_id: order.id,
           item_index: idx,
           shape_id: item.shapeId || 'custom',
           quantity: item.quantity || 1,
-          photo_object_key: item.objectKey || 'default-preview.png',
-          photo_bucket: 'customer-photos',
+          photo_object_key: realObjectKey,
+          photo_bucket: realObjectKey ? 'customer-photos' : null,
           crop_scale: crop.scale || item.photoScale || 1.0,
           crop_pan_x: crop.panX || item.photoPanX || 0,
           crop_pan_y: crop.panY || item.photoPanY || 0,
@@ -351,7 +353,31 @@ export async function getProductionJobs(orderId?: string) {
   let query = supabase.from('production_jobs').select('*').order('created_at', { ascending: false });
   if (orderId) query = query.eq('order_id', orderId);
   const { data, error } = await query;
-  if (error) console.error('getProductionJobs error:', error);
+  if (error) {
+    console.error('getProductionJobs error:', error);
+    throw error;
+  }
   return data || [];
 }
+
+export async function updateProductionJobStatus(jobId: string, newStatus: string) {
+  const ALLOWED_STAGES = ['QUEUED', 'PRINTING', 'LASER_CUT', 'QUALITY_CHECK', 'PACKED'];
+  if (!ALLOWED_STAGES.includes(newStatus)) {
+    throw new Error(`Invalid stage '${newStatus}'. Allowed: ${ALLOWED_STAGES.join(', ')}`);
+  }
+
+  const { data, error } = await supabase
+    .from('production_jobs')
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq('id', jobId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('updateProductionJobStatus error:', error);
+    throw error;
+  }
+  return data;
+}
+
 
