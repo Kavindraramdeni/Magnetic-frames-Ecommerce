@@ -3,19 +3,24 @@ import path from "path";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import fs from "fs";
-import { DatabaseSync } from "node:sqlite";
+import { fileURLToPath } from "url";
+import { createClient } from "@supabase/supabase-js";
+import * as DB from "./src/db.js";
 import { SHAPE_PRICES } from "./src/catalog.js";
+
+const UPLOAD_DIR = path.join(process.cwd(), ".user_uploaded");
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === "production";
 const isVercel = process.env.VERCEL === "1";
-const baseDataDir = isVercel ? "/tmp/kria-data" : (process.env.DATA_DIR || path.join(process.cwd(), "data"));
-const DATA_DIR = path.resolve(baseDataDir);
-const UPLOAD_DIR = path.resolve(process.env.OBJECT_STORAGE_DIR || path.join(DATA_DIR, "object-storage"));
-const DB_FILE = isVercel ? ":memory:" : path.resolve(process.env.DATABASE_URL?.replace(/^sqlite:/, "") || path.join(DATA_DIR, "kria.sqlite"));
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || (ADMIN_PASSWORD ? crypto.createHash("sha256").update(ADMIN_PASSWORD).digest("hex") : "");
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.trim() : "";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN 
+  ? process.env.ADMIN_TOKEN.trim() 
+  : (ADMIN_PASSWORD ? crypto.createHash("sha256").update(ADMIN_PASSWORD).digest("hex") : "");
 const ENABLE_MOCK_CHECKOUT = process.env.ENABLE_MOCK_CHECKOUT === "true" && !isProduction;
 const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 120);
@@ -24,230 +29,40 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-if (isProduction && !isVercel && (!ADMIN_PASSWORD && !process.env.ADMIN_TOKEN)) {
-  throw new Error("ADMIN_PASSWORD or ADMIN_TOKEN is required in production.");
-}
-
-try {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-} catch (e) {
-  console.warn("[AI Studio] Warning: Could not create storage directories, using memory/tmp fallbacks:", e);
-}
-
-let db: any;
-try {
-  db = new DatabaseSync(DB_FILE);
-} catch (err) {
-  console.warn("[AI Studio] Could not open SQLite file at", DB_FILE, "- falling back to in-memory SQLite database:", err);
-  try {
-    db = new DatabaseSync(":memory:");
-  } catch (e2) {
-    console.error("DatabaseSync unavailable, using in-memory store wrapper.");
-    const memStore = new Map<string, Map<string, any>>();
-    db = {
-      exec: () => {},
-      prepare: (sql: string) => ({
-        run: (...args: any[]) => ({ changes: 1 }),
-        all: (...args: any[]) => [],
-        get: (...args: any[]) => undefined
-      })
-    };
-  }
-}
-db.exec(`
-  CREATE TABLE IF NOT EXISTS orders (
-    id TEXT PRIMARY KEY,
-    status TEXT NOT NULL,
-    cart_json TEXT NOT NULL,
-    shipping_json TEXT NOT NULL,
-    tracking_number TEXT NOT NULL,
-    courier_name TEXT NOT NULL,
-    delivery_estimate TEXT NOT NULL,
-    transaction_id TEXT NOT NULL,
-    totals_json TEXT NOT NULL,
-    history_json TEXT NOT NULL,
-    created_at TEXT NOT NULL
-  );
-  CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
-  CREATE TABLE IF NOT EXISTS checkout_sessions (
-    id TEXT PRIMARY KEY,
-    razorpay_order_id TEXT UNIQUE NOT NULL,
-    cart_json TEXT NOT NULL,
-    shipping_json TEXT NOT NULL,
-    totals_json TEXT NOT NULL,
-    accepted_policies INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS shipping_quotes (
-    id TEXT PRIMARY KEY,
-    order_id TEXT,
-    destination_pin TEXT NOT NULL,
-    courier_name TEXT NOT NULL,
-    rate REAL NOT NULL,
-    etd TEXT NOT NULL,
-    serviceable INTEGER NOT NULL,
-    response_json TEXT NOT NULL,
-    created_at TEXT NOT NULL
-  );
-  CREATE INDEX IF NOT EXISTS idx_shipping_quotes_pin ON shipping_quotes(destination_pin);
-  CREATE TABLE IF NOT EXISTS payment_events (
-    id TEXT PRIMARY KEY,
-    provider TEXT NOT NULL,
-    event_type TEXT NOT NULL,
-    external_payment_id TEXT,
-    external_order_id TEXT,
-    payload_json TEXT NOT NULL,
-    processed_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS products (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    price REAL NOT NULL,
-    original_price REAL,
-    dimensions TEXT NOT NULL,
-    description TEXT NOT NULL,
-    shape_class TEXT NOT NULL,
-    frame_ratio TEXT NOT NULL,
-    tagline TEXT NOT NULL,
-    is_trending INTEGER DEFAULT 0,
-    stock INTEGER DEFAULT 500,
-    created_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS reviews (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    location TEXT NOT NULL,
-    rating INTEGER NOT NULL,
-    comment TEXT NOT NULL,
-    photo_url TEXT,
-    is_approved INTEGER DEFAULT 1,
-    created_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS coupons (
-    code TEXT PRIMARY KEY,
-    type TEXT NOT NULL,
-    value REAL NOT NULL,
-    label TEXT NOT NULL,
-    min_order_value REAL DEFAULT 0,
-    is_active INTEGER DEFAULT 1,
-    created_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS warehouses (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    address1 TEXT NOT NULL,
-    address2 TEXT,
-    city TEXT NOT NULL,
-    state TEXT NOT NULL,
-    pincode TEXT NOT NULL,
-    gstin TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    email TEXT NOT NULL,
-    shiprocket_pickup_name TEXT NOT NULL,
-    is_default INTEGER DEFAULT 1,
-    created_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS business_settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-`);
-
-// Initial seed for primary warehouse (Exact PDF Address)
-try {
-  db.prepare(`INSERT OR REPLACE INTO warehouses (id, name, address1, address2, city, state, pincode, gstin, phone, email, shiprocket_pickup_name, is_default, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    "wh_primary",
-    "KRIA TECH",
-    "Shop no 9, Mallikarjuna Towers, Radha Krishna Rd",
-    "Venkata Ramana Colony, Gokul Plots, 9th Phase KPHB, Near Quantum Leap School, Hafeezpet",
-    "Hyderabad",
-    "Telangana",
-    "500085",
-    "36AAAFK7892P1Z0",
-    "9392576792",
-    "kriatechgroup@gmail.com",
-    "Primary_Hyderabad_500085",
-    1,
-    new Date().toISOString()
-  );
-} catch (e) {}
-
-// Initial seed for business settings (Exact PDF details)
-const initialSettings = [
-  { key: "company_name", value: "KRIA TECH" },
-  { key: "gstin", value: "36AAAFK7892P1Z0" },
-  { key: "support_email", value: "kriatechgroup@gmail.com" },
-  { key: "support_phone", value: "9392576792" },
-  { key: "bank_name", value: "HDFC Bank Ltd" },
-  { key: "account_no", value: "50200084920194" },
-  { key: "ifsc", value: "HDFC0001294" },
-  { key: "upi_id", value: "9392576792@ybl" },
-  { key: "return_policy", value: "Custom acrylic photo products are non-refundable after production. Manufacturing defects should be reported within 48 hours with photo proof." },
-  { key: "privacy_policy", value: "Customer photos are strictly used to fulfill photo frame production and are retained securely in object storage." }
-];
-for (const s of initialSettings) {
-  try {
-    db.prepare("INSERT OR REPLACE INTO business_settings (key, value) VALUES (?, ?)").run(s.key, s.value);
-  } catch (e) {}
-}
-
-// --- AUTOMATED DAILY SQLITE DATABASE BACKUP ENGINE (30-DAY RETENTION) ---
-function backupDatabase() {
-  try {
-    const backupDir = path.join(process.cwd(), 'data', 'backups');
-    if (!fs.existsSync(backupDir)) {
-      fs.mkdirSync(backupDir, { recursive: true });
-    }
-
-    const dateStr = new Date().toISOString().split('T')[0];
-    const backupFileName = `kria_backup_${dateStr}.sqlite`;
-    const backupPath = path.join(backupDir, backupFileName);
-
-    if (!fs.existsSync(backupPath) && fs.existsSync(DB_FILE)) {
-      fs.copyFileSync(DB_FILE, backupPath);
-      console.log(`[DATABASE BACKUP] Daily SQLite backup created: ${backupFileName}`);
-    }
-
-    // Auto-prune backups older than 30 days
-    const files = fs.readdirSync(backupDir);
-    const now = Date.now();
-    const maxAgeMs = 30 * 24 * 60 * 60 * 1000;
-
-    for (const file of files) {
-      if (file.startsWith('kria_backup_') && file.endsWith('.sqlite')) {
-        const filePath = path.join(backupDir, file);
-        const stats = fs.statSync(filePath);
-        if (now - stats.mtimeMs > maxAgeMs) {
-          fs.unlinkSync(filePath);
-          console.log(`[DATABASE BACKUP] Pruned 30+ day old backup: ${file}`);
-        }
-      }
-    }
-  } catch (err: any) {
-    console.error('[DATABASE BACKUP ERROR]', err.message);
+// Strict production and security guard: never allow empty admin credentials
+if (!ADMIN_PASSWORD && !ADMIN_TOKEN) {
+  if (isProduction || isVercel) {
+    throw new Error("FATAL: ADMIN_PASSWORD or ADMIN_TOKEN environment variable is required.");
+  } else {
+    console.warn("⚠️ [SECURITY WARNING] Neither ADMIN_PASSWORD nor ADMIN_TOKEN is set. Admin routes will reject all requests until configured.");
   }
 }
 
-// Trigger initial backup on server startup & schedule 24h timer
-backupDatabase();
-setInterval(backupDatabase, 24 * 60 * 60 * 1000);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-function getBusinessSettings() {
-  const rows = (db.prepare("SELECT * FROM business_settings").all() || []) as any[];
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Missing Supabase credentials in environment variables.");
+}
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+
+
+async function getBusinessSettings() {
+  const { data: rows, error } = await supabase.from("business_settings").select("*");
+  if (error) throw error;
   const settingsObj: Record<string, string> = {};
-  for (const r of rows) {
+  for (const r of rows || []) {
     settingsObj[r.key] = r.value;
   }
   return settingsObj;
 }
 
-function getWarehouse(id = "wh_primary") {
-  const wh = db.prepare("SELECT * FROM warehouses WHERE id = ?").get(id) as any;
+async function getWarehouse(id = "wh_primary") {
+  const { data: wh } = await supabase.from("warehouses").select("*").eq("id", id).maybeSingle();
   if (wh) return wh;
-  const def = db.prepare("SELECT * FROM warehouses WHERE is_default = 1").get() as any;
+  const { data: def } = await supabase.from("warehouses").select("*").eq("is_default", 1).maybeSingle();
   return def || {
     id: "wh_primary",
     name: "KRIA Studio Central Warehouse",
@@ -277,86 +92,90 @@ const serializeOrder = (order: any) => ({
   history: JSON.parse(order.history_json),
 });
 
-function getOrders() {
-  return db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all().map(serializeOrder);
+async function getOrders() {
+  const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('getOrders error', error); return []; }
+  return data.map(serializeOrder);
 }
 
-function saveOrder(order: any) {
-  db.prepare(`INSERT OR REPLACE INTO orders
-    (id, status, cart_json, shipping_json, tracking_number, courier_name, delivery_estimate, transaction_id, totals_json, history_json, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    order.id,
-    order.status,
-    JSON.stringify(order.cart),
-    JSON.stringify(order.shippingDetails),
-    order.trackingNumber,
-    order.courierName,
-    order.deliveryEstimate,
-    order.transactionId,
-    JSON.stringify({ grandTotal: order.grandTotal, subtotal: order.subtotal, bulkDiscount: order.bulkDiscount, deliveryCharge: order.deliveryCharge }),
-    JSON.stringify(order.history),
-    order.createdAt
-  );
+async function saveOrder(order: any) {
+  const { error } = await supabase.from('orders').upsert({
+    id: order.id,
+    status: order.status,
+    cart_json: order.cart,
+    shipping_json: order.shippingDetails,
+    tracking_number: order.trackingNumber,
+    courier_name: order.courierName,
+    delivery_estimate: order.deliveryEstimate,
+    transaction_id: order.transactionId,
+    totals_json: { grandTotal: order.grandTotal, subtotal: order.subtotal, bulkDiscount: order.bulkDiscount, deliveryCharge: order.deliveryCharge },
+    history_json: order.history,
+    created_at: order.createdAt
+  });
+  if (error) console.error('saveOrder error', error);
 
-  // Atomic inventory stock reduction for each purchased shape item
   if (Array.isArray(order.cart)) {
     for (const item of order.cart) {
-      try {
-        db.prepare("UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?").run(item.quantity || 1, item.shapeId);
-      } catch (err) {
-        console.warn("Stock update error:", err);
+      // Supabase does not have an atomic stock decrement in raw JS insert without RPC.
+      // But we can do a quick fetch and update for now.
+      const { data } = await supabase.from('products').select('stock').eq('id', item.shapeId).single();
+      if (data) {
+        await supabase.from('products').update({ stock: Math.max(0, data.stock - (item.quantity || 1)) }).eq('id', item.shapeId);
       }
     }
   }
 }
 
-function saveCheckoutSession(session: any) {
-  db.prepare(`INSERT OR REPLACE INTO checkout_sessions
-    (id, razorpay_order_id, cart_json, shipping_json, totals_json, accepted_policies, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    session.id,
-    session.razorpayOrderId,
-    JSON.stringify(session.cart),
-    JSON.stringify(session.shippingDetails || {}),
-    JSON.stringify(session.totals),
-    session.acceptedPolicies ? 1 : 0,
-    session.createdAt
-  );
+async function saveCheckoutSession(session: any) {
+  const { error } = await supabase.from('checkout_sessions').upsert({
+    id: session.id,
+    razorpay_order_id: session.razorpayOrderId,
+    cart_json: session.cart,
+    shipping_json: session.shippingDetails || {},
+    totals_json: session.totals,
+    accepted_policies: session.acceptedPolicies ? 1 : 0,
+    created_at: session.createdAt
+  });
+  if (error) console.error('saveCheckoutSession error', error);
 }
 
-function getCheckoutSession(razorpayOrderId: string) {
-  const session = db.prepare("SELECT * FROM checkout_sessions WHERE razorpay_order_id = ?").get(razorpayOrderId) as any;
-  if (!session) return null;
+async function getCheckoutSession(razorpayOrderId: string) {
+  const { data, error } = await supabase.from('checkout_sessions').select('*').eq('razorpay_order_id', razorpayOrderId).single();
+  if (error || !data) return null;
   return {
-    id: session.id,
-    razorpayOrderId: session.razorpay_order_id,
-    cart: JSON.parse(session.cart_json),
-    shippingDetails: JSON.parse(session.shipping_json),
-    totals: JSON.parse(session.totals_json),
-    acceptedPolicies: Boolean(session.accepted_policies),
-    createdAt: session.created_at,
+    id: data.id,
+    razorpayOrderId: data.razorpay_order_id,
+    cart: data.cart_json,
+    shippingDetails: data.shipping_json,
+    totals: data.totals_json,
+    acceptedPolicies: Boolean(data.accepted_policies),
+    createdAt: data.created_at,
   };
 }
 
-function savePaymentEvent(event: any) {
-  db.prepare(`INSERT OR IGNORE INTO payment_events
-    (id, provider, event_type, external_payment_id, external_order_id, payload_json, processed_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(event.id, event.provider, event.eventType, event.externalPaymentId, event.externalOrderId, JSON.stringify(event.payload), event.processedAt);
+async function savePaymentEvent(event: any) {
+  const { error } = await supabase.from('payment_events').insert({
+    id: event.id,
+    provider: event.provider,
+    event_type: event.eventType,
+    external_payment_id: event.externalPaymentId,
+    external_order_id: event.externalOrderId,
+    payload_json: event.payload,
+    processed_at: event.processedAt
+  });
+  if (error) console.error('savePaymentEvent error', error);
 }
 
-function generateOrderId(prefix = "KRIA"): string {
+async function generateOrderId(prefix = "KRIA"): Promise<string> {
   const now = new Date();
   const datePart = now.toISOString().slice(2, 10).replace(/-/g, "");
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const randomPart = crypto.randomInt(1000, 10_000);
+    const randomPart = require('crypto').randomInt(1000, 10_000);
     const orderId = `${prefix}-${datePart}-${randomPart}`;
-    const existing = db.prepare("SELECT id FROM orders WHERE id = ?").get(orderId);
-    if (!existing) return orderId;
+    const { data } = await supabase.from('orders').select('id').eq('id', orderId).maybeSingle();
+    if (!data) return orderId;
   }
-  return `${prefix}-${datePart}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  return `${prefix}-${datePart}-${require('crypto').randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
 function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -643,15 +462,26 @@ function validateCart(cart: any[]) {
 }
 app.use("/stored-assets", express.static(UPLOAD_DIR, { immutable: true, maxAge: "1y" }));
 
-app.post("/api/admin/session", (req, res) => {
+app.post("/api/admin/session", async (req, res) => {
   const { password } = req.body || {};
-  if (!ADMIN_PASSWORD && !process.env.ADMIN_TOKEN && !isProduction) return res.json({ token: ADMIN_TOKEN || "dev-admin" });
-  if (ADMIN_PASSWORD && password === ADMIN_PASSWORD) return res.json({ token: ADMIN_TOKEN });
+  if (!password || typeof password !== "string") {
+    return res.status(400).json({ error: "Password is required." });
+  }
+  if (!ADMIN_PASSWORD) {
+    return res.status(500).json({ error: "Admin credentials are not configured on this server." });
+  }
+
+  const submitted = Buffer.from(password.trim());
+  const expected = Buffer.from(ADMIN_PASSWORD);
+
+  if (submitted.length === expected.length && crypto.timingSafeEqual(submitted, expected)) {
+    return res.json({ token: ADMIN_TOKEN });
+  }
   return res.status(401).json({ error: "Invalid admin password." });
 });
 
 app.post("/api/uploads/image", async (req, res) => {
-  const { dataUrl, fileName } = req.body || {};
+  const { dataUrl, fileName, isPublic = false } = req.body || {};
   if (!dataUrl || typeof dataUrl !== "string") return res.status(400).json({ error: "Missing image payload." });
 
   let base64Data = "";
@@ -672,19 +502,85 @@ app.post("/api/uploads/image", async (req, res) => {
     const buffer = Buffer.from(base64Data, "base64");
     if (buffer.length > 25 * 1024 * 1024) return res.status(400).json({ error: "Image must be under 25MB." });
     const id = crypto.randomUUID();
-    const safeName = String(fileName || "customer-photo").replace(/[^a-z0-9._-]/gi, "-").slice(0, 80);
+    const safeName = String(fileName || "photo").replace(/[^a-z0-9._-]/gi, "-").slice(0, 80);
     const storedName = `${id}-${safeName}.${ext}`;
-    fs.writeFileSync(path.join(UPLOAD_DIR, storedName), buffer);
-    return res.json({ url: `/stored-assets/${storedName}`, objectKey: storedName });
+    
+    // Distinguish private customer photos from public banners/product assets
+    const bucket = isPublic ? "images" : "customer-photos";
+
+    // Attempt upload to target bucket, falling back gracefully if bucket not yet created
+    let uploadRes = await supabase.storage.from(bucket).upload(storedName, buffer, {
+      contentType: `image/${ext}`,
+      upsert: true
+    });
+
+    let effectiveBucket = bucket;
+    if (uploadRes.error && uploadRes.error.message?.includes("Bucket not found") && bucket === "customer-photos") {
+      // Fallback to images bucket if customer-photos migration has not been applied in Supabase dashboard
+      console.warn("⚠️ 'customer-photos' bucket not found. Run supabase/storage-setup.sql! Falling back to 'images'.");
+      uploadRes = await supabase.storage.from("images").upload(storedName, buffer, {
+        contentType: `image/${ext}`,
+        upsert: true
+      });
+      effectiveBucket = "images";
+    }
+
+    if (uploadRes.error) throw uploadRes.error;
+
+    if (effectiveBucket === "customer-photos") {
+      // Generate short-lived signed URL (3600 seconds = 1 hour) for private customer image
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("customer-photos")
+        .createSignedUrl(storedName, 3600);
+
+      if (signedError || !signedData?.signedUrl) {
+        throw signedError || new Error("Failed to create signed URL.");
+      }
+
+      return res.json({
+        url: signedData.signedUrl,
+        objectKey: storedName,
+        bucket: "customer-photos",
+        isPrivate: true
+      });
+    } else {
+      const { data: publicUrlData } = supabase.storage.from("images").getPublicUrl(storedName);
+      return res.json({
+        url: publicUrlData.publicUrl,
+        objectKey: storedName,
+        bucket: "images",
+        isPrivate: false
+      });
+    }
   } catch (err: any) {
     console.error("Image upload processing error:", err);
-    return res.status(500).json({ error: "Failed to save image." });
+    return res.status(500).json({ error: "Failed to save image to cloud storage: " + (err.message || "Unknown error") });
   }
 });
 
-app.get("/api/catalog", (_req, res) => res.json({ prices: SHAPE_PRICES }));
+// Endpoint for authorized staff to generate fresh signed URLs for customer photos
+app.post("/api/admin/photos/signed-url", requireAdmin, async (req, res) => {
+  const { objectKey, bucket = "customer-photos" } = req.body || {};
+  if (!objectKey || typeof objectKey !== "string") {
+    return res.status(400).json({ error: "objectKey is required." });
+  }
 
-app.post("/api/checkout/validate-coupon", (req, res) => {
+  try {
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(objectKey, 7200); // 2 hours
+    if (error || !data?.signedUrl) {
+      // If not in customer-photos, check images bucket
+      const { data: pubData } = supabase.storage.from("images").getPublicUrl(objectKey);
+      return res.json({ signedUrl: pubData.publicUrl });
+    }
+    return res.json({ signedUrl: data.signedUrl });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to generate signed URL." });
+  }
+});
+
+app.get("/api/catalog", async (_req, res) => res.json({ prices: SHAPE_PRICES }));
+
+app.post("/api/checkout/validate-coupon", async (req, res) => {
   const { couponCode, cart = [] } = req.body || {};
   if (!couponCode) return res.status(400).json({ error: "Coupon code is required." });
   const cleanCode = String(couponCode).toUpperCase().trim();
@@ -787,7 +683,7 @@ async function syncOrderToShiprocket(order: any) {
         timestamp: new Date().toISOString(), 
         note: `Shiprocket live shipment #${shipData.order_id} created automatically with AWB ${order.trackingNumber} (${finalCourier})` 
       });
-      saveOrder(order);
+      await DB.saveOrder(order);
       return true;
     } else {
       console.error("Shiprocket adhoc order creation failed:", shipData);
@@ -798,12 +694,14 @@ async function syncOrderToShiprocket(order: any) {
   return false;
 }
 
-function createPaidOrderFromSession(session: any, paymentId: string, isMock = false) {
-  const existing = getOrders().find((order: any) => order.transactionId === paymentId);
+async function createPaidOrderFromSession(session: any, paymentId: string, isMock = false) {
+  // Concurrency guard: check if order already exists for this paymentId
+  const existing = await DB.getOrderByTransactionId(paymentId);
   if (existing) return existing;
+
   const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(session.cart);
   const order = {
-    id: generateOrderId("KRIA-ORD"),
+    id: await DB.generateOrderId("KRIA-ORD"),
     status: "Paid",
     cart: session.cart,
     shippingDetails: session.shippingDetails,
@@ -818,9 +716,13 @@ function createPaidOrderFromSession(session: any, paymentId: string, isMock = fa
     deliveryCharge,
     history: [{ status: "Paid", timestamp: new Date().toISOString(), note: isMock ? "Development mock payment confirmed." : "Razorpay server-side payment confirmation captured." }]
   };
-  saveOrder(order);
 
-  // Automatically create order in live Shiprocket dashboard upon payment!
+  const saveResult = await DB.saveOrder(order);
+  if (saveResult?.isDuplicate) {
+    return saveResult.order;
+  }
+
+  // Trigger Shiprocket sync and notifications ONLY on first-time creation
   syncOrderToShiprocket(order).catch((err) => console.error("Auto Shiprocket sync background error:", err));
 
   return order;
@@ -886,8 +788,8 @@ async function sendTransactionalEmailNotifications(order: any, type: 'SUCCESS' |
   }
 }
 
-function processSuccessfulPayment(checkoutSessionId: string, paymentId: string, isMock = false) {
-  const session = getCheckoutSession(checkoutSessionId);
+async function processSuccessfulPayment(checkoutSessionId: string, paymentId: string, paymentProvider = "razorpay") {
+  const session = await DB.getCheckoutSession(checkoutSessionId);
   if (!session) throw new Error("Checkout session not found or expired.");
   const { cart, shippingDetails, totals } = session;
   const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = totals;
@@ -902,9 +804,9 @@ function processSuccessfulPayment(checkoutSessionId: string, paymentId: string, 
     subtotal,
     bulkDiscount,
     deliveryCharge,
-    history: [{ status: "Paid", timestamp: new Date().toISOString(), note: isMock ? "Development mock payment confirmed." : "Razorpay server-side payment confirmation captured." }]
+    history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Razorpay server-side payment confirmation captured." }]
   };
-  saveOrder(order);
+  await DB.saveOrder(order);
 
   // Send Email Notifications to Admin & Customer
   sendTransactionalEmailNotifications(order, 'SUCCESS').catch((err) => console.error("Email notification background error:", err));
@@ -928,14 +830,14 @@ const createCheckoutOrderHandler = async (req: express.Request, res: express.Res
     if (!rzpKeyId || !rzpKeySecret) {
       if (!ENABLE_MOCK_CHECKOUT) return res.status(503).json({ error: "Payment gateway is not configured. Mock checkout is disabled outside development." });
       const mockOrderId = `order_mock_${crypto.randomUUID()}`;
-      saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: mockOrderId, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
+      await DB.saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: mockOrderId, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
       return res.json({ orderId: mockOrderId, amount: grandTotal * 100, currency: "INR", isMock: true, subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal, razorpayKeyId: "rzp_test_mock_key_studio_kria" });
     }
     const authString = Buffer.from(`${rzpKeyId}:${rzpKeySecret}`).toString("base64");
     const rzpResponse = await fetch("https://api.razorpay.com/v1/orders", { method: "POST", headers: { Authorization: `Basic ${authString}`, "Content-Type": "application/json" }, body: JSON.stringify({ amount: grandTotal * 100, currency: "INR", receipt: `receipt_kria_${Date.now()}` }) });
     if (!rzpResponse.ok) throw new Error(`Razorpay gateway error: ${await rzpResponse.text()}`);
     const rzpOrder: any = await rzpResponse.json();
-    saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: rzpOrder.id, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
+    await DB.saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: rzpOrder.id, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
     return res.json({ orderId: rzpOrder.id, amount: rzpOrder.amount, currency: rzpOrder.currency, isMock: false, subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal, razorpayKeyId: rzpKeyId });
   } catch (error: any) { res.status(500).json({ error: error.message || "Failed to establish a secure transaction session." }); }
 };
@@ -950,7 +852,7 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
     if (cartError) return res.status(400).json({ error: cartError });
 
     const { grandTotal, subtotal, bulkDiscount, deliveryCharge, couponDiscount } = calculateOrderTotals(cart, couponCode);
-    const orderId = generateOrderId("KRIA-WA");
+    const orderId = await DB.generateOrderId("KRIA-WA");
 
     const order = {
       id: orderId,
@@ -970,9 +872,9 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
       history: [{ status: "WhatsApp Order", timestamp: new Date().toISOString(), note: "1-Click Direct WhatsApp order initiated by customer." }]
     };
 
-    saveOrder(order);
+    await DB.saveOrder(order);
 
-    const itemsText = cart.map((item: any) => `- ${item.shapeName || 'Custom Magnet'} (Qty: ${item.quantity || 1}, Price: ₹${(item.price || 299) * (item.quantity || 1)})`).join("\n");
+    const itemsText = cart.map((item: any) => `- ${item.shapeName || 'Custom'} (Qty: ${item.quantity || 1}, Price: ₹${(item.price || 299) * (item.quantity || 1)})`).join("\n");
     const waText = `Hi KRIA Studio! ✨ I want to place an instant WhatsApp order:\n\n*Order ID:* ${orderId}\n\n*Items Ordered:*\n${itemsText}\n\n*Grand Total:* ₹${grandTotal}\n*Customer Name:* ${shippingDetails.fullName || 'Customer'}\n*Phone:* ${shippingDetails.phone || 'N/A'}\n*Delivery Address:* ${shippingDetails.address || ''}, ${shippingDetails.city || 'India'} - ${shippingDetails.pincode || ''}\n\nPlease confirm print assets & payment link!`;
     const whatsappUrl = `https://wa.me/919392576792?text=${encodeURIComponent(waText)}`;
 
@@ -997,6 +899,24 @@ const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.R
       const generatedSignature = crypto.createHmac("sha256", rzpKeySecret).update(`${razorpay_order_id}|${razorpay_payment_id}`).digest("hex");
       if (generatedSignature !== razorpay_signature) return res.status(400).json({ error: "Cryptographic signature validation failed. Potential tampering." });
     }
+    const transactionId = isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id;
+
+    // Concurrency / Idempotency check: Return existing order if already processed by webhook
+    const existingOrder = await DB.getOrderByTransactionId(transactionId);
+    if (existingOrder) {
+      return res.json({
+        success: true,
+        transactionId: existingOrder.transactionId,
+        trackingNumber: existingOrder.trackingNumber,
+        courierName: existingOrder.courierName,
+        deliveryEstimate: existingOrder.deliveryEstimate,
+        isMockCheckout: isMock,
+        isRealShipment: true,
+        notification: { success: true },
+        grandTotal: existingOrder.grandTotal
+      });
+    }
+
     const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(cart, couponCode);
     const shiprocketToken = await getShiprocketToken();
     let trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
@@ -1016,7 +936,7 @@ const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.R
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${shiprocketToken}` },
           body: JSON.stringify({
-            order_id: generateOrderId("KRIA-ORD").replace(/-/g, "_"),
+            order_id: await DB.generateOrderId("KRIA-ORD").replace(/-/g, "_"),
             order_date: new Date().toISOString().replace('T', ' ').substring(0, 16),
             pickup_location: pickupName,
             billing_customer_name: shippingDetails.fullName,
@@ -1056,10 +976,11 @@ const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.R
         }
       } catch (shipErr) { console.error("Shiprocket order failed", shipErr); }
     }
-    const newOrder = { id: generateOrderId("KRIA-ORD"), status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId: isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
-    saveOrder(newOrder);
-    const notification = await notifyCustomer(newOrder, "Order confirmed");
-    return res.json({ success: true, transactionId: newOrder.transactionId, trackingNumber, courierName, deliveryEstimate: newOrder.deliveryEstimate, isMockCheckout: isMock, isRealShipment, notification, grandTotal });
+    const newOrder = { id: await DB.generateOrderId("KRIA-ORD"), status: "Paid", cart, shippingDetails, trackingNumber, courierName, deliveryEstimate: "3-5 Business Days", transactionId, createdAt: new Date().toISOString(), grandTotal, subtotal, bulkDiscount, deliveryCharge, history: [{ status: "Paid", timestamp: new Date().toISOString(), note: "Order prepaid and policy acceptance captured." }] };
+    const saveResult = await DB.saveOrder(newOrder);
+    const finalOrder = saveResult?.order || newOrder;
+    const notification = await notifyCustomer(finalOrder, "Order confirmed");
+    return res.json({ success: true, transactionId: finalOrder.transactionId, trackingNumber: finalOrder.trackingNumber || trackingNumber, courierName: finalOrder.courierName || courierName, deliveryEstimate: finalOrder.deliveryEstimate || "3-5 Business Days", isMockCheckout: isMock, isRealShipment, notification, grandTotal: finalOrder.grandTotal || grandTotal });
   } catch (error: any) { res.status(500).json({ error: error.message || "Failed to process final order booking." }); }
 };
 
@@ -1078,20 +999,17 @@ function saveShippingQuote(quote: {
 }) {
   try {
     const id = quote.id || `quote_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-    db.prepare(`
-      INSERT INTO shipping_quotes (id, order_id, destination_pin, courier_name, rate, etd, serviceable, response_json, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      quote.orderId || null,
-      quote.destinationPin,
-      quote.courierName,
-      quote.rate,
-      quote.etd,
-      quote.serviceable ? 1 : 0,
-      JSON.stringify(quote.responseJson),
-      new Date().toISOString()
-    );
+    supabase.from("shipping_quotes").upsert({
+      id: id,
+      order_id: quote.orderId || null,
+      destination_pin: quote.destinationPin,
+      courier_name: quote.courierName,
+      rate: quote.rate,
+      etd: quote.etd,
+      serviceable: quote.serviceable ? 1 : 0,
+      response_json: JSON.stringify(quote.responseJson),
+      created_at: new Date().toISOString()
+    }).then();
   } catch (e) {
     console.error("Failed to save shipping quote:", e);
   }
@@ -1268,7 +1186,7 @@ app.post("/api/shiprocket/check-serviceability", async (req, res) => {
 // ----------------------------------------------------------------------
 
 // 1. POST /shiprocket/auth/login
-app.post(["/api/shiprocket/auth/login", "/shiprocket/auth/login"], async (req, res) => {
+app.post(["/api/shiprocket/auth/login", "/shiprocket/auth/login"], requireAdmin, async (req, res) => {
   const email = req.body?.email || process.env.SHIPROCKET_EMAIL;
   const password = req.body?.password || process.env.SHIPROCKET_PASSWORD;
   if (!email || !password) return res.status(400).json({ error: "Shiprocket credentials missing. Set SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD in environment." });
@@ -1291,7 +1209,7 @@ app.post(["/api/shiprocket/auth/login", "/shiprocket/auth/login"], async (req, r
 });
 
 // 2. POST /shiprocket/orders/create/adhoc
-app.post(["/api/shiprocket/orders/create/adhoc", "/shiprocket/orders/create/adhoc"], async (req, res) => {
+app.post(["/api/shiprocket/orders/create/adhoc", "/shiprocket/orders/create/adhoc"], requireAdmin, async (req, res) => {
   const token = await getShiprocketToken();
   if (!token) return res.status(401).json({ error: "Shiprocket authentication failed. Check API credentials." });
   try {
@@ -1307,7 +1225,7 @@ app.post(["/api/shiprocket/orders/create/adhoc", "/shiprocket/orders/create/adho
   }
 });
 
-// 3. GET /shiprocket/courier/serviceability
+// 3. GET /shiprocket/courier/serviceability (Public for checkout pincode checking)
 app.get(["/api/shiprocket/courier/serviceability", "/shiprocket/courier/serviceability"], async (req, res) => {
   const { pickup_pincode = process.env.SHIPROCKET_PICKUP_PINCODE || "500085", delivery_pincode, weight = "0.25", cod = "0" } = req.query;
   const token = await getShiprocketToken();
@@ -1323,7 +1241,7 @@ app.get(["/api/shiprocket/courier/serviceability", "/shiprocket/courier/servicea
 });
 
 // 4. POST /shiprocket/courier/assign/awb
-app.post(["/api/shiprocket/courier/assign/awb", "/shiprocket/courier/assign/awb"], async (req, res) => {
+app.post(["/api/shiprocket/courier/assign/awb", "/shiprocket/courier/assign/awb"], requireAdmin, async (req, res) => {
   const token = await getShiprocketToken();
   if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
   try {
@@ -1340,7 +1258,7 @@ app.post(["/api/shiprocket/courier/assign/awb", "/shiprocket/courier/assign/awb"
 });
 
 // --- ADMIN DATABASE BACKUP ENDPOINTS ---
-app.get("/api/admin/backups", requireAdmin, (_req, res) => {
+app.get("/api/admin/backups", requireAdmin, async (_req, res) => {
   try {
     const backupDir = path.join(process.cwd(), 'data', 'backups');
     if (!fs.existsSync(backupDir)) return res.json({ backups: [] });
@@ -1356,7 +1274,7 @@ app.get("/api/admin/backups", requireAdmin, (_req, res) => {
   }
 });
 
-app.post("/api/admin/backups/trigger", requireAdmin, (_req, res) => {
+app.post("/api/admin/backups/trigger", requireAdmin, async (_req, res) => {
   try {
     backupDatabase();
     return res.json({ success: true, message: "Database backup created successfully." });
@@ -1383,7 +1301,7 @@ app.get(["/api/shiprocket/courier/track", "/shiprocket/courier/track", "/api/shi
 });
 
 // 6. POST /shiprocket/courier/generate/pickup
-app.post(["/api/shiprocket/courier/generate/pickup", "/shiprocket/courier/generate/pickup"], async (req, res) => {
+app.post(["/api/shiprocket/courier/generate/pickup", "/shiprocket/courier/generate/pickup"], requireAdmin, async (req, res) => {
   const token = await getShiprocketToken();
   if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
   try {
@@ -1400,7 +1318,7 @@ app.post(["/api/shiprocket/courier/generate/pickup", "/shiprocket/courier/genera
 });
 
 // 7. GET/POST /shiprocket/courier/label
-app.all(["/api/shiprocket/courier/label", "/shiprocket/courier/label", "/api/shiprocket/courier/generate/label"], async (req, res) => {
+app.all(["/api/shiprocket/courier/label", "/shiprocket/courier/label", "/api/shiprocket/courier/generate/label"], requireAdmin, async (req, res) => {
   const token = await getShiprocketToken();
   if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
   try {
@@ -1418,7 +1336,7 @@ app.all(["/api/shiprocket/courier/label", "/shiprocket/courier/label", "/api/shi
 });
 
 // 8. GET/POST /shiprocket/courier/invoice
-app.all(["/api/shiprocket/courier/invoice", "/shiprocket/courier/invoice", "/api/shiprocket/courier/generate/invoice"], async (req, res) => {
+app.all(["/api/shiprocket/courier/invoice", "/shiprocket/courier/invoice", "/api/shiprocket/courier/generate/invoice"], requireAdmin, async (req, res) => {
   const token = await getShiprocketToken();
   if (!token) return res.status(401).json({ error: "Shiprocket authentication failed." });
   try {
@@ -1435,7 +1353,7 @@ app.all(["/api/shiprocket/courier/invoice", "/shiprocket/courier/invoice", "/api
   }
 });
 
-app.get("/api/webhooks/razorpay", (_req, res) => {
+app.get("/api/webhooks/razorpay", async (_req, res) => {
   return res.status(200).json({
     status: "Active",
     endpoint: "/api/webhooks/razorpay",
@@ -1446,23 +1364,77 @@ app.get("/api/webhooks/razorpay", (_req, res) => {
 });
 
 app.post("/api/webhooks/razorpay", async (req, res) => {
-  const webhookSecret = (process.env.RAZORPAY_WEBHOOK_SECRET || "kria-webhook-secret-2026").trim();
+  const webhookSecret = (process.env.RAZORPAY_WEBHOOK_SECRET || "").trim();
   const signature = req.headers["x-razorpay-signature"];
-  
-  const eventId = req.body?.payload?.payment?.entity?.id || crypto.randomUUID();
-  const payment = req.body?.payload?.payment?.entity;
-  
-  try {
-    savePaymentEvent({ id: eventId, provider: "razorpay", eventType: req.body?.event || "unknown", externalPaymentId: payment?.id, externalOrderId: payment?.order_id, payload: req.body, processedAt: new Date().toISOString() });
-  } catch (e) {}
 
+  // 1. Signature presence validation
+  if (!signature || typeof signature !== "string") {
+    return res.status(400).json({ error: "Missing x-razorpay-signature header." });
+  }
+
+  // 2. Secret presence validation
+  if (!webhookSecret) {
+    console.error("FATAL: RAZORPAY_WEBHOOK_SECRET is not configured on this server.");
+    return res.status(500).json({ error: "Webhook secret not configured." });
+  }
+
+  // 3. Exact raw body signature verification
+  const rawBody = (req as any).rawBody;
+  if (!rawBody || !Buffer.isBuffer(rawBody)) {
+    console.error("Webhook error: req.rawBody is missing or not a Buffer.");
+    return res.status(400).json({ error: "Malformed request payload." });
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", webhookSecret)
+    .update(rawBody)
+    .digest("hex");
+
+  const submittedBuf = Buffer.from(signature.trim());
+  const expectedBuf = Buffer.from(expectedSignature);
+
+  if (submittedBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(submittedBuf, expectedBuf)) {
+    console.warn("⚠️ Invalid Razorpay webhook signature attempt rejected.");
+    return res.status(400).json({ error: "Invalid webhook signature." });
+  }
+
+  // 4. Extract and log payment event
+  const eventId = req.body?.payload?.payment?.entity?.id || req.body?.event_id || crypto.randomUUID();
+  const payment = req.body?.payload?.payment?.entity;
+
+  try {
+    await DB.savePaymentEvent({
+      id: eventId,
+      provider: "razorpay",
+      eventType: req.body?.event || "unknown",
+      externalPaymentId: payment?.id,
+      externalOrderId: payment?.order_id,
+      payload: req.body,
+      processedAt: new Date().toISOString()
+    });
+  } catch (e) {
+    console.warn("Notice: Payment event logging issue:", e);
+  }
+
+  // 5. Only verified captured payment events trigger order creation & fulfillment
   if ((req.body?.event === "payment.captured" || req.body?.event === "order.paid") && payment?.order_id) {
     try {
-      const session = getCheckoutSession(payment.order_id);
+      const paymentId = payment.id || eventId;
+
+      // Idempotency check: Do not re-process if order is already created
+      const existing = await DB.getOrderByTransactionId(paymentId);
+      if (existing) {
+        console.log(`[WEBHOOK] Order for payment ${paymentId} already processed (id: ${existing.id}). Skipping.`);
+        return res.status(200).json({ received: true, status: "ALREADY_PROCESSED" });
+      }
+
+      const session = await DB.getCheckoutSession(payment.order_id);
       if (session) {
-        const order = createPaidOrderFromSession(session, payment.id, false);
+        const order = await createPaidOrderFromSession(session, paymentId, false);
         sendTransactionalEmailNotifications(order, 'SUCCESS').catch((err) => console.error("Email notification background error:", err));
         syncOrderToShiprocket(order).catch((err) => console.error("Auto Shiprocket sync background error:", err));
+      } else {
+        console.warn(`[WEBHOOK] No checkout session found for order ${payment.order_id}.`);
       }
     } catch (err) {
       console.error("Webhook payment process error:", err);
@@ -1473,7 +1445,7 @@ app.post("/api/webhooks/razorpay", async (req, res) => {
 });
 
 // Clean, keyword-free webhook routes per official Shiprocket specification ("do not use keywords like shiprocket, kartrocket, sr, or kr in your webhook URL")
-app.get(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/webhooks/logistics-update"], (_req, res) => {
+app.get(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/webhooks/logistics-update"], async (_req, res) => {
   return res.status(200).json({ success: true, message: "KRIA Courier Webhook Endpoint Active." });
 });
 
@@ -1499,7 +1471,7 @@ app.post(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/we
       return res.status(200).json({ success: true, message: "KRIA Shiprocket Test Webhook Connection Verified Successfully!" });
     }
 
-    const orders = getOrders();
+    const orders = await DB.getOrders();
     const order = orders.find((o: any) => 
       (cleanAwb && String(o.trackingNumber || '') === cleanAwb) || 
       (cleanOrderId && (o.id === cleanOrderId || o.id === String(cleanOrderId).replace(/_/g, '-')))
@@ -1529,7 +1501,7 @@ app.post(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/we
         note: `Shiprocket scan update: "${statusText}".${scanNote}`
       });
 
-      saveOrder(order);
+      await DB.saveOrder(order);
       await notifyCustomer(order, `Courier Tracking Update: ${statusText}`);
     }
 
@@ -1544,54 +1516,54 @@ app.post(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/we
 // BUSINESS SETTINGS & WAREHOUSE MANAGEMENT ENDPOINTS
 // ----------------------------------------------------------------------
 
-app.get(["/api/admin/settings", "/api/settings"], (_req, res) => {
-  return res.json(getBusinessSettings());
+app.get(["/api/admin/settings", "/api/settings"], async (_req, res) => {
+  return res.json(await getBusinessSettings());
 });
 
-app.post("/api/admin/settings", requireAdmin, (req, res) => {
+app.post("/api/admin/settings", requireAdmin, async (req, res) => {
   try {
     const settings = req.body || {};
     for (const [key, value] of Object.entries(settings)) {
-      db.prepare("INSERT OR REPLACE INTO business_settings (key, value) VALUES (?, ?)").run(key, String(value));
+      if (typeof value === "string" || typeof value === "number") {
+        await supabase.from("business_settings").upsert({ key, value: String(value) });
+      }
     }
-    return res.json({ success: true, settings: getBusinessSettings() });
+    return res.json({ success: true, settings: await getBusinessSettings() });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to update business settings." });
   }
 });
 
-app.get(["/api/admin/warehouses", "/api/warehouses"], (_req, res) => {
+app.get(["/api/admin/warehouses", "/api/warehouses"], async (_req, res) => {
   try {
-    const warehouses = db.prepare("SELECT * FROM warehouses ORDER BY is_default DESC, created_at DESC").all();
+    const { data: warehouses, error } = await supabase.from("warehouses").select("*").order("is_default", { ascending: false }).order("created_at", { ascending: false });
+    if (error) throw error;
     return res.json(warehouses);
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to fetch warehouses." });
   }
 });
 
-app.post("/api/admin/warehouses", requireAdmin, (req, res) => {
+app.post("/api/admin/warehouses", requireAdmin, async (req, res) => {
   try {
     const wh = req.body || {};
     const id = wh.id || `wh_${Date.now()}`;
-    db.prepare(`INSERT OR REPLACE INTO warehouses
-      (id, name, address1, address2, city, state, pincode, gstin, phone, email, shiprocket_pickup_name, is_default, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
+    await supabase.from("warehouses").upsert({
       id,
-      wh.name || "Main Warehouse",
-      wh.address1 || "Jubilee Tech Zone",
-      wh.address2 || "",
-      wh.city || "Hyderabad",
-      wh.state || "Telangana",
-      wh.pincode || "500085",
-      wh.gstin || "36AAAFK7892P1Z0",
-      wh.phone || "+91 93925 76792",
-      wh.email || "kriatechgroup@gmail.com",
-      wh.shiprocket_pickup_name || "Primary_Hyderabad_500085",
-      wh.is_default ? 1 : 0,
-      wh.created_at || new Date().toISOString()
-    );
-    return res.json({ success: true, warehouse: getWarehouse(id) });
+      name: wh.name || "Main Warehouse",
+      address1: wh.address1 || "Jubilee Tech Zone",
+      address2: wh.address2 || "",
+      city: wh.city || "Hyderabad",
+      state: wh.state || "Telangana",
+      pincode: wh.pincode || "500085",
+      gstin: wh.gstin || "36AAAFK7892P1Z0",
+      phone: wh.phone || "+91 93925 76792",
+      email: wh.email || "kriatechgroup@gmail.com",
+      shiprocket_pickup_name: wh.shiprocket_pickup_name || "Primary_Hyderabad_500085",
+      is_default: wh.is_default ? 1 : 0,
+      created_at: wh.created_at || new Date().toISOString()
+    });
+    return res.json({ success: true, warehouse: await getWarehouse(id) });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to save warehouse details." });
   }
@@ -1601,11 +1573,11 @@ app.post("/api/admin/warehouses", requireAdmin, (req, res) => {
 app.post("/api/shiprocket/create-shipment", requireAdmin, async (req, res) => {
   try {
     const { orderId } = req.body || {};
-    const orders = getOrders();
+    const orders = await DB.getOrders();
     const order = orders.find((o: any) => o.id === orderId);
     if (!order) return res.status(404).json({ error: "Order not found." });
 
-    const wh = getWarehouse();
+    const wh = await DB.getWarehouse();
     const shiprocketToken = await getShiprocketToken();
 
     if (shiprocketToken) {
@@ -1680,7 +1652,7 @@ app.post("/api/shiprocket/create-shipment", requireAdmin, async (req, res) => {
           note: `Production shipment created on Shiprocket. AWB: ${order.trackingNumber}`
         });
 
-        saveOrder(order);
+        await DB.saveOrder(order);
         return res.json({ success: true, trackingNumber: order.trackingNumber, labelPdfUrl, shipmentId });
       }
     }
@@ -1694,7 +1666,7 @@ app.post("/api/shiprocket/create-shipment", requireAdmin, async (req, res) => {
       timestamp: new Date().toISOString(),
       note: `Shipment packed & manifest generated. Real AWB: ${order.trackingNumber}`
     });
-    saveOrder(order);
+    await DB.saveOrder(order);
     return res.json({ success: true, trackingNumber: order.trackingNumber, courierName: order.courierName });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to create shipment." });
@@ -1705,11 +1677,11 @@ app.post("/api/shiprocket/create-shipment", requireAdmin, async (req, res) => {
 app.post("/api/shiprocket/schedule-pickup", requireAdmin, async (req, res) => {
   try {
     const { orderId } = req.body || {};
-    const orders = getOrders();
+    const orders = await DB.getOrders();
     const order = orders.find((o: any) => o.id === orderId);
     if (!order) return res.status(404).json({ error: "Order not found." });
 
-    const wh = getWarehouse();
+    const wh = await DB.getWarehouse();
     const shiprocketToken = await getShiprocketToken();
 
     if (shiprocketToken && order.shipmentId) {
@@ -1728,7 +1700,7 @@ app.post("/api/shiprocket/schedule-pickup", requireAdmin, async (req, res) => {
           timestamp: new Date().toISOString(),
           note: `Courier pickup scheduled from ${wh.city} (${wh.pincode}) warehouse.`
         });
-        saveOrder(order);
+        await DB.saveOrder(order);
         return res.json({ success: true, message: "Pickup scheduled with courier executive." });
       }
     }
@@ -1739,19 +1711,19 @@ app.post("/api/shiprocket/schedule-pickup", requireAdmin, async (req, res) => {
       timestamp: new Date().toISOString(),
       note: `Pickup scheduled for courier collection at ${wh.pincode}.`
     });
-    saveOrder(order);
+    await DB.saveOrder(order);
     return res.json({ success: true, message: "Pickup scheduled successfully." });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to schedule pickup." });
   }
 });
 
-app.get("/robots.txt", (_req, res) => {
+app.get("/robots.txt", async (_req, res) => {
   res.type("text/plain");
   res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: https://magnetic-frames-ecommerce.onrender.com/sitemap.xml`);
 });
 
-app.get("/sitemap.xml", (_req, res) => {
+app.get("/sitemap.xml", async (_req, res) => {
   res.type("application/xml");
   res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -1770,10 +1742,10 @@ app.get("/sitemap.xml", (_req, res) => {
 </urlset>`);
 });
 
-app.post("/api/orders/track", (req, res) => {
+app.post("/api/orders/track", async (req, res) => {
   const { orderId, emailOrPhone } = req.body || {};
   if (!orderId || !emailOrPhone) return res.status(400).json({ error: "Order ID and email/phone are required." });
-  const order = getOrders().find((candidate: any) => candidate.id === orderId);
+  const order = await DB.getOrders().find((candidate: any) => candidate.id === orderId);
   if (!order) return res.status(404).json({ error: "Order not found." });
   const lookup = String(emailOrPhone).toLowerCase().trim();
   const email = String(order.shippingDetails.email || "").toLowerCase();
@@ -1796,15 +1768,28 @@ app.post("/api/orders/track", (req, res) => {
   });
 });
 
-app.get("/api/admin/orders", requireAdmin, (_req, res) => res.json({ success: true, orders: getOrders() }));
+app.get("/api/admin/orders", requireAdmin, async (_req, res) => res.json({ success: true, orders: await DB.getOrders() }));
+
+app.get('/api/admin/dashboard', requireAdmin, async (_req, res) => {
+  const orders = await DB.getOrders();
+  const revenue = orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+  res.json({
+    success: true,
+    stats: { revenue, orders: orders.length, customers: orders.length, conversion: 2.5 },
+    recentOrders: orders.slice(0, 5)
+  });
+});
+app.get('/api/admin/banners', requireAdmin, async (_req, res) => res.json({ success: true, banners: await DB.getBanners() }));
+app.post('/api/admin/banners', requireAdmin, async (req, res) => { await DB.supabase.from('banners').upsert(req.body); res.json({success:true}); });
+app.delete('/api/admin/banners/:id', requireAdmin, async (req, res) => { await DB.supabase.from('banners').delete().eq('id', req.params.id); res.json({success:true}); });
 
 app.post("/api/admin/orders/recover-payments", requireAdmin, async (_req, res) => {
   try {
-    const sessions = db.prepare("SELECT * FROM checkout_sessions").all() as any[];
+    const { data: sessions } = await DB.supabase.from("checkout_sessions").select("*");
     const recovered: any[] = [];
-    for (const session of sessions) {
-      const paymentEvents = db.prepare("SELECT * FROM payment_events WHERE external_order_id = ? AND event_type = 'payment.captured'").all(session.razorpay_order_id) as any[];
-      for (const event of paymentEvents) {
+    for (const session of sessions || []) {
+      const { data: paymentEvents } = await DB.supabase.from("payment_events").select("*").eq("external_order_id", session.razorpay_order_id).eq("event_type", "payment.captured");
+      for (const event of paymentEvents || []) {
         const parsedSession = {
           id: session.id,
           razorpayOrderId: session.razorpay_order_id,
@@ -1812,7 +1797,7 @@ app.post("/api/admin/orders/recover-payments", requireAdmin, async (_req, res) =
           shippingDetails: JSON.parse(session.shipping_json),
           totals: JSON.parse(session.totals_json)
         };
-        const order = createPaidOrderFromSession(parsedSession, event.external_payment_id || `recovered_${Date.now()}`, false);
+        const order = await createPaidOrderFromSession(parsedSession, event.external_payment_id || `recovered_${Date.now()}`, false);
         recovered.push(order.id);
       }
     }
@@ -1822,17 +1807,17 @@ app.post("/api/admin/orders/recover-payments", requireAdmin, async (_req, res) =
   }
 });
 app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
-  const order = getOrders().find((o: any) => o.id === req.params.id);
+  const order = await DB.getOrders().find((o: any) => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: "Order record not found." });
   order.status = req.body.status;
   order.history.push({ status: req.body.status, timestamp: new Date().toISOString(), note: req.body.note || `Status updated to ${req.body.status}.` });
   const notification = await notifyCustomer(order, `Status updated to ${req.body.status}`);
   order.history.push({ status: "Notification", timestamp: new Date().toISOString(), note: notification.message });
-  saveOrder(order);
+  await DB.saveOrder(order);
   res.json({ success: true, order, notificationLog: notification.message });
 });
 app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res) => {
-  const order = getOrders().find((o: any) => o.id === req.params.id);
+  const order = await DB.getOrders().find((o: any) => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: "Order record not found." });
 
   const shiprocketToken = await getShiprocketToken();
@@ -1922,7 +1907,7 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
         order.courierName = finalCourier;
         order.shipmentId = shipmentId;
         order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Live Shiprocket AWB ${order.trackingNumber} assigned via ${finalCourier}` });
-        saveOrder(order);
+        await DB.saveOrder(order);
         return res.json({ success: true, order, isRealShipment: true, shiprocket: { ...shipData, awb_code: order.trackingNumber, courier_name: finalCourier } });
       }
     } catch (shipErr) {
@@ -1933,11 +1918,11 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
   // Fallback AWB refresh if Shiprocket credentials missing or API fails
   order.trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
   order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Refreshed AWB tracking code: ${order.trackingNumber}` });
-  saveOrder(order);
+  await DB.saveOrder(order);
   res.json({ success: true, order, isRealShipment: false });
 });
-app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
-  db.prepare("DELETE FROM orders WHERE id = ?").run(req.params.id);
+app.delete("/api/admin/orders/:id", requireAdmin, async (req, res) => {
+  await DB.supabase.from("orders").delete().eq("id", req.params.id);
   res.json({ success: true, message: `Voided order ${req.params.id}` });
 });
 
@@ -1945,7 +1930,6 @@ const DEFAULT_CATALOG_PRODUCTS = [
   { id: "love", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "3 × 3 in", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
   { id: "circle", name: "Minimal Circle", price: 299, originalPrice: 399, dimensions: "3 × 3 in", description: "Pure round 1:1 focus frame.", tagline: "Pure round focus frame.", isTrending: 1 },
   { id: "polaroid", name: "Classic Polaroid", price: 299, originalPrice: 500, dimensions: "3 × 4 in", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
-  { id: "scalloped-stand", name: "Scalloped Desk Stand", price: 449, originalPrice: 599, dimensions: "5 × 7 in", description: "Luxury scalloped desktop frame with clear stand.", tagline: "Desktop display stand.", isTrending: 1 },
   { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "3 × 4 in", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
   { id: "landscape", name: "Horizontal Snapshot", price: 299, originalPrice: 369, dimensions: "4 × 3 in", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
   { id: "filmstrip", name: "Vintage Film Strip", price: 349, originalPrice: 499, dimensions: "2 × 6 in", description: "A narrative strip holding 3 of your snapshots.", tagline: "3-photo narrative filmstrip.", isTrending: 1 },
@@ -1954,99 +1938,65 @@ const DEFAULT_CATALOG_PRODUCTS = [
   { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "4 × 6 in", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 }
 ];
 
-app.get("/api/products", (_req, res) => {
+app.get("/api/products", async (_req, res) => {
   try {
-    // Re-seed products table to match exact requested sequence
-    db.prepare("DELETE FROM products").run();
-    const stmt = db.prepare(`INSERT OR REPLACE INTO products
-      (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    let idx = 0;
-    for (const p of DEFAULT_CATALOG_PRODUCTS) {
-      idx++;
-      stmt.run(p.id, p.name, p.price, p.originalPrice, p.dimensions, p.description, "rounded-2xl border-2", "aspect-[4/5]", p.tagline, p.isTrending, new Date(Date.now() - idx * 1000).toISOString());
-    }
-    const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
-    const formatted = products.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      originalPrice: p.original_price,
-      dimensions: p.dimensions,
-      description: p.description,
-      shapeClass: p.shape_class,
-      frameRatio: p.frame_ratio,
-      tagline: p.tagline,
-      isTrending: Boolean(p.is_trending)
-    }));
-    return res.json({ success: true, products: formatted });
+    const { data: products, error } = await DB.supabase.from("products").select("*").order("created_at", { ascending: false });
+    if (error) throw error;
+    return res.json({ success: true, products });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/admin/products", requireAdmin, (req, res) => {
+app.post("/api/admin/products", requireAdmin, async (req, res) => {
   try {
     const { id, name, price, originalPrice, dimensions, description, shapeClass, frameRatio, tagline, isTrending } = req.body;
     if (!id || !name || !price) return res.status(400).json({ error: "ID, Name, and Price are required." });
-    db.prepare(`INSERT OR REPLACE INTO products
-      (id, name, price, original_price, dimensions, description, shape_class, frame_ratio, tagline, is_trending, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      id, name, price, originalPrice || null, dimensions || "Standard", description || "", shapeClass || "rounded-2xl border-2", frameRatio || "aspect-[4/5]", tagline || "Custom Product", isTrending ? 1 : 0, new Date().toISOString()
-    );
+    await DB.supabase.from("products").upsert({
+      id, name, price, original_price: originalPrice, dimensions, description, shape_class: shapeClass, frame_ratio: frameRatio, tagline, is_trending: isTrending ? 1 : 0
+    });
     return res.json({ success: true, message: `Product ${name} saved successfully.` });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.delete("/api/admin/products/:id", requireAdmin, (req, res) => {
-  db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
+app.delete("/api/admin/products/:id", requireAdmin, async (req, res) => {
+  await DB.supabase.from("products").delete().eq("id", req.params.id);
   res.json({ success: true, message: `Deleted product ${req.params.id}` });
 });
 
 // ----------------------------------------------------------------------
 // ADMIN PROMO COUPONS CRUD
 // ----------------------------------------------------------------------
-app.get("/api/admin/coupons", requireAdmin, (_req, res) => {
+app.get("/api/admin/coupons", requireAdmin, async (_req, res) => {
   try {
-    const rows = db.prepare("SELECT * FROM coupons ORDER BY created_at DESC").all() as any[];
-    const coupons = rows.map((c) => ({
-      code: c.code,
-      type: c.type,
-      value: c.value,
-      label: c.label,
-      minOrderValue: c.min_order_value || 0,
-      isActive: Boolean(c.is_active),
-      createdAt: c.created_at
-    }));
+    const coupons = await DB.getCoupons();
     return res.json({ success: true, coupons });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/admin/coupons", requireAdmin, (req, res) => {
+app.post("/api/admin/coupons", requireAdmin, async (req, res) => {
   try {
     const { code, type = "percent", value, label, minOrderValue = 0, isActive = true } = req.body || {};
     if (!code || !value || !label) return res.status(400).json({ error: "Code, discount value, and label are required." });
     const cleanCode = String(code).toUpperCase().trim();
-    db.prepare(`INSERT OR REPLACE INTO coupons (code, type, value, label, min_order_value, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
-      cleanCode, type, Number(value), label, Number(minOrderValue), isActive ? 1 : 0, new Date().toISOString()
-    );
-    // Sync into in-memory dictionary
-    VALID_COUPONS[cleanCode] = { type: type as any, value: Number(value), label };
+    
+    await DB.supabase.from("coupons").upsert({
+      code: cleanCode, type, value: Number(value), label, min_order_value: Number(minOrderValue), is_active: isActive
+    });
+    
     return res.json({ success: true, message: `Coupon ${cleanCode} saved successfully.` });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.delete("/api/admin/coupons/:code", requireAdmin, (req, res) => {
+app.delete("/api/admin/coupons/:code", requireAdmin, async (req, res) => {
   const cleanCode = String(req.params.code).toUpperCase().trim();
-  db.prepare("DELETE FROM coupons WHERE code = ?").run(cleanCode);
-  delete VALID_COUPONS[cleanCode];
+  await DB.supabase.from("coupons").delete().eq("code", cleanCode);
   return res.json({ success: true, message: `Deleted coupon ${cleanCode}` });
 });
 
@@ -2077,44 +2027,32 @@ const DEFAULT_REVIEWS = [
   }
 ];
 
-app.get("/api/reviews", (_req, res) => {
+app.get("/api/reviews", async (_req, res) => {
   try {
-    const stmt = db.prepare(`INSERT OR REPLACE INTO reviews (id, name, location, rating, comment, photo_url, is_approved, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`);
-    for (const r of DEFAULT_REVIEWS) {
-      stmt.run(r.id, r.name, r.location, r.rating, r.comment, r.photoUrl, new Date().toISOString());
-    }
-    const reviews = db.prepare("SELECT * FROM reviews WHERE is_approved = 1 ORDER BY created_at DESC").all();
-    const formatted = reviews.map((r: any) => ({
-      id: r.id,
-      name: r.name,
-      location: r.location,
-      rating: r.rating,
-      comment: r.comment,
-      photoUrl: r.photo_url,
-      createdAt: r.created_at
-    }));
-    return res.json({ success: true, reviews: formatted });
+    const { data: reviews, error } = await DB.supabase.from("reviews").select("*").eq("is_approved", 1).order("created_at", { ascending: false });
+    if (error) throw error;
+    return res.json({ success: true, reviews });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/reviews", (req, res) => {
+app.post("/api/reviews", async (req, res) => {
   try {
     const { name, location, rating, comment, photoUrl } = req.body || {};
     if (!name || !comment || !rating) return res.status(400).json({ error: "Name, rating, and comment are required." });
-    const id = `rev_${Date.now()}`;
-    db.prepare(`INSERT INTO reviews (id, name, location, rating, comment, photo_url, is_approved, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`).run(
-      id, name, location || "India", Number(rating), comment, photoUrl || null, new Date().toISOString()
-    );
+    await DB.supabase.from("reviews").insert({
+      id: `rev_${Date.now()}`,
+      name, location: location || "India", rating: Number(rating), comment, photo_url: photoUrl || null, is_approved: 1, created_at: new Date().toISOString()
+    });
     return res.json({ success: true, message: "Review published successfully!" });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.delete("/api/admin/reviews/:id", requireAdmin, (req, res) => {
-  db.prepare("DELETE FROM reviews WHERE id = ?").run(req.params.id);
+app.delete("/api/admin/reviews/:id", requireAdmin, async (req, res) => {
+  await DB.supabase.from("reviews").delete().eq("id", req.params.id);
   res.json({ success: true, message: `Deleted review ${req.params.id}` });
 });
 

@@ -15,6 +15,7 @@ import BulkCorporateModal from './components/BulkCorporateModal';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BlogSection from './components/BlogSection';
 import WholesaleB2BPage from './components/WholesaleB2BPage';
+import CMSLayout from './cms/CMSLayout';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem } from './types';
 import { BASE_SHAPES } from './data';
@@ -78,7 +79,7 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'policies' | 'tracking' | 'blog' | 'b2b'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b'>('home');
   const [adminToken, setAdminToken] = useState<string>('');
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
@@ -292,6 +293,11 @@ export default function App() {
     );
   }
 
+  // The New Professional CMS
+  if (currentView === 'cms') {
+    return <CMSLayout onBackToHome={() => setCurrentView('home')} />;
+  }
+
   return (
     <div id="home-root" className="min-h-screen bg-[#FAF8F5] text-[#111111] font-sans antialiased overflow-x-hidden selection:bg-[#E8DCCF] selection:text-neutral-900">
       
@@ -383,7 +389,7 @@ export default function App() {
 
       {/* Minimal Footer */}
       <Footer onOpenAdmin={async () => {
-        const password = import.meta.env.DEV ? '7893' : window.prompt('Enter admin password');
+        const password = window.prompt('Enter admin password');
         if (!password) return;
         const response = await fetch('/api/admin/session', {
           method: 'POST',
@@ -396,7 +402,8 @@ export default function App() {
         }
         const data = await response.json();
         setAdminToken(data.token);
-        setCurrentView('admin');
+        localStorage.setItem('adminToken', data.token);
+        setCurrentView('cms');
       }} onOpenPolicies={() => setCurrentView('policies')} onOpenTracking={() => setCurrentView('tracking')} onOpenBlog={() => setCurrentView('blog')} onOpenB2B={() => setCurrentView('b2b')} />
 
       {/* Floating Automated WhatsApp Support Widget */}
