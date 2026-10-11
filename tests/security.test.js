@@ -349,5 +349,42 @@ test('Versioned CropSpecification normalization logic', async (t) => {
   });
 });
 
+test('Phase 6 physical manufacturing & print resolution evaluation', async (t) => {
+  function evaluateDpi(widthPx, heightPx, widthInches, heightInches) {
+    const dpiX = widthPx / widthInches;
+    const dpiY = heightPx / heightInches;
+    const effectiveDpi = Math.round(Math.min(dpiX, dpiY));
+    if (effectiveDpi >= 300) return { effectiveDpi, quality: 'OPTIMAL' };
+    if (effectiveDpi >= 150) return { effectiveDpi, quality: 'ACCEPTABLE' };
+    return { effectiveDpi, quality: 'LOW_RESOLUTION' };
+  }
+
+  await t.test('flags 300+ DPI as OPTIMAL for 3x4 inch frame', () => {
+    // 3x4 inch at 300 DPI requires 900x1200 px
+    const res = evaluateDpi(1800, 2400, 3.0, 4.0);
+    assert.equal(res.quality, 'OPTIMAL');
+    assert.equal(res.effectiveDpi >= 300, true);
+  });
+
+  await t.test('flags between 150 and 299 DPI as ACCEPTABLE', () => {
+    const res = evaluateDpi(600, 800, 3.0, 4.0);
+    assert.equal(res.quality, 'ACCEPTABLE');
+    assert.equal(res.effectiveDpi === 200, true);
+  });
+
+  await t.test('flags under 150 DPI as LOW_RESOLUTION warning', () => {
+    const res = evaluateDpi(300, 400, 3.0, 4.0);
+    assert.equal(res.quality, 'LOW_RESOLUTION');
+    assert.equal(res.effectiveDpi === 100, true);
+  });
+
+  await t.test('calculates correct bleed margin at 300 DPI (0.125 inch = 37.5 px)', () => {
+    const bleedInches = 0.125;
+    const bleedPx = Math.round(bleedInches * 300);
+    assert.equal(bleedPx, 38);
+  });
+});
+
+
 
 

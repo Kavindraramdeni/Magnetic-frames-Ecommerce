@@ -113,18 +113,19 @@ export default function ProductionJobs() {
                 <th className="px-6 py-3.5">Crop Coordinates</th>
                 <th className="px-6 py-3.5">Factory Stage</th>
                 <th className="px-6 py-3.5">Created</th>
+                <th className="px-6 py-3.5 text-right">Production Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E3E8EE]">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
                     Loading factory production jobs...
                   </td>
                 </tr>
               ) : filteredJobs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">
                     <Box className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     No active production jobs in queue.
                   </td>
@@ -148,6 +149,34 @@ export default function ProductionJobs() {
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-500">
                       {new Date(job.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/api/admin/photos/signed-url', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                              },
+                              body: JSON.stringify({ objectKey: job.photo_object_key })
+                            });
+                            const data = await res.json();
+                            if (data.signedUrl) {
+                              window.open(data.signedUrl, '_blank');
+                            } else {
+                              alert('Could not generate signed download URL.');
+                            }
+                          } catch (e: any) {
+                            alert('Export failed: ' + e.message);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        Print Asset
+                      </button>
                     </td>
                   </tr>
                 ))
