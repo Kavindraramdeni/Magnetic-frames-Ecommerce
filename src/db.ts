@@ -272,3 +272,76 @@ export async function getBanners() {
   if (error) console.error('getBanners error:', error);
   return data || [];
 }
+
+export async function createB2BEnquiry(enquiry: {
+  companyName: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  estimatedQuantity: number;
+  preferredShapes?: string[];
+  customNotes?: string;
+}) {
+  const { data, error } = await supabase.from('b2b_enquiries').insert({
+    company_name: enquiry.companyName,
+    contact_person: enquiry.contactPerson,
+    email: enquiry.email,
+    phone: enquiry.phone,
+    estimated_quantity: enquiry.estimatedQuantity || 5,
+    preferred_shapes: enquiry.preferredShapes || [],
+    custom_notes: enquiry.customNotes || '',
+    status: 'PENDING'
+  }).select().single();
+
+  if (error) {
+    console.error('createB2BEnquiry error:', error);
+    throw error;
+  }
+  return data;
+}
+
+export async function getB2BEnquiries() {
+  const { data, error } = await supabase.from('b2b_enquiries').select('*').order('created_at', { ascending: false });
+  if (error) console.error('getB2BEnquiries error:', error);
+  return data || [];
+}
+
+export async function createProductionJob(job: {
+  orderId: string;
+  itemIndex: number;
+  shapeId: string;
+  quantity: number;
+  photoObjectKey: string;
+  photoBucket?: string;
+  cropScale?: number;
+  cropPanX?: number;
+  cropPanY?: number;
+}) {
+  const { data, error } = await supabase.from('production_jobs').insert({
+    order_id: job.orderId,
+    item_index: job.itemIndex,
+    shape_id: job.shapeId,
+    quantity: job.quantity,
+    photo_object_key: job.photoObjectKey,
+    photo_bucket: job.photoBucket || 'customer-photos',
+    crop_scale: job.cropScale || 1.0,
+    crop_pan_x: job.cropPanX || 0,
+    crop_pan_y: job.cropPanY || 0,
+    status: 'QUEUED'
+  }).select().single();
+
+  if (error) {
+    console.error('createProductionJob error:', error);
+    throw error;
+  }
+  return data;
+}
+
+export async function getProductionJobs(orderId?: string) {
+  let query = supabase.from('production_jobs').select('*').order('created_at', { ascending: false });
+  if (orderId) query = query.eq('order_id', orderId);
+  const { data, error } = await query;
+  if (error) console.error('getProductionJobs error:', error);
+  return data || [];
+}
+

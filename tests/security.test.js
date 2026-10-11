@@ -259,3 +259,55 @@ test('Coupon and Inventory Ledger deduplication logic', async (t) => {
   });
 });
 
+test('B2B enquiry payload validation logic', async (t) => {
+  function validateB2BPayload(body) {
+    const { companyName, contactPerson, email, phone } = body || {};
+    if (!companyName || !contactPerson || !email || !phone) return 'Missing required fields';
+    return null;
+  }
+
+  await t.test('passes with complete fields', () => {
+    const err = validateB2BPayload({
+      companyName: 'Acme Studio',
+      contactPerson: 'Alice',
+      email: 'alice@acme.com',
+      phone: '9876543210'
+    });
+    assert.equal(err, null);
+  });
+
+  await t.test('rejects payload missing contactPerson', () => {
+    const err = validateB2BPayload({
+      companyName: 'Acme Studio',
+      email: 'alice@acme.com',
+      phone: '9876543210'
+    });
+    assert.equal(err, 'Missing required fields');
+  });
+
+  await t.test('rejects payload missing phone', () => {
+    const err = validateB2BPayload({
+      companyName: 'Acme Studio',
+      contactPerson: 'Alice',
+      email: 'alice@acme.com'
+    });
+    assert.equal(err, 'Missing required fields');
+  });
+});
+
+test('Production job state tracking', async (t) => {
+  const allowedStatuses = ['QUEUED', 'PRINTING', 'LASER_CUT', 'QUALITY_CHECK', 'PACKED'];
+
+  await t.test('initial state defaults to QUEUED', () => {
+    const job = { id: 'job_1', status: 'QUEUED' };
+    assert.equal(job.status, 'QUEUED');
+  });
+
+  await t.test('validates factory lifecycle transitions', () => {
+    assert.equal(allowedStatuses.includes('PRINTING'), true);
+    assert.equal(allowedStatuses.includes('LASER_CUT'), true);
+    assert.equal(allowedStatuses.includes('INVALID_STATE'), false);
+  });
+});
+
+

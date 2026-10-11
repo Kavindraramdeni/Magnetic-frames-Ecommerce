@@ -614,6 +614,49 @@ app.post("/api/admin/photos/signed-url", requireAdmin, async (req, res) => {
 
 app.get("/api/catalog", async (_req, res) => res.json({ prices: SHAPE_PRICES }));
 
+// B2B Wholesale Enquiry submission (Public)
+app.post("/api/b2b/enquire", async (req, res) => {
+  try {
+    const { companyName, contactPerson, email, phone, estimatedQuantity, preferredShapes, customNotes } = req.body || {};
+    if (!companyName || !contactPerson || !email || !phone) {
+      return res.status(400).json({ error: "Company name, contact person, email, and phone are required." });
+    }
+    const enquiry = await DB.createB2BEnquiry({
+      companyName,
+      contactPerson,
+      email,
+      phone,
+      estimatedQuantity: Number(estimatedQuantity) || 5,
+      preferredShapes: Array.isArray(preferredShapes) ? preferredShapes : [],
+      customNotes: String(customNotes || '')
+    });
+    return res.json({ success: true, enquiry });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to submit B2B enquiry." });
+  }
+});
+
+// B2B Wholesale Enquiries list (Admin Protected)
+app.get("/api/admin/b2b/enquiries", requireAdmin, async (_req, res) => {
+  try {
+    const enquiries = await DB.getB2BEnquiries();
+    return res.json({ enquiries });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to fetch B2B enquiries." });
+  }
+});
+
+// Production jobs list (Admin Protected)
+app.get("/api/admin/production-jobs", requireAdmin, async (req, res) => {
+  try {
+    const orderId = typeof req.query.orderId === 'string' ? req.query.orderId : undefined;
+    const jobs = await DB.getProductionJobs(orderId);
+    return res.json({ jobs });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to fetch production jobs." });
+  }
+});
+
 app.post("/api/checkout/validate-coupon", async (req, res) => {
   const { couponCode, cart = [] } = req.body || {};
   if (!couponCode) return res.status(400).json({ error: "Coupon code is required." });
