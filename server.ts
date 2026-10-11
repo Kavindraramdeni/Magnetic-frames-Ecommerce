@@ -2063,17 +2063,17 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
         order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Live Shiprocket AWB ${order.trackingNumber} assigned via ${finalCourier}` });
         await DB.saveOrder(order);
         return res.json({ success: true, order, isRealShipment: true, shiprocket: { ...shipData, awb_code: order.trackingNumber, courier_name: finalCourier } });
+      } else {
+        const errorMsg = shipData.message || (shipData.errors ? JSON.stringify(shipData.errors) : "Shiprocket rejected shipment creation.");
+        return res.status(400).json({ error: `Shiprocket Error: ${errorMsg}` });
       }
-    } catch (shipErr) {
+    } catch (shipErr: any) {
       console.error("Shiprocket sync error:", shipErr);
+      return res.status(500).json({ error: `Shiprocket connection failed: ${shipErr.message || "Unknown error"}` });
     }
   }
 
-  // Fallback AWB refresh if Shiprocket credentials missing or API fails
-  order.trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
-  order.history.push({ status: order.status, timestamp: new Date().toISOString(), note: `Refreshed AWB tracking code: ${order.trackingNumber}` });
-  await DB.saveOrder(order);
-  res.json({ success: true, order, isRealShipment: false });
+  return res.status(503).json({ error: "Shiprocket credentials missing. Set SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD." });
 });
 app.delete("/api/admin/orders/:id", requireAdmin, async (req, res) => {
   await DB.supabase.from("orders").delete().eq("id", req.params.id);
