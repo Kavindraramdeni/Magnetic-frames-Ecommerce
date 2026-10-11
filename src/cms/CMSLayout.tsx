@@ -1,33 +1,44 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, ShoppingCart, Package, Image as ImageIcon, Settings, Tag, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Image as ImageIcon, Settings, Tag, LogOut, Menu, X, Building2, Box } from 'lucide-react';
 import Dashboard from './Dashboard';
 import Orders from './Orders';
 import Products from './Products';
 import Banners from './Banners';
 import SettingsPage from './Settings';
 import Coupons from './Coupons';
+import B2BManagement from './B2BManagement';
+import ProductionJobs from './ProductionJobs';
 
 interface CMSLayoutProps {
   onBackToHome: () => void;
 }
 
 export default function CMSLayout({ onBackToHome }: CMSLayoutProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'banners' | 'settings' | 'coupons'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'production' | 'b2b' | 'products' | 'banners' | 'settings' | 'coupons'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'orders', label: 'Orders', icon: ShoppingCart },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'banners', label: 'Banners', icon: ImageIcon },
+    { id: 'orders', label: 'Orders & Payments', icon: ShoppingCart },
+    { id: 'production', label: 'Factory Production', icon: Box },
+    { id: 'b2b', label: 'B2B Wholesale', icon: Building2 },
+    { id: 'products', label: 'Products & Pricing', icon: Package },
+    { id: 'banners', label: 'Marketing Banners', icon: ImageIcon },
     { id: 'coupons', label: 'Coupons & Reviews', icon: Tag },
     { id: 'settings', label: 'Settings & Warehouses', icon: Settings },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    onBackToHome();
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
       case 'orders': return <Orders />;
+      case 'production': return <ProductionJobs />;
+      case 'b2b': return <B2BManagement />;
       case 'products': return <Products />;
       case 'banners': return <Banners />;
       case 'coupons': return <Coupons />;
@@ -81,11 +92,11 @@ export default function CMSLayout({ onBackToHome }: CMSLayoutProps) {
 
         <div className="p-4 border-t border-[#E3E8EE]">
           <button
-            onClick={onBackToHome}
-            className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-[#4B5563] rounded-md hover:bg-[#F9FAFB] hover:text-[#111827] transition-colors"
+            onClick={handleLogout}
+            className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
           >
-            <LogOut className="mr-3 h-5 w-5 text-[#6B7280]" />
-            Exit to Storefront
+            <LogOut className="mr-3 h-5 w-5 text-rose-500" />
+            Sign Out & Exit
           </button>
         </div>
       </aside>
