@@ -570,7 +570,19 @@ export default function Customizer({
 
   const persistCheckoutUploads = async (items: CartItem[]): Promise<CartItem[]> => {
     return await Promise.all(items.map(async (item) => {
-      if (!item.previewUrl?.startsWith('data:image/')) return item;
+      const cropSpec = item.cropSpec || {
+        version: 'v1' as const,
+        scale: item.photoScale || 1.0,
+        panX: item.photoPanX || 0,
+        panY: item.photoPanY || 0,
+        aspectRatio: 1.0,
+        shapeId: item.shapeId
+      };
+
+      if (!item.previewUrl?.startsWith('data:image/')) {
+        return { ...item, cropSpec };
+      }
+
       const uploadResponse = await fetch('/api/uploads/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -580,7 +592,12 @@ export default function Customizer({
       if (!uploadResponse.ok) {
         throw new Error(uploadData.error || `Could not upload ${item.photoName || 'customer photo'}.`);
       }
-      return { ...item, previewUrl: uploadData.url, objectKey: uploadData.objectKey };
+      return { 
+        ...item, 
+        previewUrl: uploadData.url, 
+        objectKey: uploadData.objectKey,
+        cropSpec
+      };
     }));
   };
 

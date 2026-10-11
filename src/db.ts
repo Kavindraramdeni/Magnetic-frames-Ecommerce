@@ -147,17 +147,27 @@ export async function saveOrder(order: any) {
     }
   }
 
-  // Record coupon redemption in ledger if a coupon was used
-  if (order.couponCode && (order.couponDiscount || 0) > 0) {
-    try {
-      await supabase.from('coupon_redemptions').insert({
-        coupon_code: String(order.couponCode).toUpperCase().trim(),
-        order_id: order.id,
-        customer_email: order.shippingDetails?.email || null,
-        discount_amount: order.couponDiscount || 0
-      });
-    } catch (couponErr) {
-      console.warn("Coupon redemption ledger notice:", couponErr);
+  // Automatically initialize production jobs queue for factory UV printing & cutting
+  if (Array.isArray(order.cart)) {
+    for (let idx = 0; idx < order.cart.length; idx++) {
+      const item = order.cart[idx];
+      try {
+        const crop = item.cropSpec || {};
+        await supabase.from('production_jobs').insert({
+          order_id: order.id,
+          item_index: idx,
+          shape_id: item.shapeId || 'custom',
+          quantity: item.quantity || 1,
+          photo_object_key: item.objectKey || 'default-preview.png',
+          photo_bucket: 'customer-photos',
+          crop_scale: crop.scale || item.photoScale || 1.0,
+          crop_pan_x: crop.panX || item.photoPanX || 0,
+          crop_pan_y: crop.panY || item.photoPanY || 0,
+          status: 'QUEUED'
+        });
+      } catch (jobErr) {
+        console.warn("Production job creation notice:", jobErr);
+      }
     }
   }
 

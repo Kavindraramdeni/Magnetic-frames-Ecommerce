@@ -45,6 +45,15 @@ export interface LifestyleItem {
   category: string;
 }
 
+export interface CropSpecification {
+  version: 'v1';
+  scale: number;       // Normalized scale (1.0 to 3.0)
+  panX: number;        // Normalized horizontal offset percentage (-100 to 100)
+  panY: number;        // Normalized vertical offset percentage (-100 to 100)
+  aspectRatio: number; // Target frame aspect ratio (width / height)
+  shapeId: MagnetShapeId;
+}
+
 export interface CartItem {
   id: string;
   shapeId: MagnetShapeId;
@@ -56,6 +65,7 @@ export interface CartItem {
   photoScale: number;
   photoPanX: number;
   photoPanY: number;
+  cropSpec?: CropSpecification;
   customText?: string;
   objectKey?: string;
   price: number;

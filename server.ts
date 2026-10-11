@@ -458,6 +458,25 @@ function validateCart(cart: any[]) {
     if (!item.previewUrl || typeof item.previewUrl !== "string") {
       item.previewUrl = "/images/Landingprofile.png";
     }
+
+    // Phase 5: Normalize and enforce versioned CropSpecification on every cart line item
+    const scale = Number(item.cropSpec?.scale ?? item.photoScale ?? 1.0);
+    const panX = Number(item.cropSpec?.panX ?? item.photoPanX ?? 0);
+    const panY = Number(item.cropSpec?.panY ?? item.photoPanY ?? 0);
+
+    item.cropSpec = {
+      version: "v1",
+      scale: Math.max(1.0, Math.min(3.0, isNaN(scale) ? 1.0 : scale)),
+      panX: Math.max(-100, Math.min(100, isNaN(panX) ? 0 : panX)),
+      panY: Math.max(-100, Math.min(100, isNaN(panY) ? 0 : panY)),
+      aspectRatio: 1.0,
+      shapeId: item.shapeId
+    };
+
+    // Sanitize objectKey if present to prevent path traversal
+    if (item.objectKey && typeof item.objectKey === "string") {
+      item.objectKey = item.objectKey.replace(/[^a-zA-Z0-9._-]/g, "");
+    }
   }
   return null;
 }

@@ -310,4 +310,44 @@ test('Production job state tracking', async (t) => {
   });
 });
 
+test('Versioned CropSpecification normalization logic', async (t) => {
+  function normalizeCropSpec(item) {
+    const scale = Number(item.cropSpec?.scale ?? item.photoScale ?? 1.0);
+    const panX = Number(item.cropSpec?.panX ?? item.photoPanX ?? 0);
+    const panY = Number(item.cropSpec?.panY ?? item.photoPanY ?? 0);
+
+    return {
+      version: 'v1',
+      scale: Math.max(1.0, Math.min(3.0, isNaN(scale) ? 1.0 : scale)),
+      panX: Math.max(-100, Math.min(100, isNaN(panX) ? 0 : panX)),
+      panY: Math.max(-100, Math.min(100, isNaN(panY) ? 0 : panY)),
+      aspectRatio: 1.0,
+      shapeId: item.shapeId || 'custom'
+    };
+  }
+
+  await t.test('normalizes standard crop input', () => {
+    const spec = normalizeCropSpec({ shapeId: 'arch', photoScale: 1.5, photoPanX: 10, photoPanY: -15 });
+    assert.equal(spec.version, 'v1');
+    assert.equal(spec.scale, 1.5);
+    assert.equal(spec.panX, 10);
+    assert.equal(spec.panY, -15);
+  });
+
+  await t.test('clamps out-of-bounds scale and pan values safely', () => {
+    const spec = normalizeCropSpec({ shapeId: 'arch', photoScale: 10.0, photoPanX: 500, photoPanY: -300 });
+    assert.equal(spec.scale, 3.0);
+    assert.equal(spec.panX, 100);
+    assert.equal(spec.panY, -100);
+  });
+
+  await t.test('falls back safely on missing or invalid inputs', () => {
+    const spec = normalizeCropSpec({});
+    assert.equal(spec.scale, 1.0);
+    assert.equal(spec.panX, 0);
+    assert.equal(spec.panY, 0);
+  });
+});
+
+
 
