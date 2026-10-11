@@ -92,4 +92,109 @@ test('Payment & Order Idempotency validation', async (t) => {
   const duplicateResult = idempotentSaveOrder({ id: 'KRIA-ORD-261011-9999', transactionId: 'pay_12345', amount: 598 });
   assert.equal(duplicateResult.isDuplicate, true);
   assert.equal(duplicateResult.order.id, 'KRIA-ORD-261011-1001'); // Preserves initial order without duplicate
+
+  const anotherDuplicate = idempotentSaveOrder({ id: 'KRIA-ORD-000', transactionId: 'pay_12345', amount: 0 });
+  assert.equal(anotherDuplicate.isDuplicate, true);
+});
+
+test('Image magic-byte (file signature) validation', async (t) => {
+  function detectImageFormat(buffer) {
+    const isJpeg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const isPng  = buffer.length >= 8 &&
+      buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 &&
+      buffer[4] === 0x0d && buffer[5] === 0x0a && buffer[6] === 0x1a && buffer[7] === 0x0a;
+    const isWebp = buffer.length >= 12 &&
+      buffer.slice(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.slice(8, 12).toString('ascii') === 'WEBP';
+    if (!isJpeg && !isPng && !isWebp) return null;
+    return isJpeg ? 'jpeg' : isPng ? 'png' : 'webp';
+  }
+
+  await t.test('accepts a JPEG buffer by magic bytes', () => {
+    const jpegHeader = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+    assert.equal(detectImageFormat(jpegHeader), 'jpeg');
+  });
+
+  await t.test('accepts a PNG buffer by magic bytes', () => {
+    const pngHeader = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]);
+    assert.equal(detectImageFormat(pngHeader), 'png');
+  });
+
+  await t.test('accepts a WebP buffer by magic bytes', () => {
+    const webpHeader = Buffer.concat([
+      Buffer.from('RIFF', 'ascii'),
+      Buffer.from([0x24, 0x00, 0x00, 0x00]),
+      Buffer.from('WEBP', 'ascii'),
+    ]);
+    assert.equal(detectImageFormat(webpHeader), 'webp');
+  });
+
+  await t.test('rejects a PDF masquerading as an image', () => {
+    const pdfHeader = Buffer.from('%PDF-1.4', 'ascii');
+    assert.equal(detectImageFormat(pdfHeader), null);
+  });
+
+  await t.test('rejects a ZIP/DOCX masquerading as an image', () => {
+    const zipHeader = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00]);
+    assert.equal(detectImageFormat(zipHeader), null);
+  });
+});
+
+test('Razorpay server-to-server verification logic', async (t) => {
+  // Simulate the shape of fetchAndVerifyRazorpayPayment logic inline
+  function verifyPayment(payment, expectedOrderId, expectedAmountPaise) {
+    if (payment.status !== 'captured')
+      return { ok: false, reason: `Payment not captured. Status: ${payment.status}` };
+    if (payment.order_id !== expectedOrderId)
+      return { ok: false, reason: `order_id mismatch: expected ${expectedOrderId} got ${payment.order_id}` };
+    if (payment.amount !== expectedAmountPaise)
+      return { ok: false, reason: `Amount mismatch: expected ${expectedAmountPaise} got ${payment.amount}` };
+    return { ok: true, payment };
+  }
+
+  const goodPayment = { id: 'pay_abc123', status: 'captured', order_id: 'order_xyz', amount: 59800 };
+
+  await t.test('accepts captured payment with matching order_id and amount', () => {
+    const result = verifyPayment(goodPayment, 'order_xyz', 59800);
+    assert.equal(result.ok, true);
+  });
+
+  await t.test('rejects authorized (not captured) payment', () => {
+    const result = verifyPayment({ ...goodPayment, status: 'authorized' }, 'order_xyz', 59800);
+    assert.equal(result.ok, false);
+    assert.match(result.reason, /not captured/);
+  });
+
+  await t.test('rejects payment with mismatched order_id (replay attack)', () => {
+    const result = verifyPayment(goodPayment, 'order_DIFFERENT', 59800);
+    assert.equal(result.ok, false);
+    assert.match(result.reason, /mismatch/);
+  });
+
+  await t.test('rejects payment with tampered amount', () => {
+    const result = verifyPayment(goodPayment, 'order_xyz', 100); // too low
+    assert.equal(result.ok, false);
+    assert.match(result.reason, /Amount mismatch/);
+  });
+});
+
+test('Mock checkout production guard', async (t) => {
+  function shouldShowSimulatedGateway(orderRes, mockEnabled) {
+    return (orderRes.isMock || !orderRes.razorpayKeyId) && mockEnabled;
+  }
+
+  await t.test('shows simulated gateway when mock enabled and server says isMock', () => {
+    const result = shouldShowSimulatedGateway({ isMock: true, razorpayKeyId: '' }, true);
+    assert.equal(result, true);
+  });
+
+  await t.test('blocks simulated gateway in production build (MOCK_CHECKOUT_ENABLED=false)', () => {
+    const result = shouldShowSimulatedGateway({ isMock: true, razorpayKeyId: '' }, false);
+    assert.equal(result, false);
+  });
+
+  await t.test('does not show simulated gateway when real key is present even if mock flag is set', () => {
+    const result = shouldShowSimulatedGateway({ isMock: false, razorpayKeyId: 'rzp_live_abc123' }, true);
+    assert.equal(result, false);
+  });
 });

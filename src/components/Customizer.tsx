@@ -2,6 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BASE_SHAPES, PRESET_PHOTOS, fetchLiveCatalogShapes } from '../data';
 import { MagnetShapeId, CustomOrder, CartItem, MagnetShape } from '../types';
+
+// Mock checkout is disabled by default and must be explicitly enabled via VITE_ENABLE_MOCK=true.
+// This constant is evaluated at build time — it will be `false` in any production bundle
+// where the env var is not set, preventing any simulated payment path from being reachable.
+const MOCK_CHECKOUT_ENABLED = import.meta.env.VITE_ENABLE_MOCK === 'true';
 import BrandLogo from './BrandLogo';
 import { 
   Upload, Sparkles, MessageSquare, RotateCcw, 
@@ -695,8 +700,12 @@ export default function Customizer({
         grandTotal: orderRes.grandTotal
       });
 
-      if (orderRes.isMock || !orderRes.razorpayKeyId) {
+      if ((orderRes.isMock || !orderRes.razorpayKeyId) && MOCK_CHECKOUT_ENABLED) {
         setShowSimulatedGateway(true);
+      } else if (orderRes.isMock || !orderRes.razorpayKeyId) {
+        // In production builds where VITE_ENABLE_MOCK is not set, mock payments
+        // are blocked. Show a clear error rather than silently failing.
+        setCheckoutError('Payment gateway is not configured. Please use the WhatsApp checkout or contact support.');
       } else {
         if (typeof window === 'undefined' || !(window as any).Razorpay) {
           setCheckoutError('Payment gateway script failed to load. Please refresh and try again, or use WhatsApp checkout.');

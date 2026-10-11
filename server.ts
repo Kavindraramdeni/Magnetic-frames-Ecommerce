@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import * as DB from "./src/db.js";
 import { SHAPE_PRICES } from "./src/catalog.js";
+import { fetchAndVerifyRazorpayPayment } from "./src/lib/razorpay.js";
 
 const UPLOAD_DIR = path.join(process.cwd(), ".user_uploaded");
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -480,7 +481,24 @@ app.post("/api/admin/session", async (req, res) => {
   return res.status(401).json({ error: "Invalid admin password." });
 });
 
+// Dedicated rate-limit bucket for image uploads (10 per IP per minute)
+const uploadRateBuckets = new Map<string, { count: number; resetAt: number }>();
+const UPLOAD_RATE_LIMIT = 10;
+const UPLOAD_RATE_WINDOW_MS = 60_000;
+
 app.post("/api/uploads/image", async (req, res) => {
+  // Enforce upload-specific rate limit (tighter than global 120 RPM)
+  const uploadKey = String(req.ip || "unknown");
+  const now = Date.now();
+  const uploadBucket = uploadRateBuckets.get(uploadKey);
+  if (!uploadBucket || uploadBucket.resetAt < now) {
+    uploadRateBuckets.set(uploadKey, { count: 1, resetAt: now + UPLOAD_RATE_WINDOW_MS });
+  } else {
+    uploadBucket.count += 1;
+    if (uploadBucket.count > UPLOAD_RATE_LIMIT) {
+      return res.status(429).json({ error: "Too many uploads. Please wait a moment and try again." });
+    }
+  }
   const { dataUrl, fileName, isPublic = false } = req.body || {};
   if (!dataUrl || typeof dataUrl !== "string") return res.status(400).json({ error: "Missing image payload." });
 
@@ -501,6 +519,22 @@ app.post("/api/uploads/image", async (req, res) => {
   try {
     const buffer = Buffer.from(base64Data, "base64");
     if (buffer.length > 25 * 1024 * 1024) return res.status(400).json({ error: "Image must be under 25MB." });
+
+    // ── Magic-byte (file signature) verification ──────────────────────────────
+    // Reject files whose binary header does not match an allowed image format.
+    // This defends against polyglot files that pass MIME regex but carry
+    // malicious payloads disguised as images.
+    const isJpeg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const isPng  = buffer.length >= 8 &&
+      buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 &&
+      buffer[4] === 0x0d && buffer[5] === 0x0a && buffer[6] === 0x1a && buffer[7] === 0x0a;
+    const isWebp = buffer.length >= 12 &&
+      buffer.slice(0, 4).toString("ascii") === "RIFF" &&
+      buffer.slice(8, 12).toString("ascii") === "WEBP";
+    if (!isJpeg && !isPng && !isWebp) {
+      return res.status(400).json({ error: "Unsupported image format. Only JPEG, PNG, and WebP files are accepted." });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
     const id = crypto.randomUUID();
     const safeName = String(fileName || "photo").replace(/[^a-z0-9._-]/gi, "-").slice(0, 80);
     const storedName = `${id}-${safeName}.${ext}`;
@@ -901,6 +935,22 @@ const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.R
     }
     const transactionId = isMock ? `txn_${crypto.randomUUID()}` : razorpay_payment_id;
 
+    // Compute server-side order totals BEFORE any DB or Razorpay API call so we
+    // can assert the captured amount matches what we actually charged.
+    const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(cart, couponCode);
+
+    // Server-to-server payment verification: assert status=captured, correct
+    // order_id, and exact amount. Skip for mock orders.
+    if (!isMock) {
+      const expectedPaise = Math.round(grandTotal * 100);
+      const verifyResult = await fetchAndVerifyRazorpayPayment(razorpay_payment_id, razorpay_order_id, expectedPaise);
+      if (!verifyResult.ok) {
+        console.error("[payment-verify] Razorpay server-to-server check failed:", verifyResult.reason);
+        return res.status(verifyResult.httpStatus || 402).json({ error: verifyResult.reason });
+      }
+      console.log(`[payment-verify] ✅ Payment ${razorpay_payment_id} verified: captured ₹${grandTotal}`);
+    }
+
     // Concurrency / Idempotency check: Return existing order if already processed by webhook
     const existingOrder = await DB.getOrderByTransactionId(transactionId);
     if (existingOrder) {
@@ -916,8 +966,6 @@ const verifyCheckoutPaymentHandler = async (req: express.Request, res: express.R
         grandTotal: existingOrder.grandTotal
       });
     }
-
-    const { grandTotal, subtotal, bulkDiscount, deliveryCharge } = calculateOrderTotals(cart, couponCode);
     const shiprocketToken = await getShiprocketToken();
     let trackingNumber = `SRW-${Math.floor(100000000 + Math.random() * 900000000)}`;
     let courierName = "Delhivery Surface";
