@@ -110,17 +110,54 @@ export async function saveOrder(order: any) {
     }
   }
 
-  // Deduct inventory only on successful first-time insert
+  // Deduct inventory only on successful first-time insert with ledger record
   if (Array.isArray(order.cart)) {
     for (const item of order.cart) {
       try {
-        const { data: prod } = await supabase.from('products').select('stock').eq('id', item.shapeId).single();
-        if (prod) {
-          await supabase.from('products').update({ stock: Math.max(0, prod.stock - (item.quantity || 1)) }).eq('id', item.shapeId);
+        const shapeId = item.shapeId || 'custom';
+        const qtyToDeduct = item.quantity || 1;
+
+        // Check if movement was already recorded for this order and item
+        const { data: existingMovement } = await supabase
+          .from('inventory_movements')
+          .select('id')
+          .eq('order_id', order.id)
+          .eq('product_id', shapeId)
+          .eq('movement_type', 'ORDER_DEDUCT')
+          .maybeSingle();
+
+        if (!existingMovement) {
+          // Record ledger entry
+          await supabase.from('inventory_movements').insert({
+            order_id: order.id,
+            product_id: shapeId,
+            quantity_changed: -qtyToDeduct,
+            movement_type: 'ORDER_DEDUCT'
+          });
+
+          // Decrement product stock safely
+          const { data: prod } = await supabase.from('products').select('stock').eq('id', shapeId).maybeSingle();
+          if (prod && typeof prod.stock === 'number') {
+            await supabase.from('products').update({ stock: Math.max(0, prod.stock - qtyToDeduct) }).eq('id', shapeId);
+          }
         }
       } catch (err) {
-        console.warn("Stock update error:", err);
+        console.warn("Stock update/ledger error:", err);
       }
+    }
+  }
+
+  // Record coupon redemption in ledger if a coupon was used
+  if (order.couponCode && (order.couponDiscount || 0) > 0) {
+    try {
+      await supabase.from('coupon_redemptions').insert({
+        coupon_code: String(order.couponCode).toUpperCase().trim(),
+        order_id: order.id,
+        customer_email: order.shippingDetails?.email || null,
+        discount_amount: order.couponDiscount || 0
+      });
+    } catch (couponErr) {
+      console.warn("Coupon redemption ledger notice:", couponErr);
     }
   }
 
@@ -167,16 +204,27 @@ export async function savePaymentEvent(event: any) {
   if (error) console.error('savePaymentEvent error:', error);
 }
 
-export async function generateOrderId(prefix = "KRIA"): Promise<string> {
+export async function generateOrderId(prefix = "KRIA-ORD"): Promise<string> {
+  // 1. Try atomic PostgreSQL sequence function first (collision-free & race-proof)
+  try {
+    const { data, error } = await supabase.rpc('next_order_id', { prefix });
+    if (!error && data && typeof data === 'string') {
+      return data;
+    }
+  } catch (rpcErr) {
+    // Fall back to robust client-side generator if RPC function not yet applied in Supabase
+  }
+
+  // 2. Safe fallback using high-entropy crypto UUID + date stamp
   const now = new Date();
   const datePart = now.toISOString().slice(2, 10).replace(/-/g, "");
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     const randomPart = crypto.randomInt(1000, 10_000);
     const orderId = `${prefix}-${datePart}-${randomPart}`;
     const { data } = await supabase.from('orders').select('id').eq('id', orderId).maybeSingle();
     if (!data) return orderId;
   }
-  return `${prefix}-${datePart}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  return `${prefix}-${datePart}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 }
 
 export async function getBusinessSettings() {

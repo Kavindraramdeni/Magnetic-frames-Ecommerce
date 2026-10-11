@@ -633,6 +633,12 @@ app.post("/api/checkout/validate-coupon", async (req, res) => {
 });
 
 async function syncOrderToShiprocket(order: any) {
+  // Idempotency guard: If order already has a Shiprocket shipment or order ID, do not recreate
+  if (order.shipmentId || order.shiprocketOrderId) {
+    console.log(`[Shiprocket] Order ${order.id} already synced to Shiprocket (Shipment: ${order.shipmentId || order.shiprocketOrderId}). Skipping.`);
+    return true;
+  }
+
   const shiprocketToken = await getShiprocketToken();
   if (!shiprocketToken) {
     console.log("Shiprocket credentials missing or invalid. Skipping automatic order sync.");
@@ -1486,6 +1492,44 @@ app.post("/api/webhooks/razorpay", async (req, res) => {
       }
     } catch (err) {
       console.error("Webhook payment process error:", err);
+    }
+  } else if (req.body?.event === "payment.failed" && payment?.order_id) {
+    console.warn(`[WEBHOOK] Payment ${payment.id} failed for order ${payment.order_id}: ${payment.error_description || "Declined"}`);
+    // Check if an existing order exists to update history
+    try {
+      const existing = await DB.getOrderByTransactionId(payment.id);
+      if (existing) {
+        existing.status = "Failed";
+        existing.history = existing.history || [];
+        existing.history.push({
+          status: "Failed",
+          timestamp: new Date().toISOString(),
+          note: `Payment failed webhook received: ${payment.error_description || "Transaction declined by bank/gateway"}`
+        });
+        await DB.saveOrder(existing);
+      }
+    } catch (failErr) {
+      console.error("Failed payment status record error:", failErr);
+    }
+  } else if (req.body?.event === "payment.authorized" && payment?.order_id) {
+    console.log(`[WEBHOOK] Payment ${payment.id} authorized for order ${payment.order_id}. Awaiting capture.`);
+  } else if (req.body?.event === "refund.processed" && req.body?.payload?.refund?.entity) {
+    const refund = req.body.payload.refund.entity;
+    console.log(`[WEBHOOK] Refund ${refund.id} processed for payment ${refund.payment_id}. Amount: ₹${(refund.amount || 0) / 100}`);
+    try {
+      const existing = await DB.getOrderByTransactionId(refund.payment_id);
+      if (existing) {
+        existing.status = "Refunded";
+        existing.history = existing.history || [];
+        existing.history.push({
+          status: "Refunded",
+          timestamp: new Date().toISOString(),
+          note: `Refund of ₹${(refund.amount || 0) / 100} processed via webhook (${refund.id})`
+        });
+        await DB.saveOrder(existing);
+      }
+    } catch (refErr) {
+      console.error("Refund status record error:", refErr);
     }
   }
 

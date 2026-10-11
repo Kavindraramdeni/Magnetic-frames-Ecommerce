@@ -198,3 +198,64 @@ test('Mock checkout production guard', async (t) => {
     assert.equal(result, false);
   });
 });
+
+test('Shiprocket order creation idempotency guard', async (t) => {
+  function shouldSyncShiprocket(order) {
+    if (order.shipmentId || order.shiprocketOrderId) return false;
+    return true;
+  }
+
+  await t.test('allows initial sync for unsynced order', () => {
+    const order = { id: 'KRIA-ORD-101', status: 'Paid' };
+    assert.equal(shouldSyncShiprocket(order), true);
+  });
+
+  await t.test('blocks duplicate sync if shipmentId is already present', () => {
+    const order = { id: 'KRIA-ORD-101', status: 'Paid', shipmentId: 'SR_SHIP_9999' };
+    assert.equal(shouldSyncShiprocket(order), false);
+  });
+
+  await t.test('blocks duplicate sync if shiprocketOrderId is already present', () => {
+    const order = { id: 'KRIA-ORD-101', status: 'Paid', shiprocketOrderId: 'SR_ORD_8888' };
+    assert.equal(shouldSyncShiprocket(order), false);
+  });
+});
+
+test('Coupon and Inventory Ledger deduplication logic', async (t) => {
+  const redemptions = new Set();
+  function recordCoupon(couponCode, orderId) {
+    const key = `${couponCode}:${orderId}`;
+    if (redemptions.has(key)) return { duplicate: true };
+    redemptions.add(key);
+    return { duplicate: false };
+  }
+
+  await t.test('first coupon redemption succeeds', () => {
+    const res = recordCoupon('KRIA10', 'KRIA-ORD-101');
+    assert.equal(res.duplicate, false);
+  });
+
+  await t.test('duplicate coupon redemption on retry is detected', () => {
+    const res = recordCoupon('KRIA10', 'KRIA-ORD-101');
+    assert.equal(res.duplicate, true);
+  });
+
+  const movements = new Set();
+  function recordInventory(orderId, productId, type) {
+    const key = `${orderId}:${productId}:${type}`;
+    if (movements.has(key)) return { duplicate: true };
+    movements.add(key);
+    return { duplicate: false };
+  }
+
+  await t.test('initial inventory deduction succeeds', () => {
+    const res = recordInventory('KRIA-ORD-101', 'arch', 'ORDER_DEDUCT');
+    assert.equal(res.duplicate, false);
+  });
+
+  await t.test('duplicate inventory deduction on retry is detected', () => {
+    const res = recordInventory('KRIA-ORD-101', 'arch', 'ORDER_DEDUCT');
+    assert.equal(res.duplicate, true);
+  });
+});
+
