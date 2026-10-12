@@ -4,14 +4,20 @@ import crypto from "crypto";
 
 dotenv.config();
 
+const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+// Strict server-side credential isolation: Never silently fallback to client anon key for privileged server DB tasks
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.warn("Missing Supabase credentials!");
+  if (isProduction) {
+    throw new Error("FATAL: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured in production.");
+  } else {
+    console.warn("⚠️ [SECURITY WARNING] Missing SUPABASE_SERVICE_ROLE_KEY. Server-side database operations may fail without service role privileges.");
+  }
 }
 
-export const supabase = createClient(supabaseUrl || "", supabaseKey || "");
+export const supabase = createClient(supabaseUrl || "http://localhost:54321", supabaseKey || "dummy-key");
 
 export async function getOrders() {
   const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -23,13 +29,18 @@ export async function getOrders() {
     shippingDetails: order.shipping_json,
     trackingNumber: order.tracking_number,
     courierName: order.courier_name,
+    shipmentId: order.shipment_id || null,
+    shiprocketOrderId: order.shiprocket_order_id || null,
+    shiprocketLabelUrl: order.shiprocket_label_url || null,
     deliveryEstimate: order.delivery_estimate,
     transactionId: order.transaction_id,
-    grandTotal: order.totals_json.grandTotal,
-    subtotal: order.totals_json.subtotal,
-    bulkDiscount: order.totals_json.bulkDiscount,
-    deliveryCharge: order.totals_json.deliveryCharge,
-    history: order.history_json,
+    grandTotal: order.totals_json?.grandTotal,
+    subtotal: order.totals_json?.subtotal,
+    bulkDiscount: order.totals_json?.bulkDiscount,
+    deliveryCharge: order.totals_json?.deliveryCharge,
+    couponDiscount: order.totals_json?.couponDiscount || 0,
+    giftWrapFee: order.totals_json?.giftWrapFee || 0,
+    history: order.history_json || [],
     createdAt: order.created_at
   }));
 }
@@ -45,13 +56,18 @@ export async function getOrderByTransactionId(transactionId: string) {
     shippingDetails: data.shipping_json,
     trackingNumber: data.tracking_number,
     courierName: data.courier_name,
+    shipmentId: data.shipment_id || null,
+    shiprocketOrderId: data.shiprocket_order_id || null,
+    shiprocketLabelUrl: data.shiprocket_label_url || null,
     deliveryEstimate: data.delivery_estimate,
     transactionId: data.transaction_id,
     grandTotal: data.totals_json?.grandTotal,
     subtotal: data.totals_json?.subtotal,
     bulkDiscount: data.totals_json?.bulkDiscount,
     deliveryCharge: data.totals_json?.deliveryCharge,
-    history: data.history_json,
+    couponDiscount: data.totals_json?.couponDiscount || 0,
+    giftWrapFee: data.totals_json?.giftWrapFee || 0,
+    history: data.history_json || [],
     createdAt: data.created_at
   };
 }
@@ -67,13 +83,18 @@ export async function getOrderById(orderId: string) {
     shippingDetails: data.shipping_json,
     trackingNumber: data.tracking_number,
     courierName: data.courier_name,
+    shipmentId: data.shipment_id || null,
+    shiprocketOrderId: data.shiprocket_order_id || null,
+    shiprocketLabelUrl: data.shiprocket_label_url || null,
     deliveryEstimate: data.delivery_estimate,
     transactionId: data.transaction_id,
     grandTotal: data.totals_json?.grandTotal,
     subtotal: data.totals_json?.subtotal,
     bulkDiscount: data.totals_json?.bulkDiscount,
     deliveryCharge: data.totals_json?.deliveryCharge,
-    history: data.history_json,
+    couponDiscount: data.totals_json?.couponDiscount || 0,
+    giftWrapFee: data.totals_json?.giftWrapFee || 0,
+    history: data.history_json || [],
     createdAt: data.created_at
   };
 }
@@ -87,6 +108,15 @@ export async function saveOrder(order: any) {
     }
   }
 
+  const completeTotals = {
+    grandTotal: order.grandTotal,
+    subtotal: order.subtotal,
+    bulkDiscount: order.bulkDiscount || 0,
+    deliveryCharge: order.deliveryCharge || 0,
+    couponDiscount: order.couponDiscount || 0,
+    giftWrapFee: order.giftWrapFee || 0
+  };
+
   const { data, error } = await supabase.from('orders').insert({
     id: order.id,
     status: order.status,
@@ -94,20 +124,28 @@ export async function saveOrder(order: any) {
     shipping_json: order.shippingDetails,
     tracking_number: order.trackingNumber,
     courier_name: order.courierName,
+    shipment_id: order.shipmentId || null,
+    shiprocket_label_url: order.shiprocketLabelUrl || null,
     delivery_estimate: order.deliveryEstimate,
     transaction_id: order.transactionId,
-    totals_json: { grandTotal: order.grandTotal, subtotal: order.subtotal, bulkDiscount: order.bulkDiscount, deliveryCharge: order.deliveryCharge },
+    totals_json: completeTotals,
     history_json: order.history,
     created_at: order.createdAt
   }).select().maybeSingle();
 
   if (error) {
-    // If conflict on transaction_id or id, fetch and return existing
+    // If conflict on transaction_id, fetch and verify existing order
     console.warn('saveOrder insert notice:', error.message);
     if (order.transactionId) {
       const existing = await getOrderByTransactionId(order.transactionId);
       if (existing) return { order: existing, isDuplicate: true };
     }
+    // If conflict on order id, fetch and verify existing order
+    const existingById = await getOrderById(order.id);
+    if (existingById) return { order: existingById, isDuplicate: true };
+
+    // Otherwise, fail loudly to prevent ghost orders where payment was captured but order was not persisted
+    throw new Error(`CRITICAL: Order persistence failed in database: ${error.message}`);
   }
 
   // Deduct inventory only on successful first-time insert with ledger record
@@ -249,15 +287,28 @@ export async function getBusinessSettings() {
   return settings;
 }
 
-export async function getWarehouse(id: string) {
-  const { data, error } = await supabase.from('warehouses').select('*').eq('id', id).single();
-  if (error || !data) return null;
-  return data;
+export async function getWarehouse(id?: string) {
+  if (id) {
+    const { data, error } = await supabase.from('warehouses').select('*').eq('id', id).maybeSingle();
+    if (!error && data) return data;
+  }
+  return await getDefaultWarehouse();
 }
 
 export async function getDefaultWarehouse() {
-  const { data, error } = await supabase.from('warehouses').select('*').eq('is_default', 1).single();
-  if (error || !data) return null;
+  const { data, error } = await supabase.from('warehouses').select('*').eq('is_default', 1).maybeSingle();
+  if (error || !data) {
+    // If no warehouse marked is_default=1, return first available
+    const { data: first } = await supabase.from('warehouses').select('*').limit(1).maybeSingle();
+    return first || {
+      id: "wh_default",
+      name: "KRIA Production Hub",
+      city: "Hyderabad",
+      state: "Telangana",
+      pincode: "500085",
+      shiprocket_pickup_name: "Primary_Hyderabad_500085"
+    };
+  }
   return data;
 }
 
@@ -360,15 +411,43 @@ export async function getProductionJobs(orderId?: string) {
   return data || [];
 }
 
-export async function updateProductionJobStatus(jobId: string, newStatus: string) {
-  const ALLOWED_STAGES = ['QUEUED', 'PRINTING', 'LASER_CUT', 'QUALITY_CHECK', 'PACKED'];
-  if (!ALLOWED_STAGES.includes(newStatus)) {
-    throw new Error(`Invalid stage '${newStatus}'. Allowed: ${ALLOWED_STAGES.join(', ')}`);
+export async function updateProductionJobStatus(jobId: string, newStatus: string, updatedBy = "Admin") {
+  const STAGE_ORDER = ['QUEUED', 'PRINTING', 'LASER_CUT', 'QUALITY_CHECK', 'PACKED'];
+  if (!STAGE_ORDER.includes(newStatus)) {
+    throw new Error(`Invalid stage '${newStatus}'. Allowed: ${STAGE_ORDER.join(', ')}`);
+  }
+
+  // Fetch current stage to validate allowed forward transition
+  const { data: currentJob, error: fetchErr } = await supabase
+    .from('production_jobs')
+    .select('*')
+    .eq('id', jobId)
+    .single();
+
+  if (fetchErr || !currentJob) {
+    throw new Error(`Production job '${jobId}' not found.`);
+  }
+
+  const currentIndex = STAGE_ORDER.indexOf(currentJob.status);
+  const nextIndex = STAGE_ORDER.indexOf(newStatus);
+
+  // Prevent moving backward (e.g. from PACKED back to QUEUED)
+  if (nextIndex < currentIndex) {
+    throw new Error(`Invalid regression: cannot move job backwards from '${currentJob.status}' to '${newStatus}'.`);
+  }
+
+  // Prevent jumping directly to PACKED without passing QUALITY_CHECK
+  if (newStatus === 'PACKED' && currentJob.status !== 'QUALITY_CHECK') {
+    throw new Error(`Cannot mark job as PACKED before completing QUALITY_CHECK.`);
   }
 
   const { data, error } = await supabase
     .from('production_jobs')
-    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .update({ 
+      status: newStatus, 
+      updated_at: new Date().toISOString(),
+      last_updated_by: updatedBy
+    })
     .eq('id', jobId)
     .select()
     .single();

@@ -23,7 +23,7 @@ function ShapedPhotoCanvasPrint({ item }: { item: any }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // 4x6 Photo Paper Dimensions (600px x 900px high-resolution print canvas)
+    // 4x6 Photo Paper Dimensions (600px x 900px print canvas)
     const W = 600;
     const H = 900;
     canvas.width = W;
@@ -34,117 +34,23 @@ function ShapedPhotoCanvasPrint({ item }: { item: any }) {
     img.onload = () => {
       ctx.clearRect(0, 0, W, H);
 
-      // Fill background clean white
+      // Clean white background for 4x6 photo sheet
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, W, H);
 
-      const centerX = W / 2;
-      const centerY = H / 2;
-
-      // Frame box size inside 4x6 sheet
-      let fw = 380;
-      let fh = 520;
-      if (item.shapeId === 'circle' || item.shapeId === 'circle-bloom') {
-        fw = 420;
-        fh = 420;
-      } else if (item.shapeId === 'square') {
-        fw = 420;
-        fh = 420;
-      } else if (item.shapeId === 'polaroid') {
-        fw = 380;
-        fh = 480;
+      // Calculate placement to center the adjusted image cleanly inside 4x6 sheet preserving natural aspect ratio
+      const imgRatio = (img.width || 1) / (img.height || 1);
+      let drawW = 460;
+      let drawH = 460 / imgRatio;
+      if (drawH > 720) {
+        drawH = 720;
+        drawW = 720 * imgRatio;
       }
 
-      const fx = centerX - fw / 2;
-      const fy = centerY - fh / 2;
+      const drawX = (W - drawW) / 2;
+      const drawY = (H - drawH) / 2;
 
-      ctx.save();
-
-      // Begin clipping path for the exact selected frame shape
-      ctx.beginPath();
-      if (item.shapeId === 'circle' || item.shapeId === 'circle-bloom') {
-        const radius = fw / 2;
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-      } else if (item.shapeId === 'heart') {
-        // Sculpted Heart curve
-        const topCurveHeight = fh * 0.3;
-        ctx.moveTo(centerX, fy + topCurveHeight);
-        ctx.bezierCurveTo(centerX, fy, fx, fy, fx, fy + topCurveHeight);
-        ctx.bezierCurveTo(fx, fy + (fh + topCurveHeight) / 2, centerX - fw / 4, fy + fh * 0.8, centerX, fy + fh);
-        ctx.bezierCurveTo(centerX + fw / 4, fy + fh * 0.8, fx + fw, fy + (fh + topCurveHeight) / 2, fx + fw, fy + topCurveHeight);
-        ctx.bezierCurveTo(fx + fw, fy, centerX, fy, centerX, fy + topCurveHeight);
-      } else if (item.shapeId === 'arch') {
-        // Classic Arch: top rounded arch + vertical sides
-        const archRadius = fw / 2;
-        ctx.moveTo(fx, fy + archRadius);
-        ctx.arc(centerX, fy + archRadius, archRadius, Math.PI, 0, false);
-        ctx.lineTo(fx + fw, fy + fh);
-        ctx.lineTo(fx, fy + fh);
-        ctx.closePath();
-      } else if (item.shapeId === 'hexagon') {
-        // Modern Hexagon
-        ctx.moveTo(centerX, fy);
-        ctx.lineTo(fx + fw, fy + fh * 0.25);
-        ctx.lineTo(fx + fw, fy + fh * 0.75);
-        ctx.lineTo(centerX, fy + fh);
-        ctx.lineTo(fx, fy + fh * 0.75);
-        ctx.lineTo(fx, fy + fh * 0.25);
-        ctx.closePath();
-      } else if (item.shapeId === 'polaroid') {
-        // Polaroid photo container area
-        const photoH = fh - 70;
-        ctx.rect(fx + 15, fy + 15, fw - 30, photoH);
-      } else {
-        // Rounded rectangle / square default
-        const r = 28;
-        if (typeof (ctx as any).roundRect === 'function') {
-          (ctx as any).roundRect(fx, fy, fw, fh, r);
-        } else {
-          ctx.rect(fx, fy, fw, fh);
-        }
-      }
-      ctx.closePath();
-      ctx.clip();
-
-      // Draw Customer Photo with scale and pan offsets
-      const scale = item.photoScale || 1.0;
-      const panX = item.photoPanX || 0;
-      const panY = item.photoPanY || 0;
-
-      const imgRatio = img.width / img.height;
-      const frameRatio = fw / fh;
-      let drawW = fw;
-      let drawH = fh;
-      if (imgRatio > frameRatio) {
-        drawH = fh;
-        drawW = fh * imgRatio;
-      } else {
-        drawW = fw;
-        drawH = fw / imgRatio;
-      }
-
-      drawW *= scale;
-      drawH *= scale;
-
-      const imgX = centerX - drawW / 2 + (panX * 2.5);
-      const imgY = centerY - drawH / 2 + (panY * 2.5);
-
-      ctx.drawImage(img, imgX, imgY, drawW, drawH);
-      ctx.restore();
-
-      // If Polaroid shape, draw outer white card border & caption text
-      if (item.shapeId === 'polaroid') {
-        ctx.strokeStyle = '#111111';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(fx, fy, fw, fh);
-
-        if (item.captionText) {
-          ctx.fillStyle = '#111111';
-          ctx.font = 'bold 24px Cormorant Garamond, serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(item.captionText, centerX, fy + fh - 24);
-        }
-      }
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
     };
     img.src = item.previewUrl;
   }, [item]);
@@ -194,202 +100,84 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
 
   // Print individual item framed photo cleanly on 4x6 photo paper
   const handlePrintSingleItemPhoto = (item: any) => {
+    if (!item.previewUrl) return;
     try {
-      const canvas = document.createElement('canvas');
-      const W = 1200;
-      const H = 1800; // 4x6 aspect ratio 1:1.5
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, W, H);
-
-        const centerX = W / 2;
-        const centerY = H / 2;
-
-        let fw = 800;
-        let fh = 1050;
-        if (item.shapeId === 'circle' || item.shapeId === 'circle-bloom' || item.shapeId === 'square') {
-          fw = 900;
-          fh = 900;
-        } else if (item.shapeId === 'polaroid') {
-          fw = 800;
-          fh = 1000;
-        }
-
-        const fx = centerX - fw / 2;
-        const fy = centerY - fh / 2;
-
-        ctx.save();
-        ctx.beginPath();
-
-        if (item.shapeId === 'circle' || item.shapeId === 'circle-bloom') {
-          ctx.arc(centerX, centerY, fw / 2, 0, Math.PI * 2);
-        } else if (item.shapeId === 'heart') {
-          const topCurveHeight = fh * 0.3;
-          ctx.moveTo(centerX, fy + topCurveHeight);
-          ctx.bezierCurveTo(centerX, fy, fx, fy, fx, fy + topCurveHeight);
-          ctx.bezierCurveTo(fx, fy + (fh + topCurveHeight) / 2, centerX - fw / 4, fy + fh * 0.8, centerX, fy + fh);
-          ctx.bezierCurveTo(centerX + fw / 4, fy + fh * 0.8, fx + fw, fy + (fh + topCurveHeight) / 2, fx + fw, fy + topCurveHeight);
-          ctx.bezierCurveTo(fx + fw, fy, centerX, fy, centerX, fy + topCurveHeight);
-        } else if (item.shapeId === 'arch') {
-          const archRadius = fw / 2;
-          ctx.moveTo(fx, fy + archRadius);
-          ctx.arc(centerX, fy + archRadius, archRadius, Math.PI, 0, false);
-          ctx.lineTo(fx + fw, fy + fh);
-          ctx.lineTo(fx, fy + fh);
-          ctx.closePath();
-        } else if (item.shapeId === 'hexagon') {
-          ctx.moveTo(centerX, fy);
-          ctx.lineTo(fx + fw, fy + fh * 0.25);
-          ctx.lineTo(fx + fw, fy + fh * 0.75);
-          ctx.lineTo(centerX, fy + fh);
-          ctx.lineTo(fx, fy + fh * 0.75);
-          ctx.lineTo(fx, fy + fh * 0.25);
-          ctx.closePath();
-        } else if (item.shapeId === 'polaroid') {
-          ctx.rect(fx + 30, fy + 30, fw - 60, fh - 140);
-        } else {
-          if (typeof (ctx as any).roundRect === 'function') {
-            (ctx as any).roundRect(fx, fy, fw, fh, 50);
-          } else {
-            ctx.rect(fx, fy, fw, fh);
-          }
-        }
-        ctx.closePath();
-        ctx.clip();
-
-        const scale = item.photoScale || 1.0;
-        const panX = item.photoPanX || 0;
-        const panY = item.photoPanY || 0;
-
-        const imgRatio = img.width / img.height;
-        const frameRatio = fw / fh;
-        let drawW = fw;
-        let drawH = fh;
-        if (imgRatio > frameRatio) {
-          drawH = fh;
-          drawW = fh * imgRatio;
-        } else {
-          drawW = fw;
-          drawH = fw / imgRatio;
-        }
-
-        drawW *= scale;
-        drawH *= scale;
-
-        const imgX = centerX - drawW / 2 + (panX * 5);
-        const imgY = centerY - drawH / 2 + (panY * 5);
-
-        ctx.drawImage(img, imgX, imgY, drawW, drawH);
-        ctx.restore();
-
-        if (item.shapeId === 'polaroid') {
-          ctx.strokeStyle = '#111111';
-          ctx.lineWidth = 8;
-          ctx.strokeRect(fx, fy, fw, fh);
-          if (item.captionText) {
-            ctx.fillStyle = '#111111';
-            ctx.font = 'bold 48px Cormorant Garamond, serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(item.captionText, centerX, fy + fh - 40);
-          }
-        }
-
-        const dataUrl = canvas.toDataURL('image/png');
-        const printWin = window.open('', '_blank');
-        if (printWin) {
-          printWin.document.write(`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <title>4x6 Photo Print - ${item.shapeName}</title>
-                <style>
-                  @page { size: 4in 6in; margin: 0; }
-                  body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: white; width: 4in; height: 6in; overflow: hidden; }
-                  img { width: 4in; height: 6in; object-fit: contain; }
-                </style>
-              </head>
-              <body>
-                <img src="${dataUrl}" onload="window.print(); window.close();" />
-              </body>
-            </html>
-          `);
-          printWin.document.close();
-        }
-      };
-      img.src = item.previewUrl;
+      const printWin = window.open('', '_blank');
+      if (printWin) {
+        printWin.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>4x6 Photo Print - ${item.shapeName || 'Frame'}</title>
+              <style>
+                @page { size: 4in 6in; margin: 0; }
+                body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: white; width: 4in; height: 6in; overflow: hidden; }
+                img { max-width: 100%; max-height: 100%; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <img src="${item.previewUrl}" onload="window.print(); window.close();" />
+            </body>
+          </html>
+        `);
+        printWin.document.close();
+      }
     } catch (e: any) {
-      alert("Could not trigger single photo print: " + e.message);
+      alert("Could not trigger photo print: " + e.message);
     }
   };
 
-  // Download fitted photo framed in its exact selected shape
-  const handleDownloadFramedPhoto = (item: any) => {
+  // Download high-resolution adjusted photo rendered with exact shape aspect ratio
+  const handleDownloadAdjustedPhoto = async (orderId: string, idx: number, item: any) => {
     try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1200;
-      canvas.height = 1200;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      const res = await fetch(`/api/admin/orders/${orderId}/items/${idx}/adjusted-image`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${orderId}-item-${idx + 1}-${item.shapeId || 'frame'}.png`;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return;
+      }
+    } catch (e) {
+      console.warn("Server adjusted image endpoint error, falling back to preview URL:", e);
+    }
 
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        ctx.clearRect(0, 0, 1200, 1200);
-        ctx.save();
-
-        if (item.shapeId === 'circle') {
-          ctx.beginPath();
-          ctx.arc(600, 600, 500, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-        } else if (item.shapeId === 'heart') {
-          ctx.beginPath();
-          ctx.moveTo(600, 320);
-          ctx.bezierCurveTo(600, 280, 520, 160, 340, 160);
-          ctx.bezierCurveTo(160, 160, 160, 420, 160, 420);
-          ctx.bezierCurveTo(160, 640, 360, 840, 600, 1080);
-          ctx.bezierCurveTo(840, 840, 1040, 640, 1040, 420);
-          ctx.bezierCurveTo(1040, 420, 1040, 160, 860, 160);
-          ctx.bezierCurveTo(680, 160, 600, 280, 600, 320);
-          ctx.closePath();
-          ctx.clip();
-        } else if (item.shapeId === 'arch') {
-          ctx.beginPath();
-          ctx.arc(600, 450, 400, Math.PI, 0, false);
-          ctx.lineTo(1000, 1050);
-          ctx.lineTo(200, 1050);
-          ctx.closePath();
-          ctx.clip();
-        } else {
-          ctx.beginPath();
-          ctx.roundRect(150, 150, 900, 900, 40);
-          ctx.closePath();
-          ctx.clip();
-        }
-
-        ctx.drawImage(img, 0, 0, 1200, 1200);
-        ctx.restore();
-
-        const link = document.createElement('a');
-        link.download = `fitted_${item.shapeId || 'photo'}_${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      };
-      img.src = item.previewUrl;
-    } catch (e: any) {
-      alert("Could not generate fitted photo download: " + e.message);
+    if (item.previewUrl) {
+      const a = document.createElement('a');
+      a.href = item.previewUrl;
+      a.download = `${orderId}-item-${idx + 1}-${item.shapeId || 'frame'}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   };
 
-  // Generate high-fidelity thermal PDF shipping label
+  // Generate verified thermal shipping label
   const handleGeneratePDFLabel = (order: any) => {
+    // If official Shiprocket label URL exists, open real courier PDF
+    if (order.shiprocketLabelUrl) {
+      window.open(order.shiprocketLabelUrl, '_blank');
+      return;
+    }
+
+    if (!order.trackingNumber && !order.shipmentId) {
+      alert("Shipment not created yet. Please create a Shiprocket shipment first before printing shipping labels.");
+      return;
+    }
+
+    const trackingNum = order.trackingNumber;
+    if (!trackingNum) {
+      alert("AWB tracking number is still pending assignment from Shiprocket. Please refresh logistics or check courier allocation.");
+      return;
+    }
+
     try {
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -411,24 +199,25 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
       // 1. Courier Provider & Brand Header
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(14);
-      doc.text((order.courierName || "DELHIVERY AIR").toUpperCase(), 8, 12);
+      doc.text((order.courierName || "SHIPROCKET LOGISTICS").toUpperCase(), 8, 12);
       
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(7.5);
-      doc.text("PREPAID PREMIUM AIR EXPRESS • HIGH-SPEED DISPATCH", 8, 17);
+      doc.text("PREPAID AIR EXPRESS • DISPATCH CARRIER", 8, 17);
       
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(8.5);
-      doc.text("SHIPROCKET TRACKING REF: " + (order.trackingNumber || "SRW-827384912"), 8, 22);
+      doc.text("TRACKING REF: " + trackingNum, 8, 22);
 
-      // 2. Barcode Grid Representation (High Contrast laser-scannable bars)
+      // 2. Barcode Grid Representation
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(9);
-      doc.text("AWB NUMBER: " + (order.trackingNumber || "SRW-827384912"), 8, 31);
+      doc.text("AWB NUMBER: " + trackingNum, 8, 31);
       
       let startX = 8;
       for (let i = 0; i < 40; i++) {
-        const thickness = (i % 3 === 0) ? 1.6 : ((i % 5 === 0) ? 1.0 : 0.4);
+        const charCode = trackingNum.charCodeAt(i % trackingNum.length) || 48;
+        const thickness = (charCode % 3 === 0) ? 1.4 : ((charCode % 2 === 0) ? 0.9 : 0.4);
         doc.setFillColor(0, 0, 0);
         doc.rect(startX, 34, thickness, 14, 'F');
         startX += thickness + 0.8;
@@ -464,29 +253,29 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
       doc.text(`Mobile Connection: ${order.shippingDetails.phone}`, 8, currentY + 7);
       doc.text(`E-Mail Address: ${order.shippingDetails.email}`, 8, currentY + 11);
 
-      // 4. Return Sender Details & Package Dimension specs
+      // 4. Return Sender Details & Package Dimension specs (Dynamic from warehouse)
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(7);
       doc.text("RETURN TO SENDER:", 8, 116);
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(8.5);
-      doc.text("KRIA STUDIO PRINTS", 8, 121);
+      doc.text((warehouseForm.name || businessSettings.company_name || "KRIA STUDIO").toUpperCase(), 8, 121);
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(7.5);
-      doc.text("Jubilee Tech District, Phase II", 8, 125);
-      doc.text("Hyderabad, Telangana - 500081", 8, 129);
+      doc.text(warehouseForm.address1 || "Radha Krishna Rd, KPHB", 8, 125);
+      doc.text(`${warehouseForm.city || "Hyderabad"}, ${warehouseForm.state || "Telangana"} - ${warehouseForm.pincode || "500085"}`, 8, 129);
 
       // Package specs
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(7.5);
       doc.text("WEIGHT: 0.35 KG", 62, 116);
       doc.text("BOX SIZE: 15x15x5cm", 62, 121);
-      doc.text("CAST ITEMS: " + order.cart.length, 62, 126);
+      doc.text("CAST ITEMS: " + (order.cart || []).length, 62, 126);
 
       doc.save(`kria_shipping_label_${order.id}.pdf`);
       
       setActionLog(prev => [
-        `[${new Date().toLocaleTimeString()}] 📄 Generated thermal PDF shipping label for Order ${order.id}. Ready for print dispatch.`,
+        `[${new Date().toLocaleTimeString()}] 📄 Generated thermal PDF shipping label for Order ${order.id} with AWB: ${trackingNum}`,
         ...prev
       ]);
     } catch (err: any) {
@@ -560,37 +349,49 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   ]);
 
   const [businessSettings, setBusinessSettings] = useState<any>({
-    company_name: 'KRIA TECH',
-    gstin: '36AAAFK7892P1Z0',
-    support_email: 'kriatechgroup@gmail.com',
-    support_phone: '9392576792',
-    bank_name: 'HDFC Bank Ltd',
-    account_no: '50200084920194',
-    ifsc: 'HDFC0001294',
-    upi_id: '9392576792@ybl'
+    company_name: '',
+    gstin: '',
+    support_email: '',
+    support_phone: '',
+    bank_name: '',
+    account_no: '',
+    ifsc: '',
+    upi_id: ''
   });
 
   const [warehouseForm, setWarehouseForm] = useState<any>({
-    name: 'KRIA TECH',
-    address1: 'Shop no 9, Mallikarjuna Towers, Radha Krishna Rd',
-    address2: 'Venkata Ramana Colony, Gokul Plots, 9th Phase KPHB, Near Quantum Leap School, Hafeezpet',
-    city: 'Hyderabad',
-    state: 'Telangana',
-    pincode: '500085',
-    gstin: '36AAAFK7892P1Z0',
-    phone: '9392576792',
-    email: 'kriatechgroup@gmail.com',
-    shiprocket_pickup_name: 'Primary_Hyderabad_500085'
+    name: '',
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    pincode: '',
+    gstin: '',
+    phone: '',
+    email: '',
+    shiprocket_pickup_name: ''
   });
 
   const fetchSettingsAndWarehouse = async () => {
     try {
-      const sRes = await fetch('/api/settings');
+      const sRes = await fetch('/api/admin/settings', {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
       if (sRes.ok) {
         const sData = await sRes.json();
-        if (sData) setBusinessSettings((prev: any) => ({ ...prev, ...sData }));
+        if (sData) {
+          setBusinessSettings((prev: any) => ({ ...prev, ...sData }));
+          if (sData.b2b_tiers) {
+            try { setB2bTiers(JSON.parse(sData.b2b_tiers)); } catch {}
+          }
+          if (sData.b2b_products) {
+            try { setB2bProducts(JSON.parse(sData.b2b_products)); } catch {}
+          }
+        }
       }
-      const wRes = await fetch('/api/warehouses');
+      const wRes = await fetch('/api/warehouses', {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
       if (wRes.ok) {
         const wData = await wRes.json();
         if (Array.isArray(wData) && wData.length > 0) {
@@ -599,6 +400,42 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
       }
     } catch (e) {
       console.error('Failed to fetch settings/warehouse', e);
+    }
+  };
+
+  const handleSaveB2bTiers = async () => {
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ b2b_tiers: JSON.stringify(b2bTiers) })
+      });
+      if (res.ok) {
+        alert("B2B Quantity Discount Tiers saved to server settings!");
+        setActionLog(prev => [`[${new Date().toLocaleTimeString()}] 🏢 B2B discount tiers saved to server.`, ...prev]);
+      } else {
+        alert("Failed saving discount tiers to server.");
+      }
+    } catch (e: any) {
+      alert("Error saving discount tiers: " + e.message);
+    }
+  };
+
+  const handleSaveB2bProducts = async () => {
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ b2b_products: JSON.stringify(b2bProducts) })
+      });
+      if (res.ok) {
+        alert("B2B Products & size pricing matrix saved to server settings!");
+        setActionLog(prev => [`[${new Date().toLocaleTimeString()}] 🏢 B2B product sizes saved to server.`, ...prev]);
+      } else {
+        alert("Failed saving B2B products to server.");
+      }
+    } catch (e: any) {
+      alert("Error saving B2B products: " + e.message);
     }
   };
 
@@ -650,7 +487,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     }
   };
 
-  // Fetch active database orders
+  // Fetch active database orders with snapshot diffing
   const fetchOrders = async (silent = false) => {
     if (!silent) setIsLoading(true);
     setError(null);
@@ -661,6 +498,12 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
         const freshOrders = data.orders || [];
         
         setOrders(prev => {
+          const prevSig = prev.map(o => `${o.id}_${o.status}_${o.trackingNumber || ''}_${o.shipmentId || ''}_${o.grandTotal}`).join('|');
+          const freshSig = freshOrders.map((o: any) => `${o.id}_${o.status}_${o.trackingNumber || ''}_${o.shipmentId || ''}_${o.grandTotal}`).join('|');
+          if (prevSig === freshSig) {
+            return prev; // Identical snapshot, prevent unnecessary re-render and flickering
+          }
+
           if (prev.length > 0 && freshOrders.length > prev.length) {
             const newCount = freshOrders.length - prev.length;
             const newest = freshOrders[0];
@@ -670,6 +513,20 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             ]);
           }
           return freshOrders;
+        });
+
+        setSelectedOrder(currentSelected => {
+          if (!currentSelected) return null;
+          const freshCurrent = freshOrders.find((o: any) => o.id === currentSelected.id);
+          if (!freshCurrent) return currentSelected;
+          if (
+            freshCurrent.status !== currentSelected.status ||
+            freshCurrent.trackingNumber !== currentSelected.trackingNumber ||
+            freshCurrent.shipmentId !== currentSelected.shipmentId
+          ) {
+            return freshCurrent;
+          }
+          return currentSelected;
         });
       } else {
         const err = await response.json();
@@ -911,30 +768,33 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     }
   };
 
-  // Void order from database
+  // Cancel order in pipeline while preserving audit & tax records
   const handleVoidOrder = async (orderId: string) => {
-    if (!confirm(`Are you sure you want to void and delete Order ${orderId}? This cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to cancel Order ${orderId}? This marks the order as Cancelled and preserves audit/tax records.`)) {
       return;
     }
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${adminToken}` }
+      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ status: 'Cancelled', note: 'Order cancelled by administrator.' })
       });
       if (response.ok) {
-        setOrders(prev => prev.filter(o => o.id !== orderId));
+        const data = await response.json();
+        setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
         if (selectedOrder && selectedOrder.id === orderId) {
-          setSelectedOrder(null);
+          setSelectedOrder(data.order);
         }
         setActionLog(prev => [
-          `[${new Date().toLocaleTimeString()}] 🗑 Order ${orderId} has been deleted/voided from local filesystem database.`,
+          `[${new Date().toLocaleTimeString()}] 🚫 Order ${orderId} marked as Cancelled. Audit history preserved.`,
           ...prev
         ]);
       } else {
-        alert("Failed to delete order record.");
+        const err = await response.json();
+        alert(err.error || "Failed to cancel order.");
       }
     } catch (e: any) {
-      alert("Error voiding: " + e.message);
+      alert("Error cancelling order: " + e.message);
     }
   };
 
@@ -1227,28 +1087,46 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     <button
                       onClick={() => handleVoidOrder(selectedOrder.id)}
                       className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 p-2 rounded-xl text-xs font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
-                      title="Void/Delete Order Record"
+                      title="Cancel Order Record (Preserves audit history)"
                     >
                       <Trash2 className="h-4 w-4" />
-                      <span>Void Order</span>
+                      <span>Cancel Order</span>
                     </button>
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
-                      className="px-3 py-2.5 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                      className="px-2 py-2.5 bg-neutral-900 hover:bg-black text-white rounded-xl text-[11px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 shadow-md"
                     >
-                      <Printer className="h-4 w-4 text-[#E8DCCF]" />
-                      <span>🖨️ Print 4x6 Photo Sheet</span>
+                      <Printer className="h-3.5 w-3.5 text-[#E8DCCF]" />
+                      <span>🖨️ 4x6 Photo</span>
                     </button>
                     <button
                       onClick={() => setIsPrintTaxInvoiceOpen(selectedOrder)}
-                      className="px-3 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5"
+                      className="px-2 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-[11px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1"
                     >
-                      <FileText className="h-4 w-4" />
+                      <FileText className="h-3.5 w-3.5" />
                       <span>📑 GST Invoice</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!selectedOrder.trackingNumber && !selectedOrder.shipmentId && !selectedOrder.shiprocketLabelUrl) {
+                          alert("Shipment not created yet. Please create a Shiprocket shipment first.");
+                          return;
+                        }
+                        handleGeneratePDFLabel(selectedOrder);
+                      }}
+                      className={`px-2 py-2.5 rounded-xl text-[11px] font-mono font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 ${
+                        (selectedOrder.trackingNumber || selectedOrder.shipmentId || selectedOrder.shiprocketLabelUrl)
+                          ? 'bg-emerald-800 hover:bg-emerald-900 text-white'
+                          : 'bg-neutral-100 text-neutral-400 cursor-not-allowed border border-neutral-200'
+                      }`}
+                      title={!(selectedOrder.trackingNumber || selectedOrder.shipmentId || selectedOrder.shiprocketLabelUrl) ? "Shipment not created yet" : "Print Verified Shipping Label"}
+                    >
+                      <Truck className="h-3.5 w-3.5" />
+                      <span>🏷️ Label</span>
                     </button>
                   </div>
 
@@ -1264,9 +1142,38 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                     <span>📲 Send WhatsApp Notification to Customer</span>
                   </button>
 
+                  {/* Shiprocket Logistics Fulfillment Section */}
+                  <div className="space-y-2 pt-2 border-t border-neutral-100">
+                    <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block font-bold">SHIPROCKET LOGISTICS ACTIONS</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleCreateProductionShipment(selectedOrder.id)}
+                        disabled={Boolean(selectedOrder.shipmentId || isUpdatingStatus === selectedOrder.id)}
+                        className={`px-3 py-2 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider border transition-all ${
+                          selectedOrder.shipmentId
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 cursor-default'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 cursor-pointer'
+                        }`}
+                      >
+                        {selectedOrder.shipmentId ? `Shipment #${selectedOrder.shipmentId}` : 'Create Shipment'}
+                      </button>
+                      <button
+                        onClick={() => handleScheduleCourierPickup(selectedOrder.id)}
+                        disabled={!selectedOrder.shipmentId || isUpdatingStatus === selectedOrder.id}
+                        className={`px-3 py-2 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider border transition-all ${
+                          !selectedOrder.shipmentId
+                            ? 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed'
+                            : 'bg-neutral-900 hover:bg-black text-white border-neutral-900 cursor-pointer'
+                        }`}
+                      >
+                        Schedule Pickup
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Order Lifecycle Progress Buttons */}
                   <div className="space-y-2 pt-2 border-t border-neutral-100">
-                    <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block font-bold">LIFECYCLE STATUS (AUTOSENDS WHATSAPP/EMAIL/SMS)</span>
+                    <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest block font-bold">LIFECYCLE PIPELINE (STATUS & LOGISTICS)</span>
                     <div className="grid grid-cols-2 gap-2">
                       {['Order received', 'Payment success', 'Printing started', 'Packed', 'Shipped', 'Delivered'].map((st) => (
                         <button
@@ -1431,10 +1338,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <h4 className="font-serif text-xl font-bold text-neutral-900 mt-0.5">4 Bulk B2B Products (Editable Size Base Prices)</h4>
                 </div>
                 <button
-                  onClick={() => {
-                    setActionLog(prev => [`[${new Date().toLocaleTimeString()}] 🏢 B2B size prices updated for all 4 product collections`, ...prev]);
-                    alert("Wholesale per-size product prices updated successfully!");
-                  }}
+                  onClick={handleSaveB2bProducts}
                   className="px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer"
                 >
                   Save All B2B Prices
@@ -1491,7 +1395,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <h4 className="font-serif text-lg font-bold text-neutral-900 mt-0.5">Quantity Discount Tier Rates</h4>
                 </div>
                 <button
-                  onClick={() => alert("B2B Quantity Discount Tiers saved!")}
+                  onClick={handleSaveB2bTiers}
                   className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer"
                 >
                   Save Volume Tiers
@@ -1825,11 +1729,11 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                           <span>Print 4x6 Photo</span>
                         </button>
                         <button
-                          onClick={() => handleDownloadFramedPhoto(item)}
+                          onClick={() => handleDownloadAdjustedPhoto(isPrintWorkOrderOpen.id, idx, item)}
                           className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-mono font-bold text-[10px] uppercase flex items-center gap-1.5 cursor-pointer shadow-sm transition"
                         >
                           <Download className="h-3 w-3" />
-                          <span>Download Fitted PNG</span>
+                          <span>Download Adjusted PNG</span>
                         </button>
                       </div>
                     </div>
@@ -2037,20 +1941,21 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               <div className="border-b-2 border-neutral-900 pb-4 mb-4 flex justify-between items-start">
                 <div>
                   <h2 className="font-serif text-2xl font-bold tracking-tight text-neutral-900">
-                    KRIA <span className="font-sans text-xs tracking-widest font-bold border border-neutral-900 px-2 py-0.5 rounded ml-1 bg-neutral-50">STUDIO PRINTS</span>
+                    {(businessSettings.company_name || 'KRIA STUDIO').split(' ')[0]} <span className="font-sans text-xs tracking-widest font-bold border border-neutral-900 px-2 py-0.5 rounded ml-1 bg-neutral-50">{(businessSettings.company_name || 'KRIA STUDIO').split(' ').slice(1).join(' ') || 'PRINTS'}</span>
                   </h2>
                   <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest mt-1">GST Tax Invoice / Bill of Supply</p>
                   <div className="text-[11px] font-mono text-neutral-600 mt-2 space-y-0.5">
-                    <p><strong>KRIA STUDIO PRIVATE LIMITED</strong></p>
-                    <p>Jubilee Tech District, Phase II, Hyderabad - 500085</p>
-                    <p>GSTIN: 36AAAFK7892P1Z0 | State: Telangana (36)</p>
-                    <p>Email: support@kriastudio.in | Phone: +91 7893194974</p>
+                    <p><strong>{businessSettings.company_name || warehouseForm.name || 'KRIA STUDIO'}</strong></p>
+                    <p>{warehouseForm.address1 || 'Shop no 9, Mallikarjuna Towers, Radha Krishna Rd'}{warehouseForm.address2 ? `, ${warehouseForm.address2}` : ''}</p>
+                    <p>{warehouseForm.city || 'Hyderabad'}, {warehouseForm.state || 'Telangana'} - {warehouseForm.pincode || '500085'}</p>
+                    <p>GSTIN: {businessSettings.gstin || warehouseForm.gstin || '36AAAFK7892P1Z0'} | State: {warehouseForm.state || 'Telangana'}</p>
+                    <p>Email: {businessSettings.support_email || 'kriatechgroup@gmail.com'} | Phone: {businessSettings.support_phone || '+91 9392576792'}</p>
                   </div>
                 </div>
                 <div className="text-right space-y-1 font-mono text-[11px] bg-neutral-50 p-3 border border-neutral-200 rounded-xl">
                   <p className="text-[10px] text-neutral-500 uppercase font-bold">INVOICE DETAILS</p>
-                  <p><strong>INVOICE NO:</strong> INV-{isPrintTaxInvoiceOpen.id.replace('KRIA-', '')}</p>
-                  <p><strong>DATE:</strong> {new Date().toLocaleDateString('en-IN')}</p>
+                  <p><strong>INVOICE NO:</strong> {isPrintTaxInvoiceOpen.invoiceNumber || `INV-${isPrintTaxInvoiceOpen.id.replace(/^KRIA-/, '')}`}</p>
+                  <p><strong>DATE:</strong> {isPrintTaxInvoiceOpen.createdAt ? new Date(isPrintTaxInvoiceOpen.createdAt).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')}</p>
                   <p><strong>ORDER NO:</strong> {isPrintTaxInvoiceOpen.id}</p>
                   <p className="text-emerald-700 font-bold uppercase pt-1">PAYMENT: PREPAID (ONLINE)</p>
                 </div>
@@ -2067,7 +1972,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 </div>
                 <div className="text-right space-y-1">
                   <p className="text-[10px] text-neutral-500 uppercase font-bold">LOGISTICS DETAILS</p>
-                  <p>Courier: <strong>{isPrintTaxInvoiceOpen.courierName}</strong></p>
+                  <p>Courier: <strong>{isPrintTaxInvoiceOpen.courierName || 'Shiprocket Express'}</strong></p>
                   <p>AWB Tracking: <strong>{isPrintTaxInvoiceOpen.trackingNumber || 'Pending Sync'}</strong></p>
                   <p>Place of Supply: <strong>{isPrintTaxInvoiceOpen.shippingDetails.state}</strong></p>
                 </div>
@@ -2105,34 +2010,61 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
               </div>
 
               {/* Calculation & Tax Summary Footer */}
-              <div className="grid grid-cols-2 gap-6 items-start font-mono text-[11px]">
-                <div className="border border-neutral-200 p-3 rounded-xl bg-neutral-50 text-neutral-600 space-y-1">
-                  <p className="font-bold text-neutral-900 uppercase text-[10px]">TAX BREAKUP SUMMARY</p>
-                  <p>CGST (9%): ₹{Math.round((isPrintTaxInvoiceOpen.subtotal || isPrintTaxInvoiceOpen.grandTotal) * 0.09)}</p>
-                  <p>SGST (9%): ₹{Math.round((isPrintTaxInvoiceOpen.subtotal || isPrintTaxInvoiceOpen.grandTotal) * 0.09)}</p>
-                  <p className="text-[10px] text-neutral-500 pt-1 border-t border-neutral-200">All prices are inclusive of applicable GST taxes.</p>
-                </div>
-                <div className="space-y-2 text-right bg-neutral-50 p-4 border border-neutral-200 rounded-xl">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">SUBTOTAL:</span>
-                    <span className="font-bold">₹{isPrintTaxInvoiceOpen.subtotal || isPrintTaxInvoiceOpen.grandTotal}</span>
-                  </div>
-                  {isPrintTaxInvoiceOpen.bulkDiscount > 0 && (
-                    <div className="flex justify-between text-emerald-700">
-                      <span>BULK DISCOUNT:</span>
-                      <span>-₹{isPrintTaxInvoiceOpen.bulkDiscount}</span>
+              {(() => {
+                const sellerState = (warehouseForm.state || 'telangana').trim().toLowerCase();
+                const buyerState = (isPrintTaxInvoiceOpen.shippingDetails?.state || '').trim().toLowerCase();
+                const isIntrastate = buyerState === sellerState || !buyerState;
+                const totalPaid = isPrintTaxInvoiceOpen.grandTotal || 0;
+                const taxableValue = Math.round(totalPaid / 1.18);
+                const totalTax = totalPaid - taxableValue;
+                const cgst = isIntrastate ? Math.round(totalTax / 2) : 0;
+                const sgst = isIntrastate ? (totalTax - cgst) : 0;
+                const igst = isIntrastate ? 0 : totalTax;
+
+                return (
+                  <div className="grid grid-cols-2 gap-6 items-start font-mono text-[11px]">
+                    <div className="border border-neutral-200 p-3 rounded-xl bg-neutral-50 text-neutral-600 space-y-1">
+                      <p className="font-bold text-neutral-900 uppercase text-[10px]">TAX BREAKUP SUMMARY (GST 18%)</p>
+                      <p>Taxable Value: ₹{taxableValue}</p>
+                      {isIntrastate ? (
+                        <>
+                          <p>CGST (9%): ₹{cgst}</p>
+                          <p>SGST (9%): ₹{sgst}</p>
+                        </>
+                      ) : (
+                        <p>IGST (18%): ₹{igst}</p>
+                      )}
+                      <p className="text-[10px] text-neutral-500 pt-1 border-t border-neutral-200">
+                        {isIntrastate ? 'Intra-State Supply (CGST + SGST applied)' : 'Inter-State Supply (IGST applied)'} • Inclusive of GST
+                      </p>
                     </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">SHIPPING CHARGE:</span>
-                    <span>{isPrintTaxInvoiceOpen.deliveryCharge === 0 ? "FREE" : `₹${isPrintTaxInvoiceOpen.deliveryCharge}`}</span>
+                    <div className="space-y-2 text-right bg-neutral-50 p-4 border border-neutral-200 rounded-xl">
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">TAXABLE AMOUNT:</span>
+                        <span className="font-bold">₹{taxableValue}</span>
+                      </div>
+                      <div className="flex justify-between text-neutral-600">
+                        <span>TOTAL GST (18%):</span>
+                        <span>₹{totalTax}</span>
+                      </div>
+                      {isPrintTaxInvoiceOpen.bulkDiscount > 0 && (
+                        <div className="flex justify-between text-emerald-700">
+                          <span>BULK DISCOUNT:</span>
+                          <span>-₹{isPrintTaxInvoiceOpen.bulkDiscount}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">SHIPPING CHARGE:</span>
+                        <span>{isPrintTaxInvoiceOpen.deliveryCharge === 0 ? "FREE" : `₹${isPrintTaxInvoiceOpen.deliveryCharge}`}</span>
+                      </div>
+                      <div className="flex justify-between border-t-2 border-neutral-900 pt-2 text-sm font-bold text-neutral-950">
+                        <span>GRAND TOTAL PAID:</span>
+                        <span>₹{isPrintTaxInvoiceOpen.grandTotal}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between border-t-2 border-neutral-900 pt-2 text-sm font-bold text-neutral-950">
-                    <span>GRAND TOTAL PAID:</span>
-                    <span>₹{isPrintTaxInvoiceOpen.grandTotal}</span>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Signature & Declaration */}
               <div className="pt-8 mt-6 border-t border-neutral-200 grid grid-cols-2 gap-4 text-[10px] font-mono text-neutral-500">
@@ -2141,7 +2073,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <p>We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</p>
                 </div>
                 <div className="text-right space-y-4">
-                  <p className="font-bold text-neutral-900 uppercase">For KRIA STUDIO PRIVATE LIMITED</p>
+                  <p className="font-bold text-neutral-900 uppercase">For {(businessSettings.company_name || warehouseForm.name || 'KRIA STUDIO').toUpperCase()}</p>
                   <div className="h-8" />
                   <p className="text-4xs uppercase tracking-widest text-neutral-400">Authorized Signatory</p>
                 </div>
@@ -2310,14 +2242,25 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                       <span className="text-neutral-600">Total Lifetime Orders:</span>
                       <span className="font-bold text-neutral-900">{totalOrds}</span>
                     </div>
-                    <div className="flex justify-between p-2.5 bg-white rounded-xl border border-neutral-200">
-                      <span className="text-neutral-600">Prepaid Verification Rate:</span>
-                      <span className="font-bold text-emerald-700">100% Guaranteed</span>
-                    </div>
-                    <div className="flex justify-between p-2.5 bg-white rounded-xl border border-neutral-200">
-                      <span className="text-neutral-600">Active Shiprocket Carrier:</span>
-                      <span className="font-bold text-blue-700">Delhivery / BlueDart Express</span>
-                    </div>
+                    {(() => {
+                      const paidOrders = orders.filter(o => ['Paid', 'Processing', 'Printing', 'Quality Check', 'Packed', 'Shipped', 'Delivered'].includes(o.status));
+                      const prepaidPercent = totalOrds > 0 ? Math.round((paidOrders.length / totalOrds) * 100) : 0;
+                      const uniqueCouriers = Array.from(new Set(orders.map(o => o.courierName).filter(Boolean)));
+                      const courierLabel = uniqueCouriers.length > 0 ? uniqueCouriers.join(', ') : 'Pending Carrier Allocation';
+
+                      return (
+                        <>
+                          <div className="flex justify-between p-2.5 bg-white rounded-xl border border-neutral-200">
+                            <span className="text-neutral-600">Prepaid Verification Rate:</span>
+                            <span className="font-bold text-emerald-700">{totalOrds > 0 ? `${prepaidPercent}% (${paidOrders.length}/${totalOrds})` : 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between p-2.5 bg-white rounded-xl border border-neutral-200">
+                            <span className="text-neutral-600">Active Courier Partners:</span>
+                            <span className="font-bold text-blue-700">{courierLabel}</span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 

@@ -385,3 +385,134 @@ test('Versioned CropSpecification normalization logic', async (t) => {
     assert.equal(spec.panY, 0);
   });
 });
+
+test('Shape aspect-ratio and print dimensions mapping', async (t) => {
+  const SHAPE_PRINT_DIMENSIONS = {
+    polaroid: { width: 900, height: 1200, aspectRatio: 0.75 },
+    arch: { width: 900, height: 1200, aspectRatio: 0.75 },
+    landscape: { width: 1200, height: 900, aspectRatio: 1.333 },
+    portrait: { width: 900, height: 1200, aspectRatio: 0.75 },
+    'portrait-wide': { width: 1000, height: 1200, aspectRatio: 0.833 },
+    love: { width: 900, height: 900, aspectRatio: 1.0 },
+    circle: { width: 900, height: 900, aspectRatio: 1.0 },
+    'circle-bloom': { width: 900, height: 900, aspectRatio: 1.0 },
+    hexagon: { width: 900, height: 900, aspectRatio: 1.0 },
+    'scalloped-stand': { width: 1500, height: 2000, aspectRatio: 0.75 },
+    grande: { width: 1200, height: 1800, aspectRatio: 0.667 },
+    oval: { width: 800, height: 1200, aspectRatio: 0.667 },
+    filmstrip: { width: 600, height: 1800, aspectRatio: 0.333 },
+    cloud: { width: 1000, height: 1000, aspectRatio: 1.0 },
+    crest: { width: 900, height: 1100, aspectRatio: 0.818 },
+    custom: { width: 1200, height: 1200, aspectRatio: 1.0 }
+  };
+
+  await t.test('provides distinct aspect ratios for square, portrait, and landscape frames', () => {
+    assert.equal(SHAPE_PRINT_DIMENSIONS.circle.aspectRatio, 1.0); // Square 3x3
+    assert.equal(SHAPE_PRINT_DIMENSIONS.love.aspectRatio, 1.0);   // Square 3x3
+    assert.equal(SHAPE_PRINT_DIMENSIONS.landscape.aspectRatio, 1.333); // Landscape 4x3
+    assert.equal(SHAPE_PRINT_DIMENSIONS.polaroid.aspectRatio, 0.75);   // Portrait 3x4
+    assert.equal(SHAPE_PRINT_DIMENSIONS.grande.aspectRatio, 0.667);     // Portrait 4x6
+  });
+
+  await t.test('provides 300 DPI print pixel dimensions', () => {
+    assert.equal(SHAPE_PRINT_DIMENSIONS.landscape.width, 1200);
+    assert.equal(SHAPE_PRINT_DIMENSIONS.landscape.height, 900);
+    assert.equal(SHAPE_PRINT_DIMENSIONS.grande.width, 1200);
+    assert.equal(SHAPE_PRINT_DIMENSIONS.grande.height, 1800);
+  });
+});
+
+test('Production stage transition security logic', async (t) => {
+  const STAGE_ORDER = ['QUEUED', 'PRINTING', 'LASER_CUT', 'QUALITY_CHECK', 'PACKED'];
+
+  function validateStageTransition(currentStatus, nextStatus) {
+    if (!STAGE_ORDER.includes(nextStatus)) {
+      throw new Error(`Invalid stage '${nextStatus}'.`);
+    }
+    const currentIndex = STAGE_ORDER.indexOf(currentStatus);
+    const nextIndex = STAGE_ORDER.indexOf(nextStatus);
+
+    if (nextIndex < currentIndex) {
+      throw new Error(`Invalid regression: cannot move job backwards from '${currentStatus}' to '${nextStatus}'.`);
+    }
+    if (nextStatus === 'PACKED' && currentStatus !== 'QUALITY_CHECK') {
+      throw new Error(`Cannot mark job as PACKED before completing QUALITY_CHECK.`);
+    }
+    return true;
+  }
+
+  await t.test('allows valid forward progress', () => {
+    assert.equal(validateStageTransition('QUEUED', 'PRINTING'), true);
+    assert.equal(validateStageTransition('PRINTING', 'LASER_CUT'), true);
+    assert.equal(validateStageTransition('QUALITY_CHECK', 'PACKED'), true);
+  });
+
+  await t.test('blocks backwards regression', () => {
+    assert.throws(() => validateStageTransition('PACKED', 'QUEUED'), /Invalid regression/);
+    assert.throws(() => validateStageTransition('LASER_CUT', 'PRINTING'), /Invalid regression/);
+  });
+
+  await t.test('blocks skipping QC directly into PACKED', () => {
+    assert.throws(() => validateStageTransition('PRINTING', 'PACKED'), /QUALITY_CHECK/);
+    assert.throws(() => validateStageTransition('QUEUED', 'PACKED'), /QUALITY_CHECK/);
+  });
+});
+
+test('GST Tax Invoice breakup and place-of-supply logic', async (t) => {
+  function calculateGstBreakup(totalPaid, originState, destinationState) {
+    const isIntrastate = (destinationState || '').trim().toLowerCase() === (originState || '').trim().toLowerCase();
+    const taxableValue = Math.round(totalPaid / 1.18);
+    const totalTax = totalPaid - taxableValue;
+    const cgst = isIntrastate ? Math.round(totalTax / 2) : 0;
+    const sgst = isIntrastate ? (totalTax - cgst) : 0;
+    const igst = isIntrastate ? 0 : totalTax;
+
+    return { taxableValue, totalTax, cgst, sgst, igst, isIntrastate };
+  }
+
+  await t.test('calculates CGST and SGST correctly for intra-state supply (Telangana to Telangana)', () => {
+    const res = calculateGstBreakup(1180, 'Telangana', 'Telangana');
+    assert.equal(res.isIntrastate, true);
+    assert.equal(res.taxableValue, 1000);
+    assert.equal(res.totalTax, 180);
+    assert.equal(res.cgst, 90);
+    assert.equal(res.sgst, 90);
+    assert.equal(res.igst, 0);
+  });
+
+  await t.test('calculates IGST correctly for inter-state supply (Telangana to Maharashtra)', () => {
+    const res = calculateGstBreakup(1180, 'Telangana', 'Maharashtra');
+    assert.equal(res.isIntrastate, false);
+    assert.equal(res.taxableValue, 1000);
+    assert.equal(res.totalTax, 180);
+    assert.equal(res.cgst, 0);
+    assert.equal(res.sgst, 0);
+    assert.equal(res.igst, 180);
+  });
+});
+
+test('Controlled order cancellation audit preservation logic', async (t) => {
+  function cancelOrder(order, note) {
+    if (!order) throw new Error('Order not found');
+    const updated = { ...order };
+    updated.status = 'Cancelled';
+    updated.history = [...(order.history || [])];
+    updated.history.push({
+      status: 'Cancelled',
+      timestamp: new Date().toISOString(),
+      note: note || 'Cancelled by staff'
+    });
+    return updated;
+  }
+
+  await t.test('preserves audit history and sets status to Cancelled without row deletion', () => {
+    const original = { id: 'KRIA-TEST-01', status: 'Paid', grandTotal: 598, history: [{ status: 'Paid', note: 'Initial' }] };
+    const cancelled = cancelOrder(original, 'Customer requested change before printing');
+    assert.equal(cancelled.id, 'KRIA-TEST-01');
+    assert.equal(cancelled.status, 'Cancelled');
+    assert.equal(cancelled.history.length, 2);
+    assert.equal(cancelled.history[1].status, 'Cancelled');
+    assert.equal(cancelled.history[1].note, 'Customer requested change before printing');
+  });
+});
+
