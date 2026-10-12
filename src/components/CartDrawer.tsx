@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, Trash2, Plus, Minus, Lock, ShoppingBag, 
-  Sparkles, Truck, ArrowRight, Check, MessageSquare 
+  Sparkles, Truck, ArrowRight, Check, MessageSquare, ShieldCheck 
 } from 'lucide-react';
 import { CartItem } from '../types';
 
@@ -94,9 +94,9 @@ export default function CartDrawer({
         setPincodeMessage(data.error || 'Pincode not serviceable');
       }
     } catch (err: any) {
-      setPincodeVerified(true);
-      setPincodeMessage('Express Air (2-3 Days)');
-      setIsEditingPincode(false);
+      setPincodeVerified(false);
+      setPincodeMessage('Delivery estimate unavailable at this time. Will be confirmed at checkout.');
+      setIsEditingPincode(true);
     } finally {
       setIsVerifyingPincode(false);
     }
@@ -392,6 +392,12 @@ export default function CartDrawer({
                 <span>Express Delivery</span>
                 <span className="font-mono">{deliveryCharge === 0 ? 'FREE' : `₹${deliveryCharge}`}</span>
               </div>
+            </div>
+
+            {/* Reassurance Badge */}
+            <div className="flex items-center justify-center gap-1.5 py-1 text-[11px] text-neutral-500 font-sans text-center bg-neutral-50 rounded-lg border border-neutral-100">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+              <span>All taxes inclusive (18% GST) • No hidden charges</span>
             </div>
 
             {/* Primary Action Button: Proceed to Online Checkout */}

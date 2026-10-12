@@ -148,39 +148,50 @@ export async function saveOrder(order: any) {
     throw new Error(`CRITICAL: Order persistence failed in database: ${error.message}`);
   }
 
-  // Deduct inventory only on successful first-time insert with ledger record
+  // Deduct inventory only on successful first-time insert with verified ledger record
   if (Array.isArray(order.cart)) {
     for (const item of order.cart) {
-      try {
-        const shapeId = item.shapeId || 'custom';
-        const qtyToDeduct = item.quantity || 1;
+      const shapeId = item.shapeId || 'custom';
+      const qtyToDeduct = item.quantity || 1;
 
-        // Check if movement was already recorded for this order and item
-        const { data: existingMovement } = await supabase
-          .from('inventory_movements')
-          .select('id')
-          .eq('order_id', order.id)
-          .eq('product_id', shapeId)
-          .eq('movement_type', 'ORDER_DEDUCT')
-          .maybeSingle();
+      // Check if movement was already recorded for this order and item
+      const { data: existingMovement } = await supabase
+        .from('inventory_movements')
+        .select('id')
+        .eq('order_id', order.id)
+        .eq('product_id', shapeId)
+        .eq('movement_type', 'ORDER_DEDUCT')
+        .maybeSingle();
 
-        if (!existingMovement) {
-          // Record ledger entry
-          await supabase.from('inventory_movements').insert({
-            order_id: order.id,
-            product_id: shapeId,
-            quantity_changed: -qtyToDeduct,
-            movement_type: 'ORDER_DEDUCT'
-          });
+      if (!existingMovement) {
+        // Verify current stock level before decrementing
+        const { data: prod, error: prodErr } = await supabase.from('products').select('stock').eq('id', shapeId).maybeSingle();
+        if (prodErr) {
+          console.error(`Failed to verify stock for ${shapeId}:`, prodErr);
+        } else if (prod && typeof prod.stock === 'number' && prod.stock < qtyToDeduct) {
+          throw new Error(`CRITICAL: Insufficient inventory for product ${shapeId}. Available: ${prod.stock}, Requested: ${qtyToDeduct}`);
+        }
 
-          // Decrement product stock safely
-          const { data: prod } = await supabase.from('products').select('stock').eq('id', shapeId).maybeSingle();
-          if (prod && typeof prod.stock === 'number') {
-            await supabase.from('products').update({ stock: Math.max(0, prod.stock - qtyToDeduct) }).eq('id', shapeId);
+        // Record ledger entry
+        const { error: ledgerErr } = await supabase.from('inventory_movements').insert({
+          order_id: order.id,
+          product_id: shapeId,
+          quantity_changed: -qtyToDeduct,
+          movement_type: 'ORDER_DEDUCT'
+        });
+
+        if (ledgerErr) {
+          throw new Error(`CRITICAL: Failed to record inventory movement ledger for order ${order.id}: ${ledgerErr.message}`);
+        }
+
+        // Decrement product stock safely
+        if (prod && typeof prod.stock === 'number') {
+          const newStock = Math.max(0, prod.stock - qtyToDeduct);
+          const { error: updateErr } = await supabase.from('products').update({ stock: newStock }).eq('id', shapeId);
+          if (updateErr) {
+            throw new Error(`CRITICAL: Failed to update product stock for ${shapeId}: ${updateErr.message}`);
           }
         }
-      } catch (err) {
-        console.warn("Stock update/ledger error:", err);
       }
     }
   }
@@ -214,6 +225,47 @@ export async function saveOrder(order: any) {
   return { order, isDuplicate: false };
 }
 
+/**
+ * Update an existing order row (status changes, shipping updates, history appends, etc.)
+ * This is intentionally separate from saveOrder() which handles first-time creation only.
+ * Throws if the Supabase update fails so callers can surface real errors to admins.
+ */
+export async function updateOrder(order: any) {
+  if (!order.id) throw new Error('updateOrder: order.id is required');
+
+  const completeTotals = {
+    grandTotal: order.grandTotal,
+    subtotal: order.subtotal,
+    bulkDiscount: order.bulkDiscount || 0,
+    deliveryCharge: order.deliveryCharge || 0,
+    couponDiscount: order.couponDiscount || 0,
+    giftWrapFee: order.giftWrapFee || 0,
+  };
+
+  const { data, error } = await supabase
+    .from('orders')
+    .update({
+      status: order.status,
+      tracking_number: order.trackingNumber ?? null,
+      courier_name: order.courierName ?? null,
+      shipment_id: order.shipmentId ?? null,
+      shiprocket_order_id: order.shiprocketOrderId ?? null,
+      shiprocket_label_url: order.shiprocketLabelUrl ?? null,
+      delivery_estimate: order.deliveryEstimate ?? null,
+      totals_json: completeTotals,
+      history_json: order.history,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', order.id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`CRITICAL: updateOrder failed for ${order.id}: ${error.message}`);
+  }
+  return data;
+}
+
 export async function saveCheckoutSession(session: any) {
   const { error } = await supabase.from('checkout_sessions').upsert({
     id: session.id,
@@ -224,7 +276,11 @@ export async function saveCheckoutSession(session: any) {
     accepted_policies: session.acceptedPolicies ? 1 : 0,
     created_at: session.createdAt
   });
-  if (error) console.error('saveCheckoutSession error:', error);
+  // Throw loudly so checkout aborts before presenting a payment order to the customer.
+  // A missing session means a successful payment cannot be recovered into an order.
+  if (error) {
+    throw new Error(`Checkout session could not be saved — payment order not created. DB error: ${error.message}`);
+  }
 }
 
 export async function getCheckoutSession(razorpayOrderId: string) {
@@ -457,6 +513,57 @@ export async function updateProductionJobStatus(jobId: string, newStatus: string
     throw error;
   }
   return data;
+}
+
+/**
+ * Checks whether all items in the given cart have adequate stock available.
+ * Returns { available: true } or throws/returns { available: false, error: string }
+ */
+export async function checkInventoryAvailability(cart: any[]): Promise<{ available: boolean; error?: string }> {
+  if (!Array.isArray(cart) || cart.length === 0) {
+    return { available: true };
+  }
+
+  for (const item of cart) {
+    const shapeId = item.shapeId || 'custom';
+    const reqQty = Math.max(1, parseInt(item.quantity) || 1);
+
+    const { data: prod, error } = await supabase
+      .from('products')
+      .select('name, stock')
+      .eq('id', shapeId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`checkInventoryAvailability DB check notice for ${shapeId}:`, error.message);
+      continue;
+    }
+
+    if (prod && typeof prod.stock === 'number' && prod.stock < reqQty) {
+      const prodName = prod.name || item.shapeName || shapeId;
+      return {
+        available: false,
+        error: `Insufficient stock for "${prodName}". Requested: ${reqQty}, Available in warehouse: ${prod.stock}`
+      };
+    }
+  }
+
+  return { available: true };
+}
+
+/**
+ * Loads authoritative prices from the Supabase products catalog
+ */
+export async function getProductPrices(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.from('products').select('id, price');
+  if (error || !data) return {};
+  const prices: Record<string, number> = {};
+  for (const item of data) {
+    if (item.id && typeof item.price === 'number') {
+      prices[item.id] = item.price;
+    }
+  }
+  return prices;
 }
 
 

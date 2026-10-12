@@ -146,8 +146,41 @@ export default function App() {
   const [customizerPhotoName, setCustomizerPhotoName] = useState<string | null>(null);
 
   useEffect(() => {
-    // Initialize analytics event listener
+    // Initialize analytics event listener & capture UTMs
     initAnalytics(import.meta.env.VITE_META_PIXEL_ID, import.meta.env.VITE_GA_MEASUREMENT_ID);
+
+    // Deep-linking query params (?shape=heart, ?shape=filmstrip, etc.) for direct ad campaigns
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const shapeParam = searchParams.get('shape');
+      if (shapeParam) {
+        const clean = shapeParam.toLowerCase().trim();
+        const SHAPE_ALIASES: Record<string, MagnetShapeId> = {
+          heart: 'love',
+          love: 'love',
+          filmstrip: 'filmstrip',
+          film: 'filmstrip',
+          polaroid: 'polaroid',
+          arch: 'arch',
+          circle: 'circle',
+          round: 'circle',
+          hexagon: 'hexagon',
+          oval: 'oval',
+          grande: 'grande',
+          landscape: 'landscape',
+          portrait: 'portrait'
+        };
+        const resolvedShape = SHAPE_ALIASES[clean];
+        if (resolvedShape) {
+          setActiveWorkspaceShape(resolvedShape);
+          setTimeout(() => {
+            scrollToCustomizer();
+          }, 300);
+        }
+      }
+    } catch (e) {
+      console.warn('Deep link param resolution error:', e);
+    }
   }, []);
   const [customizerPhotoScale, setCustomizerPhotoScale] = useState<number>(1.0);
   const [customizerPhotoPanX, setCustomizerPhotoPanX] = useState<number>(0);

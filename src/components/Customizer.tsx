@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BASE_SHAPES, PRESET_PHOTOS, fetchLiveCatalogShapes } from '../data';
 import { MagnetShapeId, CustomOrder, CartItem, MagnetShape } from '../types';
+import { getStoredAttribution } from '../utils/analytics';
 
 // Mock checkout is disabled by default and must be explicitly enabled via VITE_ENABLE_MOCK=true.
 // This constant is evaluated at build time — it will be `false` in any production bundle
@@ -632,6 +633,17 @@ export default function Customizer({
             pincode: pin,
             error: undefined
           });
+
+          // Pincode-based auto-fill for City and State in checkout (Finding 11c)
+          const detectedCity = data.city || data.district || '';
+          const detectedState = data.state || '';
+          if (detectedCity || detectedState) {
+            setShippingDetails(prev => ({
+              ...prev,
+              city: prev.city ? prev.city : detectedCity,
+              state: prev.state ? prev.state : detectedState
+            }));
+          }
         } else {
           setServiceabilityResult({
             serviceable: false,
@@ -698,7 +710,8 @@ export default function Customizer({
           cart: persistedItemsToPay,
           shippingDetails,
           acceptedPolicies,
-          couponCode: appliedCoupon?.code || null
+          couponCode: appliedCoupon?.code || null,
+          attribution: getStoredAttribution()
         })
       });
 
@@ -1440,8 +1453,24 @@ export default function Customizer({
               </div>
             </div>
 
+            {/* Upfront Delivery Estimate Widget (12a) */}
+            <div className="bg-[#FAF8F5] border border-neutral-200/90 rounded-2xl p-3 text-xs space-y-1.5 shadow-2xs">
+              <div className="flex items-center justify-between text-neutral-800">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <Truck className="h-4 w-4 text-neutral-700 shrink-0" />
+                  <span className="font-serif">Estimated Express Delivery:</span>
+                </div>
+                <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  2–4 Days
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-500 font-sans leading-tight">
+                ⚡ Handcrafted & printed within 24 hours. Free express shipping on ₹699+.
+              </p>
+            </div>
+
             {/* Add To Tray Button (Adds item silently & provides inline checkmark feedback) */}
-            <div className="pt-4 border-t border-neutral-200/60 space-y-3">
+            <div className="pt-2 border-t border-neutral-200/60 space-y-3">
               <button
                 type="button"
                 onClick={handleAddToOrder}
@@ -1516,9 +1545,39 @@ export default function Customizer({
               )}
 
               {checkoutStep === 'details' && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
-                  {/* Left Column: Shipping Coordinates */}
-                  <div className="lg:col-span-7 space-y-4">
+                <div className="space-y-6">
+                  {/* Sticky Cropped Photo & Item Preview (12b) */}
+                  <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-xs pb-3 border-b border-neutral-100 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0 relative shadow-2xs">
+                        <img 
+                          src={photoUrl || activeShape.previewImage || '/images/Landingprofile.png'} 
+                          alt={activeShape.name} 
+                          className="h-full w-full object-cover"
+                          style={{
+                            transform: `scale(${photoScale}) translate(${photoPanX}px, ${photoPanY}px)`
+                          }}
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/Landingprofile.png'; }}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-serif font-medium text-neutral-900 truncate">
+                          {cart.length > 0 ? `${cart.length} item${cart.length > 1 ? 's' : ''} in cart` : activeShape.name}
+                        </p>
+                        <p className="text-[10px] font-mono text-neutral-500">
+                          {activeShape.name} • {activeShape.dimensions}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="font-mono text-xs font-bold text-neutral-900">₹{grandTotal}</span>
+                      <span className="block text-[9px] font-mono text-emerald-700 font-semibold">Taxes Included</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
+                    {/* Left Column: Shipping Coordinates */}
+                    <div className="lg:col-span-7 space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-neutral-100">
                       <Truck className="h-4 w-4 text-neutral-800" />
                       <h4 className="font-sans text-xs font-bold uppercase tracking-wider text-neutral-800">1. Delivery Coordinates</h4>
@@ -1730,10 +1789,17 @@ export default function Customizer({
                           </>
                         )}
                       </button>
+
+                      {/* Reassurance Badge (12c) */}
+                      <div className="flex items-center justify-center gap-1.5 pt-2 text-[10px] text-neutral-500 font-sans text-center">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <span>All taxes inclusive (18% GST) • 100% Secure Checkout • No hidden charges</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
               {checkoutStep === 'success' && (
                 <div className="text-center py-6 sm:py-8 max-w-md mx-auto space-y-4">

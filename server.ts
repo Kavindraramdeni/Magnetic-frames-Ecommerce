@@ -138,7 +138,10 @@ async function saveCheckoutSession(session: any) {
     accepted_policies: session.acceptedPolicies ? 1 : 0,
     created_at: session.createdAt
   });
-  if (error) console.error('saveCheckoutSession error', error);
+  // Throw loudly: a failed session means a successful payment cannot be recovered into an order.
+  if (error) {
+    throw new Error(`Checkout session could not be saved: ${error.message}`);
+  }
 }
 
 async function getCheckoutSession(razorpayOrderId: string) {
@@ -205,11 +208,32 @@ interface OrderTotals {
   grandTotal: number;
 }
 
-function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?: boolean): OrderTotals {
+let liveCatalogPrices: Record<string, number> = { ...SHAPE_PRICES };
+let lastPriceFetchTime = 0;
+
+export async function refreshLiveCatalogPrices(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (now - lastPriceFetchTime < 15000 && Object.keys(liveCatalogPrices).length > 0) {
+    return liveCatalogPrices;
+  }
+  try {
+    const dbPrices = await DB.getProductPrices();
+    if (dbPrices && Object.keys(dbPrices).length > 0) {
+      liveCatalogPrices = { ...SHAPE_PRICES, ...dbPrices };
+      lastPriceFetchTime = now;
+    }
+  } catch (err) {
+    console.warn("Could not fetch live catalog prices, using fallback:", err);
+  }
+  return liveCatalogPrices;
+}
+
+function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?: boolean, customPriceMap?: Record<string, number>): OrderTotals {
+  const prices = customPriceMap || liveCatalogPrices;
   let subtotal = 0;
   let itemCount = 0;
   cart.forEach((item: any) => {
-    const backendPrice = SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] || SHAPE_PRICES.custom;
+    const backendPrice = prices[item.shapeId] ?? SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] ?? SHAPE_PRICES.custom;
     const qty = Math.max(1, Math.min(99, parseInt(item.quantity) || 1));
     itemCount += qty;
     subtotal += backendPrice * qty;
@@ -950,8 +974,8 @@ async function createPaidOrderFromSession(session: any, paymentId: string, isMoc
     status: "Paid",
     cart: session.cart,
     shippingDetails: session.shippingDetails,
-    trackingNumber: undefined,
-    courierName: "Delhivery Air",
+    trackingNumber: null,
+    courierName: null,
     deliveryEstimate: "2-3 Business Days",
     transactionId: paymentId,
     createdAt: new Date().toISOString(),
@@ -961,7 +985,18 @@ async function createPaidOrderFromSession(session: any, paymentId: string, isMoc
     deliveryCharge: totals.deliveryCharge || 0,
     couponDiscount: totals.couponDiscount || 0,
     giftWrapFee: totals.giftWrapFee || 0,
-    history: [{ status: "Paid", timestamp: new Date().toISOString(), note: isMock ? "Development mock payment confirmed." : "Razorpay server-side payment confirmation captured." }]
+    history: [
+      { 
+        status: "Paid", 
+        timestamp: new Date().toISOString(), 
+        note: isMock ? "Development mock payment confirmed." : "Razorpay server-side payment confirmation captured." 
+      },
+      ...(session.attribution ? [{
+        status: "Attribution",
+        timestamp: new Date().toISOString(),
+        note: `Acquisition source: ${JSON.stringify(session.attribution)}`
+      }] : [])
+    ]
   };
 
   const saveResult = await DB.saveOrder(order);
@@ -1043,25 +1078,53 @@ async function processSuccessfulPayment(checkoutSessionId: string, paymentId: st
 
 const createCheckoutOrderHandler = async (req: express.Request, res: express.Response) => {
   try {
-    const { cart, shippingDetails, acceptedPolicies = true, couponCode } = req.body;
+    const { cart, shippingDetails, acceptedPolicies = true, couponCode, attribution } = req.body;
     const cartError = validateCart(cart);
     if (cartError) return res.status(400).json({ error: cartError });
     const shippingError = validateShippingDetails(shippingDetails);
     if (shippingError) return res.status(400).json({ error: shippingError });
+
+    // Inventory check before creating payment session: prevent orders for out-of-stock items
+    const stockCheck = await DB.checkInventoryAvailability(cart);
+    if (!stockCheck.available) {
+      return res.status(409).json({ error: stockCheck.error || "Some items in your cart are currently out of stock." });
+    }
+
+    // Refresh live prices from catalog to ensure 100% price consistency
+    await refreshLiveCatalogPrices();
     const { grandTotal, subtotal, deliveryCharge, bulkDiscount, couponDiscount } = calculateOrderTotals(cart, couponCode);
+
     const rzpKeyId = (process.env.RAZORPAY_KEY_ID || "").trim().replace(/['"]/g, "");
     const rzpKeySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim().replace(/['"]/g, "");
     if (!rzpKeyId || !rzpKeySecret) {
       if (!ENABLE_MOCK_CHECKOUT) return res.status(503).json({ error: "Payment gateway is not configured. Mock checkout is disabled outside development." });
       const mockOrderId = `order_mock_${crypto.randomUUID()}`;
-      await DB.saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: mockOrderId, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
+      await DB.saveCheckoutSession({ 
+        id: crypto.randomUUID(), 
+        razorpayOrderId: mockOrderId, 
+        cart, 
+        shippingDetails, 
+        totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, 
+        acceptedPolicies, 
+        createdAt: new Date().toISOString(),
+        attribution: attribution || null
+      });
       return res.json({ orderId: mockOrderId, amount: grandTotal * 100, currency: "INR", isMock: true, subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal, razorpayKeyId: "rzp_test_mock_key_studio_kria" });
     }
     const authString = Buffer.from(`${rzpKeyId}:${rzpKeySecret}`).toString("base64");
     const rzpResponse = await fetch("https://api.razorpay.com/v1/orders", { method: "POST", headers: { Authorization: `Basic ${authString}`, "Content-Type": "application/json" }, body: JSON.stringify({ amount: grandTotal * 100, currency: "INR", receipt: `receipt_kria_${Date.now()}` }) });
     if (!rzpResponse.ok) throw new Error(`Razorpay gateway error: ${await rzpResponse.text()}`);
     const rzpOrder: any = await rzpResponse.json();
-    await DB.saveCheckoutSession({ id: crypto.randomUUID(), razorpayOrderId: rzpOrder.id, cart, shippingDetails, totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, acceptedPolicies, createdAt: new Date().toISOString() });
+    await DB.saveCheckoutSession({ 
+      id: crypto.randomUUID(), 
+      razorpayOrderId: rzpOrder.id, 
+      cart, 
+      shippingDetails, 
+      totals: { subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal }, 
+      acceptedPolicies, 
+      createdAt: new Date().toISOString(),
+      attribution: attribution || null
+    });
     return res.json({ orderId: rzpOrder.id, amount: rzpOrder.amount, currency: rzpOrder.currency, isMock: false, subtotal, deliveryCharge, bulkDiscount, couponDiscount, grandTotal, razorpayKeyId: rzpKeyId });
   } catch (error: any) { res.status(500).json({ error: error.message || "Failed to establish a secure transaction session." }); }
 };
@@ -1071,10 +1134,17 @@ app.post("/api/razorpay/create-order", createCheckoutOrderHandler);
 
 app.post("/api/checkout/whatsapp-order", async (req, res) => {
   try {
-    const { cart = [], shippingDetails = {}, couponCode } = req.body || {};
+    const { cart = [], shippingDetails = {}, couponCode, attribution } = req.body || {};
     const cartError = validateCart(cart);
     if (cartError) return res.status(400).json({ error: cartError });
 
+    // Inventory check before creating WhatsApp order
+    const stockCheck = await DB.checkInventoryAvailability(cart);
+    if (!stockCheck.available) {
+      return res.status(409).json({ error: stockCheck.error || "Some items in your cart are currently out of stock." });
+    }
+
+    await refreshLiveCatalogPrices();
     const { grandTotal, subtotal, bulkDiscount, deliveryCharge, couponDiscount } = calculateOrderTotals(cart, couponCode);
     const orderId = await DB.generateOrderId("KRIA-WA");
 
@@ -1083,9 +1153,10 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
       status: "WhatsApp Order",
       cart,
       shippingDetails,
-      trackingNumber: `WA-${Math.floor(100000 + Math.random() * 900000)}`,
-      courierName: "Delhivery Air",
-      deliveryEstimate: "2-3 Business Days",
+      // Tracking details are intentionally null until Shiprocket shipment is created by admin.
+      trackingNumber: null,
+      courierName: null,
+      deliveryEstimate: "2-3 Business Days (after production)",
       transactionId: `WA_DIRECT_${Date.now()}`,
       createdAt: new Date().toISOString(),
       grandTotal,
@@ -1093,7 +1164,10 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
       bulkDiscount,
       deliveryCharge,
       couponDiscount,
-      history: [{ status: "WhatsApp Order", timestamp: new Date().toISOString(), note: "1-Click Direct WhatsApp order initiated by customer." }]
+      history: [
+        { status: "WhatsApp Order", timestamp: new Date().toISOString(), note: "1-Click Direct WhatsApp order initiated by customer." },
+        ...(attribution ? [{ status: "Attribution", timestamp: new Date().toISOString(), note: `Acquisition source: ${JSON.stringify(attribution)}` }] : [])
+      ]
     };
 
     await DB.saveOrder(order);
@@ -1474,16 +1548,15 @@ app.get("/api/admin/backups", requireAdmin, async (_req, res) => {
 });
 
 app.post("/api/admin/backups/trigger", requireAdmin, async (_req, res) => {
-  try {
-    const backupDir = path.join(process.cwd(), 'data', 'backups');
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(backupDir, `kria_backup_${timestamp}.sqlite`);
-    fs.writeFileSync(backupFile, Buffer.from([]));
-    return res.json({ success: true, message: "Database backup marker created successfully." });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+  // Real Supabase backup cannot be triggered from application code using the anon/service-role key.
+  // Use the Supabase Dashboard → Settings → Backups, or the Supabase Management API with a personal
+  // access token to schedule and download point-in-time recovery snapshots.
+  // Returning a false success here would be misleading and potentially dangerous.
+  return res.status(501).json({
+    error: "Automated backup not implemented.",
+    instructions: "Use the Supabase Dashboard (Settings → Backups) or pg_dump with the database connection string to create a real backup. Never rely on this endpoint for data safety.",
+    docsUrl: "https://supabase.com/docs/guides/platform/backups"
+  });
 });
 
 // 5. GET /shiprocket/courier/track
@@ -2004,29 +2077,37 @@ app.get("/sitemap.xml", async (_req, res) => {
 app.post("/api/orders/track", async (req, res) => {
   const { orderId, emailOrPhone } = req.body || {};
   if (!orderId || !emailOrPhone) return res.status(400).json({ error: "Order ID and email/phone are required." });
-  const allOrders = await DB.getOrders();
-  const order = allOrders.find((candidate: any) => candidate.id === orderId);
+
+  // Query the specific order directly — do not load all orders
+  const order = await DB.getOrderById(orderId);
   if (!order) return res.status(404).json({ error: "Order not found." });
+
   const lookup = String(emailOrPhone).toLowerCase().trim();
-  const email = String(order.shippingDetails?.email || "").toLowerCase();
+  const email = String(order.shippingDetails?.email || "").toLowerCase().trim();
   const phone = String(order.shippingDetails?.phone || "").replace(/\D/g, "");
   const lookupPhone = lookup.replace(/\D/g, "");
-  const phoneMatches = lookupPhone.length >= 4 && phone.endsWith(lookupPhone);
-  if (lookup !== email && !phoneMatches) return res.status(403).json({ error: "Order lookup details did not match." });
+
+  // Require full email match OR full 10-digit phone match (not just last 4 digits)
+  const emailMatches = lookup === email && email.length > 3;
+  const phoneMatches = lookupPhone.length >= 10 && phone === lookupPhone;
+  if (!emailMatches && !phoneMatches) {
+    return res.status(403).json({ error: "Order lookup details did not match." });
+  }
+
+  // Return only the fields needed for customer tracking — no payment amounts, no full address, no history
   return res.json({
     id: order.id,
     status: order.status,
-    trackingNumber: order.trackingNumber,
-    courierName: order.courierName,
-    deliveryEstimate: order.deliveryEstimate,
-    productionLeadTime: "24 Hours Custom Laser Cutting & UV Printing",
-    transitEstimate: "2-4 Business Days Express Shipping",
-    shippingAddressSummary: `${order.shippingDetails?.city}, ${order.shippingDetails?.state} - ${order.shippingDetails?.pincode}`,
+    trackingNumber: order.trackingNumber || null,
+    courierName: order.courierName || null,
+    deliveryEstimate: order.deliveryEstimate || null,
     createdAt: order.createdAt,
-    grandTotal: order.grandTotal,
-    history: order.history,
+    // Minimal destination hint (city + state only, no full address or pincode)
+    destinationCity: order.shippingDetails?.city || null,
+    destinationState: order.shippingDetails?.state || null,
   });
 });
+
 
 app.get("/api/admin/orders", requireAdmin, async (_req, res) => res.json({ success: true, orders: await DB.getOrders() }));
 
@@ -2067,15 +2148,36 @@ app.post("/api/admin/orders/recover-payments", requireAdmin, async (_req, res) =
   }
 });
 app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
-  const allOrders = await DB.getOrders();
-  const order = allOrders.find((o: any) => o.id === req.params.id);
-  if (!order) return res.status(404).json({ error: "Order record not found." });
-  order.status = req.body.status;
-  order.history.push({ status: req.body.status, timestamp: new Date().toISOString(), note: req.body.note || `Status updated to ${req.body.status}.` });
-  const notification = await notifyCustomer(order, `Status updated to ${req.body.status}`);
-  order.history.push({ status: "Notification", timestamp: new Date().toISOString(), note: notification.message });
-  await DB.saveOrder(order);
-  res.json({ success: true, order, notificationLog: notification.message });
+  try {
+    const allOrders = await DB.getOrders();
+    const order = allOrders.find((o: any) => o.id === req.params.id);
+    if (!order) return res.status(404).json({ error: "Order record not found." });
+
+    const VALID_STATUSES = [
+      "Pending", "WhatsApp Order", "Payment Verified", "Processing",
+      "Production", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Refunded"
+    ];
+    if (!VALID_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({ error: `Invalid status '${req.body.status}'.` });
+    }
+
+    order.status = req.body.status;
+    order.history = order.history || [];
+    order.history.push({
+      status: req.body.status,
+      timestamp: new Date().toISOString(),
+      note: req.body.note || `Status updated to ${req.body.status}.`
+    });
+    const notification = await notifyCustomer(order, `Status updated to ${req.body.status}`);
+    order.history.push({ status: "Notification", timestamp: new Date().toISOString(), note: notification.message });
+
+    // Use updateOrder (not saveOrder) — saveOrder returns early for existing transaction IDs
+    await DB.updateOrder(order);
+    res.json({ success: true, order, notificationLog: notification.message });
+  } catch (err: any) {
+    console.error("Order status update error:", err);
+    res.status(500).json({ error: err.message || "Failed to update order status." });
+  }
 });
 app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res) => {
   const allOrders = await DB.getOrders();
@@ -2229,19 +2331,25 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
   }
 });
 app.delete("/api/admin/orders/:id", requireAdmin, async (req, res) => {
-  const allOrders = await DB.getOrders();
-  const order = allOrders.find((o: any) => o.id === req.params.id);
-  if (!order) return res.status(404).json({ error: "Order not found." });
+  try {
+    const allOrders = await DB.getOrders();
+    const order = allOrders.find((o: any) => o.id === req.params.id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
 
-  order.status = "Cancelled";
-  order.history = order.history || [];
-  order.history.push({ 
-    status: "Cancelled", 
-    timestamp: new Date().toISOString(), 
-    note: "Order cancelled and archived by administrator." 
-  });
-  await DB.saveOrder(order);
-  res.json({ success: true, message: `Order ${req.params.id} marked as Cancelled. Audit trail preserved.` });
+    order.status = "Cancelled";
+    order.history = order.history || [];
+    order.history.push({
+      status: "Cancelled",
+      timestamp: new Date().toISOString(),
+      note: "Order cancelled and archived by administrator."
+    });
+    // Use updateOrder (not saveOrder) to persist the cancellation
+    await DB.updateOrder(order);
+    res.json({ success: true, message: `Order ${req.params.id} marked as Cancelled. Audit trail preserved.` });
+  } catch (err: any) {
+    console.error("Order cancel error:", err);
+    res.status(500).json({ error: err.message || "Failed to cancel order." });
+  }
 });
 
 const DEFAULT_CATALOG_PRODUCTS = [
@@ -2256,32 +2364,114 @@ const DEFAULT_CATALOG_PRODUCTS = [
   { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "4 × 6 in", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 }
 ];
 
-app.get("/api/products", async (_req, res) => {
+app.get(["/api/products", "/api/admin/products"], async (_req, res) => {
   try {
     const { data: products, error } = await DB.supabase.from("products").select("*").order("created_at", { ascending: false });
-    if (error) throw error;
+    if (error || !products || products.length === 0) {
+      return res.json({ success: true, products: DEFAULT_CATALOG_PRODUCTS });
+    }
     return res.json({ success: true, products });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.json({ success: true, products: DEFAULT_CATALOG_PRODUCTS });
   }
 });
 
 app.post("/api/admin/products", requireAdmin, async (req, res) => {
   try {
-    const { id, name, price, originalPrice, dimensions, description, shapeClass, frameRatio, tagline, isTrending } = req.body;
-    if (!id || !name || !price) return res.status(400).json({ error: "ID, Name, and Price are required." });
-    await DB.supabase.from("products").upsert({
-      id, name, price, original_price: originalPrice, dimensions, description, shape_class: shapeClass, frame_ratio: frameRatio, tagline, is_trending: isTrending ? 1 : 0
+    const { 
+      id, name, price, originalPrice, dimensions, description, 
+      shapeClass, shape, frameRatio, tagline, isTrending, stock 
+    } = req.body;
+
+    if (!name || price === undefined || price === null || price === '') {
+      return res.status(400).json({ error: "Product Name and Price are required." });
+    }
+
+    const productId = id && String(id).trim()
+      ? String(id).trim()
+      : String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `shape-${Date.now()}`;
+
+    const numPrice = Number(price);
+    if (isNaN(numPrice) || numPrice < 0) {
+      return res.status(400).json({ error: "Price must be a valid positive number." });
+    }
+
+    const stockNum = typeof stock === 'number' 
+      ? stock 
+      : (stock === 'Out of Stock' ? 0 : 500);
+
+    const resolvedShapeClass = shapeClass || shape || "Rectangle";
+    const resolvedDimensions = dimensions || "3 × 4 in";
+
+    const { error: upsertErr } = await DB.supabase.from("products").upsert({
+      id: productId,
+      name: String(name).trim(),
+      price: numPrice,
+      original_price: originalPrice ? Number(originalPrice) : Math.round(numPrice * 1.35),
+      dimensions: resolvedDimensions,
+      description: description || `Handcrafted acrylic magnetic frame featuring ${name}.`,
+      shape_class: resolvedShapeClass,
+      frame_ratio: frameRatio || "1:1",
+      tagline: tagline || `${name} luxury acrylic magnetic keepsake.`,
+      is_trending: isTrending ? 1 : 0,
+      stock: stockNum
     });
-    return res.json({ success: true, message: `Product ${name} saved successfully.` });
+
+    if (upsertErr) throw upsertErr;
+
+    // Immediately invalidate price cache so new price takes effect across entire checkout
+    lastPriceFetchTime = 0;
+
+    return res.json({ 
+      success: true, 
+      message: `Product "${name}" saved successfully.`,
+      product: { id: productId, name, price: numPrice, stock: stockNum }
+    });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    console.error("Admin product upsert error:", err);
+    return res.status(500).json({ error: err.message || "Failed to save product." });
   }
 });
 
-app.delete("/api/admin/products/:id", requireAdmin, async (req, res) => {
-  await DB.supabase.from("products").delete().eq("id", req.params.id);
-  res.json({ success: true, message: `Deleted product ${req.params.id}` });
+app.delete(["/api/admin/products/:id", "/api/admin/products"], requireAdmin, async (req, res) => {
+  const targetId = req.params.id || (req.query.id as string);
+  if (!targetId) return res.status(400).json({ error: "Product ID is required." });
+  const { error } = await DB.supabase.from("products").delete().eq("id", targetId);
+  if (error) return res.status(500).json({ error: error.message });
+  lastPriceFetchTime = 0;
+  res.json({ success: true, message: `Deleted product ${targetId}` });
+});
+
+// Dedicated Pincode Auto-fill Directory API (India Post Directory)
+app.get("/api/pincode/:pincode", async (req, res) => {
+  const pin = String(req.params.pincode || "").trim().replace(/\D/g, "");
+  if (pin.length !== 6 || !/^[1-9][0-9]{5}$/.test(pin)) {
+    return res.status(400).json({ error: "Invalid Indian PIN code format (must be 6 digits starting with 1-9)." });
+  }
+
+  try {
+    const postalRes = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+    if (postalRes.ok) {
+      const postalData: any = await postalRes.json();
+      if (Array.isArray(postalData) && postalData[0]?.Status === "Success" && Array.isArray(postalData[0]?.PostOffice) && postalData[0].PostOffice.length > 0) {
+        const po = postalData[0].PostOffice[0];
+        const city = po.District || po.Division || po.Name || "";
+        const state = po.State || "";
+        return res.json({
+          success: true,
+          pincode: pin,
+          city,
+          state,
+          district: city,
+          postOffices: postalData[0].PostOffice.map((p: any) => p.Name).slice(0, 5)
+        });
+      }
+    }
+    return res.status(404).json({ error: `Pincode ${pin} not found in postal directory.` });
+  } catch (err: any) {
+    console.error("Pincode lookup error:", err);
+    return res.status(500).json({ error: "Postal directory lookup service temporarily unavailable." });
+  }
 });
 
 // ----------------------------------------------------------------------

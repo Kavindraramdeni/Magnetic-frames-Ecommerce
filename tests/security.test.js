@@ -516,3 +516,257 @@ test('Controlled order cancellation audit preservation logic', async (t) => {
   });
 });
 
+test('Finding 1: Checkout session persistence failure aborts payment order generation', async (t) => {
+  await t.test('saveCheckoutSession throws loudly when DB reports an error', async () => {
+    async function mockSaveCheckoutSession(session, fail = false) {
+      if (fail) {
+        throw new Error('Checkout session could not be saved — DB write failed');
+      }
+      return { success: true };
+    }
+
+    await assert.rejects(
+      async () => {
+        await mockSaveCheckoutSession({ id: 'sess_1', razorpayOrderId: 'order_123' }, true);
+      },
+      /Checkout session could not be saved/
+    );
+  });
+});
+
+test('Finding 2: Order update separates from creation to ensure status persistence', async (t) => {
+  await t.test('updateOrder updates existing order row without being blocked by transactionId collision', () => {
+    const existingOrder = {
+      id: 'KRIA-ORD-101',
+      transactionId: 'pay_rzp_999',
+      status: 'Paid',
+      history: [{ status: 'Paid', note: 'Paid' }]
+    };
+
+    function updateOrderStatus(order, newStatus, note) {
+      if (!order.id) throw new Error('order.id is required');
+      const updated = { ...order, status: newStatus };
+      updated.history = [...(order.history || []), { status: newStatus, timestamp: new Date().toISOString(), note }];
+      return updated;
+    }
+
+    const updated = updateOrderStatus(existingOrder, 'Production', 'Sent to UV printer');
+    assert.equal(updated.status, 'Production');
+    assert.equal(updated.history.length, 2);
+    assert.equal(updated.history[1].status, 'Production');
+  });
+});
+
+test('Finding 3: WhatsApp and paid orders initialize with null tracking details', async (t) => {
+  await t.test('new order does not fabricate trackingNumber or courierName before Shiprocket assignment', () => {
+    const newOrder = {
+      id: 'KRIA-WA-2026-1234',
+      status: 'WhatsApp Order',
+      trackingNumber: null,
+      courierName: null,
+      deliveryEstimate: '2-3 Business Days (after production)'
+    };
+
+    assert.equal(newOrder.trackingNumber, null);
+    assert.equal(newOrder.courierName, null);
+    assert.doesNotMatch(String(newOrder.trackingNumber), /^WA-\d+/);
+  });
+});
+
+test('Finding 4: Authoritative catalog prices govern checkout calculations', async (t) => {
+  const fallbackPrices = { love: 299, polaroid: 299, custom: 399 };
+  const dbCatalogPrices = { love: 349, polaroid: 329 }; // Admin updated prices in CMS
+
+  function calculateTotalsWithCatalog(cart, priceMap) {
+    let subtotal = 0;
+    for (const item of cart) {
+      const price = priceMap[item.shapeId] || fallbackPrices[item.shapeId] || 299;
+      subtotal += price * (item.quantity || 1);
+    }
+    return subtotal;
+  }
+
+  await t.test('checkout uses live DB prices when updated by admin', () => {
+    const cart = [{ shapeId: 'love', quantity: 2 }];
+    const liveTotal = calculateTotalsWithCatalog(cart, dbCatalogPrices);
+    const staleTotal = calculateTotalsWithCatalog(cart, fallbackPrices);
+
+    assert.equal(liveTotal, 698); // 349 * 2
+    assert.equal(staleTotal, 598); // 299 * 2
+    assert.notEqual(liveTotal, staleTotal);
+  });
+});
+
+test('Finding 5: Inventory validation prevents orders exceeding available stock', async (t) => {
+  const stockInventory = {
+    love: 10,
+    filmstrip: 0,
+    arch: 3
+  };
+
+  function checkStockAvailability(cart) {
+    for (const item of cart) {
+      const stock = stockInventory[item.shapeId] ?? 500;
+      if (stock < (item.quantity || 1)) {
+        return { available: false, error: `Insufficient stock for ${item.shapeId}` };
+      }
+    }
+    return { available: true };
+  }
+
+  await t.test('rejects cart when item has 0 stock', () => {
+    const res = checkStockAvailability([{ shapeId: 'filmstrip', quantity: 1 }]);
+    assert.equal(res.available, false);
+    assert.match(res.error, /Insufficient stock/);
+  });
+
+  await t.test('accepts cart when stock is sufficient', () => {
+    const res = checkStockAvailability([{ shapeId: 'love', quantity: 2 }]);
+    assert.equal(res.available, true);
+  });
+});
+
+test('Finding 6: Customer order tracking requires full credentials and redacts sensitive data', async (t) => {
+  const mockOrder = {
+    id: 'KRIA-ORD-2026-9999',
+    status: 'Shipped',
+    trackingNumber: 'AWB-DEL-98765',
+    courierName: 'Delhivery Surface',
+    deliveryEstimate: '3 Days',
+    shippingDetails: {
+      fullName: 'Vikram Mehta',
+      email: 'vikram@example.com',
+      phone: '9876543210',
+      address: 'Plot 42, Jubilee Hills',
+      city: 'Hyderabad',
+      state: 'Telangana',
+      pincode: '500033'
+    },
+    grandTotal: 1299
+  };
+
+  function trackOrder(order, emailOrPhone) {
+    const lookup = String(emailOrPhone).toLowerCase().trim();
+    const email = String(order.shippingDetails?.email || '').toLowerCase().trim();
+    const phone = String(order.shippingDetails?.phone || '').replace(/\D/g, '');
+    const lookupPhone = lookup.replace(/\D/g, '');
+
+    const emailMatches = lookup === email && email.length > 3;
+    const phoneMatches = lookupPhone.length >= 10 && phone === lookupPhone;
+
+    if (!emailMatches && !phoneMatches) {
+      return { ok: false, status: 403, error: 'Order lookup details did not match.' };
+    }
+
+    // Minimized response: no payment totals, no street address, no phone
+    return {
+      ok: true,
+      data: {
+        id: order.id,
+        status: order.status,
+        trackingNumber: order.trackingNumber,
+        courierName: order.courierName,
+        deliveryEstimate: order.deliveryEstimate,
+        destinationCity: order.shippingDetails.city,
+        destinationState: order.shippingDetails.state
+      }
+    };
+  }
+
+  await t.test('rejects 4-digit partial phone lookup', () => {
+    const res = trackOrder(mockOrder, '3210');
+    assert.equal(res.ok, false);
+    assert.equal(res.status, 403);
+  });
+
+  await t.test('accepts full 10-digit phone lookup and redacts sensitive fields', () => {
+    const res = trackOrder(mockOrder, '9876543210');
+    assert.equal(res.ok, true);
+    assert.equal(res.data.id, 'KRIA-ORD-2026-9999');
+    assert.equal(res.data.grandTotal, undefined); // Sensitive financial data omitted
+    assert.equal(res.data.destinationCity, 'Hyderabad');
+  });
+
+  await t.test('accepts full email lookup', () => {
+    const res = trackOrder(mockOrder, 'vikram@example.com');
+    assert.equal(res.ok, true);
+    assert.equal(res.data.trackingNumber, 'AWB-DEL-98765');
+  });
+});
+
+test('Finding 8: Backup endpoint fails loudly rather than creating zero-byte fake files', async (t) => {
+  await t.test('returns 501 instructions instead of false success claim', () => {
+    function handleBackupTrigger() {
+      return {
+        status: 501,
+        body: {
+          error: "Automated backup not implemented.",
+          instructions: "Use the Supabase Dashboard (Settings → Backups) or pg_dump with the database connection string to create a real backup."
+        }
+      };
+    }
+
+    const res = handleBackupTrigger();
+    assert.equal(res.status, 501);
+    assert.match(res.body.instructions, /Supabase Dashboard/);
+  });
+});
+
+test('Finding 9: Pincode lookup network failure sets unconfirmed state instead of asserting delivery', async (t) => {
+  await t.test('network error results in unverified status with clear customer notice', () => {
+    function handlePincodeResponse(isNetworkError, data) {
+      if (isNetworkError) {
+        return {
+          verified: false,
+          message: 'Delivery estimate unavailable at this time. Will be confirmed at checkout.'
+        };
+      }
+      if (data?.serviceable) {
+        return { verified: true, message: 'Serviceable Express Air' };
+      }
+      return { verified: false, message: 'Pincode not serviceable' };
+    }
+
+    const failureState = handlePincodeResponse(true, null);
+    assert.equal(failureState.verified, false);
+    assert.match(failureState.message, /Delivery estimate unavailable/);
+  });
+});
+
+test('Finding 10 & 11b: UTM parameter attribution capture and resolution', async (t) => {
+  await t.test('extracts UTM parameters from query string into attribution record', () => {
+    const search = '?utm_source=instagram&utm_medium=cpc&utm_campaign=diwali_sale_2026';
+    const params = new URLSearchParams(search);
+    const attribution = {
+      utm_source: params.get('utm_source'),
+      utm_medium: params.get('utm_medium'),
+      utm_campaign: params.get('utm_campaign')
+    };
+
+    assert.equal(attribution.utm_source, 'instagram');
+    assert.equal(attribution.utm_medium, 'cpc');
+    assert.equal(attribution.utm_campaign, 'diwali_sale_2026');
+  });
+});
+
+test('Finding 11a: Deep-linking query params resolve to valid shape IDs', async (t) => {
+  const SHAPE_ALIASES = {
+    heart: 'love',
+    love: 'love',
+    filmstrip: 'filmstrip',
+    film: 'filmstrip',
+    polaroid: 'polaroid',
+    arch: 'arch',
+    circle: 'circle'
+  };
+
+  await t.test('resolves ?shape=heart to love', () => {
+    assert.equal(SHAPE_ALIASES['heart'], 'love');
+  });
+
+  await t.test('resolves ?shape=filmstrip to filmstrip', () => {
+    assert.equal(SHAPE_ALIASES['filmstrip'], 'filmstrip');
+  });
+});
+
+

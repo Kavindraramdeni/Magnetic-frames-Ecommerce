@@ -1,4 +1,4 @@
-// Analytics & Meta Pixel / Google Analytics 4 Event Tracker
+// Analytics & Meta Pixel / Google Analytics 4 Event Tracker with UTM Attribution Tracking
 
 declare global {
   interface Window {
@@ -8,8 +8,90 @@ declare global {
   }
 }
 
+export interface UTMAttribution {
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  referrer?: string;
+  landing_page?: string;
+  timestamp?: string;
+}
+
+const ATTRIBUTION_STORAGE_KEY = 'kria_utm_attribution';
+
+/**
+ * Captures UTM parameters and referrer from URL and saves to sessionStorage
+ */
+export const captureUrlAttribution = (): UTMAttribution | null => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get('utm_source');
+    const utmMedium = params.get('utm_medium');
+    const utmCampaign = params.get('utm_campaign');
+    const utmContent = params.get('utm_content');
+    const utmTerm = params.get('utm_term');
+    const ref = params.get('ref');
+
+    // Only overwrite if URL contains attribution parameters or nothing stored yet
+    if (utmSource || utmCampaign || utmMedium || ref) {
+      const attribution: UTMAttribution = {
+        utm_source: utmSource || ref || undefined,
+        utm_medium: utmMedium || undefined,
+        utm_campaign: utmCampaign || undefined,
+        utm_content: utmContent || undefined,
+        utm_term: utmTerm || undefined,
+        referrer: document.referrer || undefined,
+        landing_page: window.location.pathname,
+        timestamp: new Date().toISOString()
+      };
+      sessionStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(attribution));
+      return attribution;
+    }
+
+    const existing = sessionStorage.getItem(ATTRIBUTION_STORAGE_KEY);
+    if (existing) {
+      return JSON.parse(existing);
+    }
+
+    // Capture organic referrer if coming from external site
+    if (document.referrer && !document.referrer.includes(window.location.hostname)) {
+      const organicAttribution: UTMAttribution = {
+        referrer: document.referrer,
+        landing_page: window.location.pathname,
+        timestamp: new Date().toISOString()
+      };
+      sessionStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(organicAttribution));
+      return organicAttribution;
+    }
+  } catch (err) {
+    console.warn('Could not parse or persist UTM attribution', err);
+  }
+
+  return null;
+};
+
+/**
+ * Returns currently stored UTM attribution for order checkout payloads
+ */
+export const getStoredAttribution = (): UTMAttribution | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(ATTRIBUTION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const initAnalytics = (metaPixelId?: string, gaMeasurementId?: string) => {
   if (typeof window === 'undefined') return;
+
+  // 1. Immediately capture URL UTM campaign parameters on page load
+  captureUrlAttribution();
 
   // Initialize Meta Pixel if ID provided
   if (metaPixelId && !window.fbq) {
@@ -77,12 +159,15 @@ export const trackAddToCart = (item: { shapeId: string; shapeName: string; price
 
 export const trackInitiateCheckout = (cart: any[], total: number) => {
   if (typeof window === 'undefined') return;
+  const attribution = getStoredAttribution();
 
   if (window.fbq) {
     window.fbq('track', 'InitiateCheckout', {
       num_items: cart.length,
       value: total,
-      currency: 'INR'
+      currency: 'INR',
+      ...(attribution?.utm_source && { utm_source: attribution.utm_source }),
+      ...(attribution?.utm_campaign && { utm_campaign: attribution.utm_campaign })
     });
   }
 
@@ -90,22 +175,27 @@ export const trackInitiateCheckout = (cart: any[], total: number) => {
     window.gtag('event', 'begin_checkout', {
       currency: 'INR',
       value: total,
-      items: cart.map(i => ({ item_id: i.shapeId, item_name: i.shapeName, price: i.price, quantity: i.quantity }))
+      items: cart.map(i => ({ item_id: i.shapeId, item_name: i.shapeName, price: i.price, quantity: i.quantity })),
+      ...(attribution?.utm_source && { campaign_source: attribution.utm_source }),
+      ...(attribution?.utm_campaign && { campaign_name: attribution.utm_campaign })
     });
   }
 
-  console.log('📊 [ANALYTICS LOG] InitiateCheckout event fired for total:', total);
+  console.log('📊 [ANALYTICS LOG] InitiateCheckout event fired for total:', total, 'Attribution:', attribution);
 };
 
 export const trackPurchase = (orderId: string, total: number, cart: any[]) => {
   if (typeof window === 'undefined') return;
+  const attribution = getStoredAttribution();
 
   if (window.fbq) {
     window.fbq('track', 'Purchase', {
       value: total,
       currency: 'INR',
       order_id: orderId,
-      num_items: cart.length
+      num_items: cart.length,
+      ...(attribution?.utm_source && { utm_source: attribution.utm_source }),
+      ...(attribution?.utm_campaign && { utm_campaign: attribution.utm_campaign })
     });
   }
 
@@ -114,9 +204,11 @@ export const trackPurchase = (orderId: string, total: number, cart: any[]) => {
       transaction_id: orderId,
       value: total,
       currency: 'INR',
-      items: cart.map(i => ({ item_id: i.shapeId, item_name: i.shapeName, price: i.price, quantity: i.quantity }))
+      items: cart.map(i => ({ item_id: i.shapeId, item_name: i.shapeName, price: i.price, quantity: i.quantity })),
+      ...(attribution?.utm_source && { campaign_source: attribution.utm_source }),
+      ...(attribution?.utm_campaign && { campaign_name: attribution.utm_campaign })
     });
   }
 
-  console.log('📊 [ANALYTICS LOG] Purchase event fired for order:', orderId, total);
+  console.log('📊 [ANALYTICS LOG] Purchase event fired for order:', orderId, total, 'Attribution:', attribution);
 };
