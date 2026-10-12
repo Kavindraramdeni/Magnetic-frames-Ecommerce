@@ -94,94 +94,7 @@ const serializeOrder = (order: any) => ({
   history: JSON.parse(order.history_json),
 });
 
-async function getOrders() {
-  const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-  if (error) { console.error('getOrders error', error); return []; }
-  return data.map(serializeOrder);
-}
 
-async function saveOrder(order: any) {
-  const { error } = await supabase.from('orders').upsert({
-    id: order.id,
-    status: order.status,
-    cart_json: order.cart,
-    shipping_json: order.shippingDetails,
-    tracking_number: order.trackingNumber,
-    courier_name: order.courierName,
-    delivery_estimate: order.deliveryEstimate,
-    transaction_id: order.transactionId,
-    totals_json: { grandTotal: order.grandTotal, subtotal: order.subtotal, bulkDiscount: order.bulkDiscount, deliveryCharge: order.deliveryCharge },
-    history_json: order.history,
-    created_at: order.createdAt
-  });
-  if (error) console.error('saveOrder error', error);
-
-  if (Array.isArray(order.cart)) {
-    for (const item of order.cart) {
-      // Supabase does not have an atomic stock decrement in raw JS insert without RPC.
-      // But we can do a quick fetch and update for now.
-      const { data } = await supabase.from('products').select('stock').eq('id', item.shapeId).single();
-      if (data) {
-        await supabase.from('products').update({ stock: Math.max(0, data.stock - (item.quantity || 1)) }).eq('id', item.shapeId);
-      }
-    }
-  }
-}
-
-async function saveCheckoutSession(session: any) {
-  const { error } = await supabase.from('checkout_sessions').upsert({
-    id: session.id,
-    razorpay_order_id: session.razorpayOrderId,
-    cart_json: session.cart,
-    shipping_json: session.shippingDetails || {},
-    totals_json: session.totals,
-    accepted_policies: session.acceptedPolicies ? 1 : 0,
-    created_at: session.createdAt
-  });
-  // Throw loudly: a failed session means a successful payment cannot be recovered into an order.
-  if (error) {
-    throw new Error(`Checkout session could not be saved: ${error.message}`);
-  }
-}
-
-async function getCheckoutSession(razorpayOrderId: string) {
-  const { data, error } = await supabase.from('checkout_sessions').select('*').eq('razorpay_order_id', razorpayOrderId).single();
-  if (error || !data) return null;
-  return {
-    id: data.id,
-    razorpayOrderId: data.razorpay_order_id,
-    cart: data.cart_json,
-    shippingDetails: data.shipping_json,
-    totals: data.totals_json,
-    acceptedPolicies: Boolean(data.accepted_policies),
-    createdAt: data.created_at,
-  };
-}
-
-async function savePaymentEvent(event: any) {
-  const { error } = await supabase.from('payment_events').insert({
-    id: event.id,
-    provider: event.provider,
-    event_type: event.eventType,
-    external_payment_id: event.externalPaymentId,
-    external_order_id: event.externalOrderId,
-    payload_json: event.payload,
-    processed_at: event.processedAt
-  });
-  if (error) console.error('savePaymentEvent error', error);
-}
-
-async function generateOrderId(prefix = "KRIA"): Promise<string> {
-  const now = new Date();
-  const datePart = now.toISOString().slice(2, 10).replace(/-/g, "");
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const randomPart = require('crypto').randomInt(1000, 10_000);
-    const orderId = `${prefix}-${datePart}-${randomPart}`;
-    const { data } = await supabase.from('orders').select('id').eq('id', orderId).maybeSingle();
-    if (!data) return orderId;
-  }
-  return `${prefix}-${datePart}-${require('crypto').randomUUID().slice(0, 8).toUpperCase()}`;
-}
 
 function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
   const auth = req.headers.authorization || "";
@@ -228,6 +141,60 @@ export async function refreshLiveCatalogPrices(): Promise<Record<string, number>
   return liveCatalogPrices;
 }
 
+export interface B2bTier {
+  minQty: number;
+  maxQty: number;
+  discountPercent: number;
+  label?: string;
+}
+
+export const DEFAULT_B2B_TIERS: B2bTier[] = [
+  { minQty: 5, maxQty: 10, discountPercent: 10, label: "5-10 Frames (10% OFF)" },
+  { minQty: 11, maxQty: 25, discountPercent: 20, label: "11-25 Frames (20% OFF)" },
+  { minQty: 26, maxQty: 50, discountPercent: 30, label: "26-50 Frames (30% OFF)" },
+  { minQty: 51, maxQty: 999, discountPercent: 40, label: "50+ Frames Bulk (40% OFF)" },
+];
+
+let cachedB2bTiers: B2bTier[] = DEFAULT_B2B_TIERS;
+let lastB2bTiersFetchTime = 0;
+
+export async function refreshLiveB2bTiers(): Promise<B2bTier[]> {
+  const now = Date.now();
+  if (now - lastB2bTiersFetchTime < 30_000) {
+    return cachedB2bTiers;
+  }
+  try {
+    const { data } = await supabase.from("business_settings").select("value").eq("key", "b2b_tiers").maybeSingle();
+    if (data?.value) {
+      const parsed = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        cachedB2bTiers = parsed.map((t: any) => ({
+          minQty: Number(t.minQty) || 0,
+          maxQty: Number(t.maxQty) || 999,
+          discountPercent: Number(t.discountPercent) || 0,
+          label: t.label || `${t.minQty}-${t.maxQty} Frames (${t.discountPercent}% OFF)`
+        }));
+        lastB2bTiersFetchTime = now;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch live B2B tiers, using default:", err);
+  }
+  return cachedB2bTiers;
+}
+
+export function calculateBulkDiscount(itemCount: number, subtotal: number, tiers: B2bTier[] = cachedB2bTiers): number {
+  if (itemCount < 5 || subtotal <= 0) return 0;
+  // Sort descending by minQty to match highest applicable bracket
+  const sorted = [...tiers].sort((a, b) => b.minQty - a.minQty);
+  for (const tier of sorted) {
+    if (itemCount >= tier.minQty) {
+      return Math.round((subtotal * tier.discountPercent) / 100);
+    }
+  }
+  return 0;
+}
+
 function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?: boolean, customPriceMap?: Record<string, number>): OrderTotals {
   const prices = customPriceMap || liveCatalogPrices;
   let subtotal = 0;
@@ -239,7 +206,7 @@ function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?
     subtotal += backendPrice * qty;
   });
 
-  const bulkDiscount = itemCount >= 10 ? Math.round(subtotal * 0.15) : 0;
+  const bulkDiscount = calculateBulkDiscount(itemCount, subtotal);
   let couponDiscount = 0;
   let forceFreeShipping = false;
 
@@ -313,7 +280,7 @@ async function sendWhatsAppNotification(order: any, event: string) {
     parameters: [
       { name: "name", value: order.shippingDetails?.fullName },
       { name: "order_id", value: order.id },
-      { name: "tracking", value: order.trackingNumber || "SRW-8910" },
+      { name: "tracking", value: order.trackingNumber || "Pending Dispatch" },
       { name: "courier", value: order.courierName || "Express Air" },
       { name: "total", value: `₹${order.grandTotal}` }
     ]
@@ -362,17 +329,29 @@ async function notifyCustomer(order: any, event: string) {
     timestamp: new Date().toISOString()
   };
 
-  const configuredChannels = [
-    ["email", process.env.EMAIL_WEBHOOK_URL || process.env.NOTIFICATION_WEBHOOK_URL],
-    ["sms", process.env.SMS_WEBHOOK_URL],
-  ].filter(([, url]) => Boolean(url)) as [string, string][];
+  const channelsDispatched: string[] = [];
+  if (whatsappSent) channelsDispatched.push("WhatsApp");
 
-  if (configuredChannels.length > 0) {
-    await Promise.all(configuredChannels.map(async ([, url]) => await postNotificationWebhook(url, payload)));
+  const emailUrl = process.env.EMAIL_WEBHOOK_URL || process.env.NOTIFICATION_WEBHOOK_URL;
+  const smsUrl = process.env.SMS_WEBHOOK_URL;
+
+  if (emailUrl) {
+    const emailSent = await postNotificationWebhook(emailUrl, payload);
+    if (emailSent) channelsDispatched.push("Email");
+  }
+  if (smsUrl) {
+    const smsSent = await postNotificationWebhook(smsUrl, payload);
+    if (smsSent) channelsDispatched.push("SMS");
   }
 
-  console.log(`[AUTOMATED MULTI-CHANNEL NOTIFICATION SENT] [WhatsApp, Email, SMS]: ${eventMsg}`);
-  return { sent: true, channel: "whatsapp,email,sms", message: eventMsg };
+  const anySent = channelsDispatched.length > 0;
+  console.log(`[AUTOMATED NOTIFICATION] Dispatched via [${channelsDispatched.join(", ") || "none"}]: ${eventMsg}`);
+  return { 
+    sent: anySent, 
+    channels: channelsDispatched, 
+    status: anySent ? `Delivered via ${channelsDispatched.join(", ")}` : "No Active Notification Providers Configured",
+    message: eventMsg 
+  };
 }
 
 let shiprocketTokenCache: { token: string; expiresAt: number } | null = null;
@@ -952,7 +931,7 @@ async function syncOrderToShiprocket(order: any) {
           ? `Shiprocket live shipment #${shipData.order_id} created with AWB ${finalAwb} (${finalCourier})`
           : `Shiprocket live shipment #${shipData.order_id} created. AWB assignment pending.`
       });
-      await DB.saveOrder(order);
+      await DB.updateOrder(order);
       return true;
     } else {
       console.error("Shiprocket adhoc order creation failed:", shipData);
@@ -1092,6 +1071,7 @@ const createCheckoutOrderHandler = async (req: express.Request, res: express.Res
 
     // Refresh live prices from catalog to ensure 100% price consistency
     await refreshLiveCatalogPrices();
+    await refreshLiveB2bTiers();
     const { grandTotal, subtotal, deliveryCharge, bulkDiscount, couponDiscount } = calculateOrderTotals(cart, couponCode);
 
     const rzpKeyId = (process.env.RAZORPAY_KEY_ID || "").trim().replace(/['"]/g, "");
@@ -1145,6 +1125,7 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
     }
 
     await refreshLiveCatalogPrices();
+    await refreshLiveB2bTiers();
     const { grandTotal, subtotal, bulkDiscount, deliveryCharge, couponDiscount } = calculateOrderTotals(cart, couponCode);
     const orderId = await DB.generateOrderId("KRIA-WA");
 
@@ -1708,7 +1689,46 @@ app.post("/api/webhooks/razorpay", async (req, res) => {
       if (session) {
         await createPaidOrderFromSession(session, paymentId, false);
       } else {
-        console.warn(`[WEBHOOK] No checkout session found for order ${payment.order_id}.`);
+        console.warn(`[WEBHOOK] No checkout session found for order ${payment.order_id}. Initiating fallback recovery order.`);
+        const grandTotal = Math.round((payment.amount || 0) / 100);
+        const recoveryOrder = {
+          id: await DB.generateOrderId("KRIA-REC"),
+          status: "Paid",
+          cart: [{
+            shapeId: "custom",
+            quantity: 1,
+            price: grandTotal,
+            shapeName: "Captured Payment (Auto-Recovered Order)",
+            previewUrl: null
+          }],
+          shippingDetails: {
+            fullName: (payment.notes && (payment.notes.name || payment.notes.fullName || payment.notes.customer_name)) || "Razorpay Customer",
+            email: payment.email || "",
+            phone: payment.contact || "",
+            address: (payment.notes && payment.notes.address) || "Address pending verification",
+            city: (payment.notes && payment.notes.city) || "",
+            state: (payment.notes && payment.notes.state) || "",
+            pincode: (payment.notes && payment.notes.pincode) || ""
+          },
+          trackingNumber: null,
+          courierName: null,
+          deliveryEstimate: "3-5 Business Days",
+          transactionId: paymentId,
+          grandTotal,
+          subtotal: grandTotal,
+          bulkDiscount: 0,
+          deliveryCharge: 0,
+          couponDiscount: 0,
+          giftWrapFee: 0,
+          history: [{
+            status: "Paid",
+            timestamp: new Date().toISOString(),
+            note: `Payment ₹${grandTotal} captured directly via Razorpay webhook. Auto-recovery order created.`
+          }],
+          createdAt: new Date().toISOString()
+        };
+        await DB.saveOrder(recoveryOrder);
+        await notifyCustomer(recoveryOrder, "Payment Received (Session Recovered)");
       }
     } catch (err) {
       console.error("Webhook payment process error:", err);
@@ -1726,7 +1746,7 @@ app.post("/api/webhooks/razorpay", async (req, res) => {
           timestamp: new Date().toISOString(),
           note: `Payment failed webhook received: ${payment.error_description || "Transaction declined by bank/gateway"}`
         });
-        await DB.saveOrder(existing);
+        await DB.updateOrder(existing);
       }
     } catch (failErr) {
       console.error("Failed payment status record error:", failErr);
@@ -1746,7 +1766,7 @@ app.post("/api/webhooks/razorpay", async (req, res) => {
           timestamp: new Date().toISOString(),
           note: `Refund of ₹${(refund.amount || 0) / 100} processed via webhook (${refund.id})`
         });
-        await DB.saveOrder(existing);
+        await DB.updateOrder(existing);
       }
     } catch (refErr) {
       console.error("Refund status record error:", refErr);
@@ -1813,7 +1833,7 @@ app.post(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/we
         note: `Shiprocket scan update: "${statusText}".${scanNote}`
       });
 
-      await DB.saveOrder(order);
+      await DB.updateOrder(order);
       await notifyCustomer(order, `Courier Tracking Update: ${statusText}`);
     }
 
@@ -1828,17 +1848,59 @@ app.post(["/api/webhooks/shiprocket", "/api/webhooks/courier-tracking", "/api/we
 // BUSINESS SETTINGS & WAREHOUSE MANAGEMENT ENDPOINTS
 // ----------------------------------------------------------------------
 
-app.get(["/api/admin/settings", "/api/settings"], async (_req, res) => {
-  return res.json(await getBusinessSettings());
+const PUBLIC_SETTING_KEYS = new Set([
+  "company_name",
+  "store_name",
+  "support_email",
+  "support_phone",
+  "instagram_handle",
+  "announcement_banner",
+  "return_policy_days",
+  "shipping_free_threshold",
+  "currency_symbol",
+  "tax_inclusive",
+  "b2b_tiers",
+  "brand_tagline"
+]);
+
+// Public sanitized settings endpoint (sensitive bank accounts, IFSC, secret keys are never returned)
+app.get("/api/settings", async (_req, res) => {
+  try {
+    const all = await getBusinessSettings();
+    const publicSettings: Record<string, any> = {};
+    for (const [key, val] of Object.entries(all)) {
+      if (PUBLIC_SETTING_KEYS.has(key)) {
+        publicSettings[key] = val;
+      }
+    }
+    return res.json(publicSettings);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to fetch settings." });
+  }
+});
+
+// Admin full settings endpoint (Protected with bearer token)
+app.get("/api/admin/settings", requireAdmin, async (_req, res) => {
+  try {
+    return res.json(await getBusinessSettings());
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to fetch admin settings." });
+  }
 });
 
 app.post("/api/admin/settings", requireAdmin, async (req, res) => {
   try {
     const settings = req.body || {};
     for (const [key, value] of Object.entries(settings)) {
-      if (typeof value === "string" || typeof value === "number") {
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         await supabase.from("business_settings").upsert({ key, value: String(value) });
+      } else if (typeof value === "object" && value !== null) {
+        await supabase.from("business_settings").upsert({ key, value: JSON.stringify(value) });
       }
+    }
+    // Invalidate cached B2B tiers if b2b_tiers setting was updated
+    if ("b2b_tiers" in settings) {
+      lastB2bTiersFetchTime = 0;
     }
     return res.json({ success: true, settings: await getBusinessSettings() });
   } catch (err: any) {
@@ -1996,7 +2058,7 @@ app.post("/api/shiprocket/create-shipment", requireAdmin, async (req, res) => {
           note: `Production shipment created on Shiprocket. AWB: ${order.trackingNumber} (${order.courierName})`
         });
 
-        await DB.saveOrder(order);
+        await DB.updateOrder(order);
         return res.json({ success: true, trackingNumber: order.trackingNumber, labelPdfUrl, shipmentId });
       } else {
         const errorText = await shipResponse.text();
@@ -2040,7 +2102,7 @@ app.post("/api/shiprocket/schedule-pickup", requireAdmin, async (req, res) => {
         timestamp: new Date().toISOString(),
         note: `Courier pickup scheduled from ${wh.city} (${wh.pincode}) warehouse. Collection pending.`
       });
-      await DB.saveOrder(order);
+      await DB.updateOrder(order);
       return res.json({ success: true, message: "Pickup scheduled with courier executive.", shiprocket: pickupData });
     } else {
       return res.status(400).json({ error: pickupData.message || "Shiprocket rejected pickup request." });
@@ -2161,14 +2223,32 @@ app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
       return res.status(400).json({ error: `Invalid status '${req.body.status}'.` });
     }
 
-    order.status = req.body.status;
+    const currentStatus = order.status;
+    const nextStatus = req.body.status;
+
+    // Guard: Terminal states cannot transition back to active fulfillment
+    if ((currentStatus === "Cancelled" || currentStatus === "Refunded") && nextStatus !== currentStatus) {
+      return res.status(400).json({ 
+        error: `Cannot update order ${order.id}: Order is already ${currentStatus}. Create a new order or append an audit note instead.` 
+      });
+    }
+
+    // Guard: Delivered orders cannot regress to earlier fulfillment states
+    const PRE_DELIVERY_STATUSES = ["Pending", "Payment Verified", "Processing", "Production", "Packed", "Shipped", "Out for Delivery"];
+    if (currentStatus === "Delivered" && PRE_DELIVERY_STATUSES.includes(nextStatus)) {
+      return res.status(400).json({ 
+        error: `Invalid status transition: Order ${order.id} is already Delivered and cannot regress to ${nextStatus}.` 
+      });
+    }
+
+    order.status = nextStatus;
     order.history = order.history || [];
     order.history.push({
-      status: req.body.status,
+      status: nextStatus,
       timestamp: new Date().toISOString(),
-      note: req.body.note || `Status updated to ${req.body.status}.`
+      note: req.body.note || `Status transitioned from ${currentStatus} to ${nextStatus} by administrator.`
     });
-    const notification = await notifyCustomer(order, `Status updated to ${req.body.status}`);
+    const notification = await notifyCustomer(order, `Status updated to ${nextStatus}`);
     order.history.push({ status: "Notification", timestamp: new Date().toISOString(), note: notification.message });
 
     // Use updateOrder (not saveOrder) — saveOrder returns early for existing transaction IDs
@@ -2183,6 +2263,13 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
   const allOrders = await DB.getOrders();
   const order = allOrders.find((o: any) => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: "Order record not found." });
+
+  // Disallow creating shipments for cancelled or refunded orders
+  if (order.status === "Cancelled" || order.status === "Refunded") {
+    return res.status(400).json({ 
+      error: `Cannot create Shiprocket shipment: Order ${order.id} is already ${order.status}.` 
+    });
+  }
 
   // Retries aware of partial success: do not recreate if shipment was already established
   if (order.shipmentId) {
@@ -2311,7 +2398,7 @@ app.post("/api/admin/orders/:id/sync-shiprocket", requireAdmin, async (req, res)
         ? `Shiprocket shipment #${shipmentId} created with live AWB ${finalAwb} via ${finalCourier || 'Courier'}.`
         : `Shiprocket shipment #${shipmentId} created (order #${shipData.order_id}). AWB assignment pending.`
     });
-    await DB.saveOrder(order);
+    await DB.updateOrder(order);
 
     return res.json({ 
       success: true, 

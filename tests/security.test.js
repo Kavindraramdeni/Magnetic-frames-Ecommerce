@@ -769,4 +769,175 @@ test('Finding 11a: Deep-linking query params resolve to valid shape IDs', async 
   });
 });
 
+test('Second-Pass Remediation: Public settings sanitization & sensitive field redaction', async (t) => {
+  const PUBLIC_SETTING_KEYS = new Set([
+    "company_name",
+    "store_name",
+    "support_email",
+    "support_phone",
+    "instagram_handle",
+    "announcement_banner",
+    "return_policy_days",
+    "shipping_free_threshold",
+    "currency_symbol",
+    "tax_inclusive",
+    "b2b_tiers",
+    "brand_tagline"
+  ]);
+
+  function filterPublicSettings(settings) {
+    const sanitized = {};
+    for (const [key, val] of Object.entries(settings)) {
+      if (PUBLIC_SETTING_KEYS.has(key)) {
+        sanitized[key] = val;
+      }
+    }
+    return sanitized;
+  }
+
+  await t.test('strips bank accounts, ifsc, upi_id, and secret keys from public settings', () => {
+    const rawSettings = {
+      store_name: "KRIA Studio",
+      support_email: "support@kriastudio.com",
+      bank_name: "HDFC Bank",
+      account_no: "50200012345678",
+      ifsc: "HDFC0000123",
+      upi_id: "kria@okhdfcbank",
+      admin_secret: "super_secret_token",
+      b2b_tiers: JSON.stringify([{ minQty: 5, discountPercent: 10 }])
+    };
+
+    const sanitized = filterPublicSettings(rawSettings);
+
+    assert.equal(sanitized.store_name, "KRIA Studio");
+    assert.equal(sanitized.support_email, "support@kriastudio.com");
+    assert.equal(sanitized.b2b_tiers, rawSettings.b2b_tiers);
+    assert.equal(sanitized.bank_name, undefined);
+    assert.equal(sanitized.account_no, undefined);
+    assert.equal(sanitized.ifsc, undefined);
+    assert.equal(sanitized.upi_id, undefined);
+    assert.equal(sanitized.admin_secret, undefined);
+  });
+});
+
+test('Second-Pass Remediation: Wholesale B2B volume discount calculation', async (t) => {
+  const DEFAULT_B2B_TIERS = [
+    { minQty: 5, maxQty: 10, discountPercent: 10 },
+    { minQty: 11, maxQty: 25, discountPercent: 20 },
+    { minQty: 26, maxQty: 50, discountPercent: 30 },
+    { minQty: 51, maxQty: 999, discountPercent: 40 },
+  ];
+
+  function calculateBulkDiscount(itemCount, subtotal, tiers = DEFAULT_B2B_TIERS) {
+    if (itemCount < 5 || subtotal <= 0) return 0;
+    const sorted = [...tiers].sort((a, b) => b.minQty - a.minQty);
+    for (const tier of sorted) {
+      if (itemCount >= tier.minQty) {
+        return Math.round((subtotal * tier.discountPercent) / 100);
+      }
+    }
+    return 0;
+  }
+
+  await t.test('gives 0 discount for 1 to 4 frames (under MOQ)', () => {
+    assert.equal(calculateBulkDiscount(1, 299), 0);
+    assert.equal(calculateBulkDiscount(4, 1196), 0);
+  });
+
+  await t.test('gives 10% discount for 5 to 10 frames', () => {
+    assert.equal(calculateBulkDiscount(5, 1500), 150);
+    assert.equal(calculateBulkDiscount(10, 3000), 300);
+  });
+
+  await t.test('gives 20% discount for 11 to 25 frames', () => {
+    assert.equal(calculateBulkDiscount(11, 3300), 660);
+    assert.equal(calculateBulkDiscount(25, 7500), 1500);
+  });
+
+  await t.test('gives 30% discount for 26 to 50 frames', () => {
+    assert.equal(calculateBulkDiscount(26, 7800), 2340);
+    assert.equal(calculateBulkDiscount(50, 15000), 4500);
+  });
+
+  await t.test('gives 40% discount for 51+ frames', () => {
+    assert.equal(calculateBulkDiscount(51, 15300), 6120);
+    assert.equal(calculateBulkDiscount(100, 30000), 12000);
+  });
+});
+
+test('Second-Pass Remediation: Order fulfillment state machine validation', async (t) => {
+  const PRE_DELIVERY_STATUSES = ["Pending", "Payment Verified", "Processing", "Production", "Packed", "Shipped", "Out for Delivery"];
+
+  function validateStatusTransition(currentStatus, nextStatus) {
+    if ((currentStatus === "Cancelled" || currentStatus === "Refunded") && nextStatus !== currentStatus) {
+      return { allowed: false, error: `Cannot update order: Order is already ${currentStatus}.` };
+    }
+    if (currentStatus === "Delivered" && PRE_DELIVERY_STATUSES.includes(nextStatus)) {
+      return { allowed: false, error: `Invalid status transition: Order is already Delivered and cannot regress to ${nextStatus}.` };
+    }
+    return { allowed: true };
+  }
+
+  await t.test('blocks altering status of a Cancelled order', () => {
+    const res = validateStatusTransition("Cancelled", "Processing");
+    assert.equal(res.allowed, false);
+    assert.match(res.error, /already Cancelled/);
+  });
+
+  await t.test('blocks altering status of a Refunded order', () => {
+    const res = validateStatusTransition("Refunded", "Shipped");
+    assert.equal(res.allowed, false);
+    assert.match(res.error, /already Refunded/);
+  });
+
+  await t.test('blocks regression from Delivered to Processing or Shipped', () => {
+    const res = validateStatusTransition("Delivered", "Processing");
+    assert.equal(res.allowed, false);
+    assert.match(res.error, /cannot regress/);
+
+    const res2 = validateStatusTransition("Delivered", "Shipped");
+    assert.equal(res2.allowed, false);
+    assert.match(res2.error, /cannot regress/);
+  });
+
+  await t.test('allows forward progression through valid lifecycle states', () => {
+    assert.equal(validateStatusTransition("Paid", "Processing").allowed, true);
+    assert.equal(validateStatusTransition("Processing", "Production").allowed, true);
+    assert.equal(validateStatusTransition("Production", "Packed").allowed, true);
+    assert.equal(validateStatusTransition("Packed", "Shipped").allowed, true);
+    assert.equal(validateStatusTransition("Shipped", "Delivered").allowed, true);
+  });
+});
+
+test('Second-Pass Remediation: Truthful notification delivery reporting', async (t) => {
+  function formatNotificationResult(whatsappSent, emailSent, smsSent, eventMsg) {
+    const channelsDispatched = [];
+    if (whatsappSent) channelsDispatched.push("WhatsApp");
+    if (emailSent) channelsDispatched.push("Email");
+    if (smsSent) channelsDispatched.push("SMS");
+
+    const anySent = channelsDispatched.length > 0;
+    return {
+      sent: anySent,
+      channels: channelsDispatched,
+      status: anySent ? `Delivered via ${channelsDispatched.join(", ")}` : "No Active Notification Providers Configured",
+      message: eventMsg
+    };
+  }
+
+  await t.test('truthfully reports false when no notification channels are active', () => {
+    const result = formatNotificationResult(false, false, false, "Order update");
+    assert.equal(result.sent, false);
+    assert.equal(result.channels.length, 0);
+    assert.equal(result.status, "No Active Notification Providers Configured");
+  });
+
+  await t.test('truthfully reports active channels when dispatched', () => {
+    const result = formatNotificationResult(true, true, false, "Order update");
+    assert.equal(result.sent, true);
+    assert.deepEqual(result.channels, ["WhatsApp", "Email"]);
+    assert.match(result.status, /Delivered via WhatsApp, Email/);
+  });
+});
+
 

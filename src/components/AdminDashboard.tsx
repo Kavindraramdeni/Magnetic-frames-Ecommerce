@@ -1946,9 +1946,9 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                   <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest mt-1">GST Tax Invoice / Bill of Supply</p>
                   <div className="text-[11px] font-mono text-neutral-600 mt-2 space-y-0.5">
                     <p><strong>{businessSettings.company_name || warehouseForm.name || 'KRIA STUDIO'}</strong></p>
-                    <p>{warehouseForm.address1 || 'Shop no 9, Mallikarjuna Towers, Radha Krishna Rd'}{warehouseForm.address2 ? `, ${warehouseForm.address2}` : ''}</p>
-                    <p>{warehouseForm.city || 'Hyderabad'}, {warehouseForm.state || 'Telangana'} - {warehouseForm.pincode || '500085'}</p>
-                    <p>GSTIN: {businessSettings.gstin || warehouseForm.gstin || '36AAAFK7892P1Z0'} | State: {warehouseForm.state || 'Telangana'}</p>
+                    <p>{warehouseForm.address1 || businessSettings.registered_address || 'Operating Facility on File'}{warehouseForm.address2 ? `, ${warehouseForm.address2}` : ''}</p>
+                    <p>{warehouseForm.city || 'Hyderabad'}, {warehouseForm.state || 'Telangana'}{warehouseForm.pincode ? ` - ${warehouseForm.pincode}` : ''}</p>
+                    <p>GSTIN: {businessSettings.gstin || warehouseForm.gstin || 'Unregistered / Exempt'} | State: {warehouseForm.state || 'Telangana'}</p>
                     <p>Email: {businessSettings.support_email || 'kriatechgroup@gmail.com'} | Phone: {businessSettings.support_phone || '+91 9392576792'}</p>
                   </div>
                 </div>

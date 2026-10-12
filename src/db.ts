@@ -150,46 +150,67 @@ export async function saveOrder(order: any) {
 
   // Deduct inventory only on successful first-time insert with verified ledger record
   if (Array.isArray(order.cart)) {
-    for (const item of order.cart) {
-      const shapeId = item.shapeId || 'custom';
-      const qtyToDeduct = item.quantity || 1;
+    // 1. Attempt atomic PostgreSQL RPC deduction first (row locks + transactional ledger insert)
+    let rpcSucceeded = false;
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('deduct_inventory_atomic', {
+        p_order_id: order.id,
+        p_items: order.cart
+      });
+      if (!rpcErr && rpcRes?.success) {
+        rpcSucceeded = true;
+      } else if (rpcErr && !rpcErr.message.includes('function') && !rpcErr.message.includes('does not exist')) {
+        // If RPC failed due to insufficient stock or logic error, fail loudly!
+        throw new Error(`CRITICAL: Inventory deduction failed: ${rpcErr.message}`);
+      }
+    } catch (rpcEx: any) {
+      if (rpcEx.message?.includes('CRITICAL:')) throw rpcEx;
+      // RPC function might not yet be installed in remote instance; fall back to verified client ledger check
+    }
 
-      // Check if movement was already recorded for this order and item
-      const { data: existingMovement } = await supabase
-        .from('inventory_movements')
-        .select('id')
-        .eq('order_id', order.id)
-        .eq('product_id', shapeId)
-        .eq('movement_type', 'ORDER_DEDUCT')
-        .maybeSingle();
+    // 2. Client-side verified ledger check fallback
+    if (!rpcSucceeded) {
+      for (const item of order.cart) {
+        const shapeId = item.shapeId || 'custom';
+        const qtyToDeduct = item.quantity || 1;
 
-      if (!existingMovement) {
-        // Verify current stock level before decrementing
-        const { data: prod, error: prodErr } = await supabase.from('products').select('stock').eq('id', shapeId).maybeSingle();
-        if (prodErr) {
-          console.error(`Failed to verify stock for ${shapeId}:`, prodErr);
-        } else if (prod && typeof prod.stock === 'number' && prod.stock < qtyToDeduct) {
-          throw new Error(`CRITICAL: Insufficient inventory for product ${shapeId}. Available: ${prod.stock}, Requested: ${qtyToDeduct}`);
-        }
+        // Check if movement was already recorded for this order and item
+        const { data: existingMovement } = await supabase
+          .from('inventory_movements')
+          .select('id')
+          .eq('order_id', order.id)
+          .eq('product_id', shapeId)
+          .eq('movement_type', 'ORDER_DEDUCT')
+          .maybeSingle();
 
-        // Record ledger entry
-        const { error: ledgerErr } = await supabase.from('inventory_movements').insert({
-          order_id: order.id,
-          product_id: shapeId,
-          quantity_changed: -qtyToDeduct,
-          movement_type: 'ORDER_DEDUCT'
-        });
+        if (!existingMovement) {
+          // Verify current stock level before decrementing
+          const { data: prod, error: prodErr } = await supabase.from('products').select('stock').eq('id', shapeId).maybeSingle();
+          if (prodErr) {
+            console.error(`Failed to verify stock for ${shapeId}:`, prodErr);
+          } else if (prod && typeof prod.stock === 'number' && prod.stock < qtyToDeduct) {
+            throw new Error(`CRITICAL: Insufficient inventory for product ${shapeId}. Available: ${prod.stock}, Requested: ${qtyToDeduct}`);
+          }
 
-        if (ledgerErr) {
-          throw new Error(`CRITICAL: Failed to record inventory movement ledger for order ${order.id}: ${ledgerErr.message}`);
-        }
+          // Record ledger entry
+          const { error: ledgerErr } = await supabase.from('inventory_movements').insert({
+            order_id: order.id,
+            product_id: shapeId,
+            quantity_changed: -qtyToDeduct,
+            movement_type: 'ORDER_DEDUCT'
+          });
 
-        // Decrement product stock safely
-        if (prod && typeof prod.stock === 'number') {
-          const newStock = Math.max(0, prod.stock - qtyToDeduct);
-          const { error: updateErr } = await supabase.from('products').update({ stock: newStock }).eq('id', shapeId);
-          if (updateErr) {
-            throw new Error(`CRITICAL: Failed to update product stock for ${shapeId}: ${updateErr.message}`);
+          if (ledgerErr) {
+            throw new Error(`CRITICAL: Failed to record inventory movement ledger for order ${order.id}: ${ledgerErr.message}`);
+          }
+
+          // Decrement product stock safely
+          if (prod && typeof prod.stock === 'number') {
+            const newStock = Math.max(0, prod.stock - qtyToDeduct);
+            const { error: updateErr } = await supabase.from('products').update({ stock: newStock }).eq('id', shapeId);
+            if (updateErr) {
+              throw new Error(`CRITICAL: Failed to update product stock for ${shapeId}: ${updateErr.message}`);
+            }
           }
         }
       }
