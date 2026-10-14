@@ -12,8 +12,9 @@ import CheckoutPage from './components/CheckoutPage';
 import MobileDock from './components/MobileDock';
 import GalleryPage from './components/GalleryPage';
 import BOGOModal from './components/BOGOModal';
+import ReturnGiftDetailPage from './components/ReturnGiftDetailPage';
 import { initAnalytics } from './utils/analytics';
-import { MagnetShapeId, CartItem } from './types';
+import { MagnetShapeId, CartItem, ReturnGiftProduct } from './types';
 
 
 function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
@@ -73,7 +74,8 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery' | 'return-gift-detail'>('home');
+  const [selectedReturnGift, setSelectedReturnGift] = useState<ReturnGiftProduct | null>(null);
   const [isBOGOOpen, setIsBOGOOpen] = useState(false);
   const [adminToken, setAdminToken] = useState<string>(() => {
     try {
@@ -251,6 +253,12 @@ export default function App() {
     setCurrentView('gallery');
   };
 
+  const handleOpenReturnGiftDetail = (gift: ReturnGiftProduct) => {
+    setSelectedReturnGift(gift);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentView('return-gift-detail');
+  };
+
   const handleAddToCart = (item: CartItem) => {
     setCart((prev) => [...prev, item]);
     setIsCartOpen(true);
@@ -419,6 +427,17 @@ export default function App() {
           onCustomize={() => goStudio()}
           onOpenReturnGifts={handleOpenReturnGifts}
         />
+      ) : currentView === 'return-gift-detail' && selectedReturnGift ? (
+        <ReturnGiftDetailPage
+          gift={selectedReturnGift}
+          onBackToHome={goHome}
+          onAddToCart={handleAddToCart}
+          onDirectCheckout={handleDirectCheckout}
+          onCustomizeShape={(shapeId) => {
+            setActiveWorkspaceShape(shapeId);
+            goStudio(shapeId);
+          }}
+        />
       ) : (
         <StoreHome 
           onCustomize={goStudio}
@@ -426,6 +445,7 @@ export default function App() {
           onDirectCheckout={handleDirectCheckout}
           onOpenGallery={handleOpenGallery}
           onOpenBOGO={() => setIsBOGOOpen(true)}
+          onOpenReturnGiftDetail={handleOpenReturnGiftDetail}
         />
       )}
 

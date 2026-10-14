@@ -578,7 +578,7 @@ export default function FrameStudio({
                         : 'bg-transparent text-neutral-700 hover:bg-white'
                     }`}
                   >
-                    {opt.label} · ₹{opt.price}
+                    {opt.label}
                   </button>
                 );
               })}

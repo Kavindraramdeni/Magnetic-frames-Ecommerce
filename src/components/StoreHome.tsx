@@ -13,6 +13,7 @@ interface StoreHomeProps {
   onDirectCheckout?: (item: CartItem) => void;
   onOpenGallery?: () => void;
   onOpenBOGO?: () => void;
+  onOpenReturnGiftDetail?: (gift: ReturnGiftProduct) => void;
 }
 
 export default function StoreHome({ 
@@ -20,7 +21,8 @@ export default function StoreHome({
   onAddToCart, 
   onDirectCheckout,
   onOpenGallery,
-  onOpenBOGO 
+  onOpenBOGO,
+  onOpenReturnGiftDetail
 }: StoreHomeProps) {
   // Exactly the 4 customizable frame products
   const customizableFrames: MagnetShape[] = BASE_SHAPES.filter(s => 
@@ -218,26 +220,23 @@ export default function StoreHome({
                     ₹{shape.price}
                   </span>
                 </div>
-                <p className="text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">
-                  {shape.description}
-                </p>
 
-                {/* Available Sizes Pills */}
+                {/* Available Sizes Pills: Only size, without price */}
                 {shape.sizes && shape.sizes.length > 0 && (
                   <div className="pt-2">
                     <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-400 font-semibold block mb-1">
                       Available Sizes:
                     </span>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {shape.sizes.map((s) => (
                         <button
                           key={s.size}
                           type="button"
                           onClick={() => onCustomize(shape.id, s.size)}
-                          className="px-2 py-0.5 rounded-md bg-[#FAF8F5] hover:bg-neutral-900 hover:text-white border border-neutral-200 text-[10px] font-mono text-neutral-700 transition cursor-pointer"
-                          title={`Customize ${shape.name} in ${s.size} for ₹${s.price}`}
+                          className="px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-neutral-900 hover:text-white border border-neutral-200 text-[10px] font-mono text-neutral-800 transition cursor-pointer font-medium"
+                          title={`Customize ${shape.name} in ${s.size}`}
                         >
-                          {s.label} · ₹{s.price}
+                          {s.label}
                         </button>
                       ))}
                     </div>
@@ -291,10 +290,13 @@ export default function StoreHome({
               return (
                 <div
                   key={gift.id}
-                  className="bg-white rounded-3xl border border-neutral-200/90 p-4 shadow-xs hover:shadow-lg transition-all flex flex-col justify-between"
+                  className="bg-white rounded-3xl border border-neutral-200/90 p-4 shadow-xs hover:shadow-lg transition-all flex flex-col justify-between group"
                 >
-                  {/* Fixed Art Frame Preview */}
-                  <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-[#1a1714] mb-3.5 group">
+                  {/* Fixed Art Frame Preview - Click opens separate product page */}
+                  <div 
+                    onClick={() => onOpenReturnGiftDetail ? onOpenReturnGiftDetail(gift) : handleAddReturnGift(gift)}
+                    className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-[#1a1714] mb-3.5 cursor-pointer"
+                  >
                     <img
                       src={gift.imageUrl}
                       alt={gift.name}
@@ -310,6 +312,11 @@ export default function StoreHome({
                         ₹{gift.price}
                       </span>
                     </div>
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="rounded-full bg-white text-neutral-900 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider shadow-md">
+                        View &amp; Customize →
+                      </span>
+                    </div>
                   </div>
 
                   {/* Info */}
@@ -317,72 +324,41 @@ export default function StoreHome({
                     <span className="text-[10px] font-mono text-[#A38A6E] font-semibold block uppercase">
                       {gift.category}
                     </span>
-                    <h3 className="font-serif text-base font-medium text-neutral-950 leading-snug">
+                    <h3 
+                      onClick={() => onOpenReturnGiftDetail && onOpenReturnGiftDetail(gift)}
+                      className="font-serif text-base font-medium text-neutral-950 leading-snug cursor-pointer hover:underline"
+                    >
                       {gift.name}
                     </h3>
-                    <p className="text-[11px] text-neutral-500 line-clamp-2">
-                      {gift.description}
-                    </p>
-                    <div className="text-[10px] text-neutral-400 font-mono pt-1">
+                    <div className="text-[10px] text-neutral-500 font-mono">
                       Size: {gift.dimensions} · 3mm Acrylic
                     </div>
                   </div>
 
-                  {/* Quantity Selector + Fast Add Buttons */}
+                  {/* Action Buttons: Customize / View Details (opens separate page) & Quick Add */}
                   <div className="pt-4 space-y-2">
-                    {/* Quantity Selector */}
-                    <div className="flex items-center justify-between bg-[#FAF8F5] rounded-xl border border-neutral-200/80 px-2 py-1">
-                      <span className="text-[10px] font-mono text-neutral-500 uppercase">Quantity</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleQtyChange(gift.id, -1)}
-                          className="h-6 w-6 rounded-lg bg-white border border-neutral-200 text-neutral-700 flex items-center justify-center hover:bg-neutral-100 cursor-pointer text-xs"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="font-mono text-xs font-bold text-neutral-900 min-w-5 text-center">
-                          {qty}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleQtyChange(gift.id, 1)}
-                          className="h-6 w-6 rounded-lg bg-white border border-neutral-200 text-neutral-700 flex items-center justify-center hover:bg-neutral-100 cursor-pointer text-xs"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Dual Buttons: Add to Bag and Buy Now */}
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleAddReturnGift(gift, false)}
-                        className={`py-2 px-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                          isAdded
-                            ? 'bg-emerald-700 text-white'
-                            : 'bg-neutral-900 text-white hover:bg-neutral-800'
-                        }`}
-                      >
-                        {isAdded ? (
-                          <>
-                            <Check className="h-3 w-3" />
-                            <span>Added</span>
-                          </>
-                        ) : (
-                          <span>Add to Bag</span>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleAddReturnGift(gift, true)}
-                        className="py-2 px-2 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-[#FAF8F5] text-neutral-900 border border-neutral-300 hover:bg-white hover:border-black transition flex items-center justify-center cursor-pointer"
-                      >
-                        Buy Now
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onOpenReturnGiftDetail ? onOpenReturnGiftDetail(gift) : handleAddReturnGift(gift)}
+                      className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold uppercase tracking-wider bg-neutral-900 text-white hover:bg-neutral-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <span>Customize / View Details</span>
+                      <span>→</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddReturnGift(gift, false)}
+                      className="w-full py-2 px-3 rounded-2xl text-[11px] font-medium uppercase tracking-wider text-neutral-600 hover:text-black hover:bg-neutral-100 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      {isAdded ? (
+                        <>
+                          <Check className="h-3 w-3 text-emerald-600" />
+                          <span className="text-emerald-700 font-bold">Added to Bag</span>
+                        </>
+                      ) : (
+                        <span>Quick Add 1 pc to Bag</span>
+                      )}
+                    </button>
                   </div>
                 </div>
               );
