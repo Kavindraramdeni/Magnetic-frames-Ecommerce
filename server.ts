@@ -483,9 +483,31 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+app.set("trust proxy", 1);
+
+function getClientIp(req: express.Request): string {
+  try {
+    const forwarded = req.headers["x-forwarded-for"];
+    if (typeof forwarded === "string") {
+      return forwarded.split(",")[0].trim();
+    }
+    if (Array.isArray(forwarded) && forwarded.length > 0) {
+      return forwarded[0].trim();
+    }
+    const realIp = req.headers["x-real-ip"];
+    if (typeof realIp === "string") {
+      return realIp.trim();
+    }
+    return (req.socket && req.socket.remoteAddress) || "127.0.0.1";
+  } catch {
+    return "127.0.0.1";
+  }
+}
+
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 app.use("/api", (req, res, next) => {
-  const key = `${req.ip}:${req.path}`;
+  const ip = getClientIp(req);
+  const key = `${ip}:${req.path}`;
   const now = Date.now();
   const bucket = rateBuckets.get(key);
   if (!bucket || bucket.resetAt < now) {
@@ -639,7 +661,7 @@ app.post("/api/admin/uploads/public", requireAdmin, async (req, res) => {
 // ── Customer Photo Upload (Strictly Private customer-photos Bucket) ─────────
 app.post("/api/uploads/image", async (req, res) => {
   // Enforce upload-specific rate limit (10 RPM per IP)
-  const uploadKey = String(req.ip || "unknown");
+  const uploadKey = getClientIp(req);
   const now = Date.now();
   const uploadBucket = uploadRateBuckets.get(uploadKey);
   if (!uploadBucket || uploadBucket.resetAt < now) {
@@ -3228,7 +3250,14 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-if (process.env.VERCEL !== "1") {
+const isServerless = Boolean(
+  process.env.VERCEL || 
+  process.env.VERCEL_ENV || 
+  process.env.AWS_LAMBDA_FUNCTION_NAME || 
+  process.env.LAMBDA_TASK_ROOT
+);
+
+if (!isServerless && process.env.NODE_ENV !== "test") {
   const listenPort = Number(process.env.PORT || 3000);
   app.listen(listenPort, "0.0.0.0", () => {
     console.log(`KRIA Studio web service bound successfully to 0.0.0.0:${listenPort}`);
