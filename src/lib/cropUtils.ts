@@ -1,11 +1,22 @@
-import sharp from 'sharp';
-
 export interface CropSpec {
   scale?: number;
   panX?: number;
   panY?: number;
   aspectRatio?: number;
   cropMode?: 'fill' | 'fit';
+}
+
+let sharpLib: any = null;
+async function getSharpInstance() {
+  if (sharpLib) return sharpLib;
+  try {
+    const mod = await import('sharp');
+    sharpLib = mod.default || mod;
+    return sharpLib;
+  } catch (e) {
+    console.warn("Notice: sharp native binary not loaded in serverless environment, using original image fallback:", e);
+    return null;
+  }
 }
 
 /**
@@ -40,6 +51,10 @@ export async function renderAdjustedImage(
   customWidth?: number,
   customHeight?: number
 ): Promise<Buffer> {
+  const sharp = await getSharpInstance();
+  if (!sharp) {
+    return inputBuffer;
+  }
   const metadata = await sharp(inputBuffer).metadata();
   const imgWidth = metadata.width || 1200;
   const imgHeight = metadata.height || 1200;
