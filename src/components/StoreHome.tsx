@@ -6,6 +6,7 @@ import {
 import { BASE_SHAPES, RETURN_GIFTS } from '../data';
 import { MagnetShape, MagnetShapeId, ReturnGiftProduct, CartItem } from '../types';
 import { SHAPE_SAMPLE_IMAGES } from '../lib/shapePreview';
+import CustomizeModal from './CustomizeModal';
 
 interface StoreHomeProps {
   onCustomize: (shapeId?: MagnetShapeId, size?: string) => void;
@@ -28,6 +29,8 @@ export default function StoreHome({
   const customizableFrames: MagnetShape[] = BASE_SHAPES.filter(s => 
     ['love', 'circle', 'polaroid', 'grande'].includes(s.id)
   );
+
+  const [customizerGift, setCustomizerGift] = useState<ReturnGiftProduct | null>(null);
 
   // Return Gifts quantity state
   const [returnGiftQuantities, setReturnGiftQuantities] = useState<Record<string, number>>({
@@ -283,18 +286,23 @@ export default function StoreHome({
 
           {/* The 4 Return Gift Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {RETURN_GIFTS.map((gift) => {
-              const qty = returnGiftQuantities[gift.id] || 1;
-              const isAdded = addedIds[gift.id];
+            {RETURN_GIFTS.map((gift, index) => {
+              const isCustomizer = index === 0;
 
               return (
                 <div
                   key={gift.id}
                   className="bg-white rounded-3xl border border-neutral-200/90 p-4 shadow-xs hover:shadow-lg transition-all flex flex-col justify-between group"
                 >
-                  {/* Fixed Art Frame Preview - Click opens separate product page */}
+                  {/* Frame Preview: Click opens Dialog for product 1, or Product Page for products 2,3,4 */}
                   <div 
-                    onClick={() => onOpenReturnGiftDetail ? onOpenReturnGiftDetail(gift) : handleAddReturnGift(gift)}
+                    onClick={() => {
+                      if (isCustomizer) {
+                        setCustomizerGift(gift);
+                      } else if (onOpenReturnGiftDetail) {
+                        onOpenReturnGiftDetail(gift);
+                      }
+                    }}
                     className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-[#1a1714] mb-3.5 cursor-pointer"
                   >
                     <img
@@ -303,8 +311,10 @@ export default function StoreHome({
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute top-2.5 left-2.5">
-                      <span className="rounded-full bg-black/60 backdrop-blur-md px-2 py-0.5 text-[9px] font-semibold text-white tracking-wide uppercase">
-                        Fixed Artwork
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold text-white tracking-wide uppercase ${
+                        isCustomizer ? 'bg-[#9E1B32]' : 'bg-black/60 backdrop-blur-md'
+                      }`}>
+                        {isCustomizer ? 'Customizer Keepsake' : 'Fixed Artwork'}
                       </span>
                     </div>
                     <div className="absolute bottom-2.5 right-2.5">
@@ -314,7 +324,7 @@ export default function StoreHome({
                     </div>
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <span className="rounded-full bg-white text-neutral-900 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider shadow-md">
-                        View &amp; Customize →
+                        {isCustomizer ? 'Customize Now →' : 'Order Now →'}
                       </span>
                     </div>
                   </div>
@@ -325,7 +335,13 @@ export default function StoreHome({
                       {gift.category}
                     </span>
                     <h3 
-                      onClick={() => onOpenReturnGiftDetail && onOpenReturnGiftDetail(gift)}
+                      onClick={() => {
+                        if (isCustomizer) {
+                          setCustomizerGift(gift);
+                        } else if (onOpenReturnGiftDetail) {
+                          onOpenReturnGiftDetail(gift);
+                        }
+                      }}
                       className="font-serif text-base font-medium text-neutral-950 leading-snug cursor-pointer hover:underline"
                     >
                       {gift.name}
@@ -335,30 +351,26 @@ export default function StoreHome({
                     </div>
                   </div>
 
-                  {/* Action Buttons: Customize / View Details (opens separate page) & Quick Add */}
-                  <div className="pt-4 space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => onOpenReturnGiftDetail ? onOpenReturnGiftDetail(gift) : handleAddReturnGift(gift)}
-                      className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold uppercase tracking-wider bg-neutral-900 text-white hover:bg-neutral-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                    >
-                      <span>Customize / View Details</span>
-                      <span>→</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddReturnGift(gift, false)}
-                      className="w-full py-2 px-3 rounded-2xl text-[11px] font-medium uppercase tracking-wider text-neutral-600 hover:text-black hover:bg-neutral-100 transition-all flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      {isAdded ? (
-                        <>
-                          <Check className="h-3 w-3 text-emerald-600" />
-                          <span className="text-emerald-700 font-bold">Added to Bag</span>
-                        </>
-                      ) : (
-                        <span>Quick Add 1 pc to Bag</span>
-                      )}
-                    </button>
+                  {/* Action Button: Customize for 1st product, Order Now for remaining products */}
+                  <div className="pt-4">
+                    {isCustomizer ? (
+                      <button
+                        type="button"
+                        onClick={() => setCustomizerGift(gift)}
+                        className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold uppercase tracking-wider bg-neutral-900 text-white hover:bg-neutral-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <Sparkles className="h-3 w-3 text-[#E8DCCF]" />
+                        <span>Customize →</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onOpenReturnGiftDetail && onOpenReturnGiftDetail(gift)}
+                        className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold uppercase tracking-wider bg-neutral-900 text-white hover:bg-neutral-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <span>Order Now →</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -489,6 +501,34 @@ export default function StoreHome({
           </button>
         ))}
       </section>
+
+      {/* Customize Dialog Box for Return Gift #1 */}
+      {customizerGift && (
+        <CustomizeModal
+          isOpen={!!customizerGift}
+          onClose={() => setCustomizerGift(null)}
+          shape={{
+            id: customizerGift.shapeId || 'arch',
+            name: customizerGift.name,
+            price: customizerGift.price,
+            originalPrice: customizerGift.originalPrice,
+            dimensions: customizerGift.dimensions,
+            description: customizerGift.description,
+            shapeClass: 'shape-arch',
+            frameRatio: 'aspect-[3/4]',
+            tagline: customizerGift.tagline,
+            sizes: [
+              { size: '2 × 2"', label: '2 × 2 in', price: 199 },
+              { size: '3 × 3"', label: '3 × 3 in', price: 249 },
+              { size: '3 × 4"', label: '3 × 4 in', price: customizerGift.price }
+            ]
+          }}
+          onAddToCart={(item) => {
+            if (onAddToCart) onAddToCart(item);
+            setCustomizerGift(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Check, Sparkles, Star, ShieldCheck, Truck, Plus, Minus, 
-  ShoppingBag, Gift, Heart, Edit3, Image, CheckCircle2 
+  ShoppingBag, Gift, ZoomIn
 } from 'lucide-react';
 import { ReturnGiftProduct, CartItem, MagnetShapeId } from '../types';
 
@@ -10,21 +10,73 @@ interface ReturnGiftDetailPageProps {
   onBackToHome: () => void;
   onAddToCart: (item: CartItem) => void;
   onDirectCheckout: (item: CartItem) => void;
-  onCustomizeShape: (shapeId: MagnetShapeId, initialPhotoUrl?: string, customText?: string) => void;
+  onCustomizeShape?: (shapeId: MagnetShapeId) => void;
 }
+
+// Gallery images under the main image
+const RETURN_GIFT_GALLERIES: Record<string, { label: string; url: string }[]> = {
+  'rg-ganesha': [
+    { label: 'Front', url: '/images/return_gift_ganesha.svg' },
+    { label: 'Pair', url: '/images/acrylic_magnets_hero_1782423101134.jpg' },
+    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'Detail', url: '/images/banner_memory_deserves_place.png' },
+    { label: 'Gift', url: '/images/lifestyle_gallery_workspace_1779653492345.png' },
+    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+  ],
+  'rg-teddy': [
+    { label: 'Front', url: '/images/return_gift_baby_teddy.svg' },
+    { label: 'Pair', url: '/images/couple_portrait_sample_1782458143228.jpg' },
+    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'Detail', url: '/images/banner_perfect_for_magnetic_surfaces.png' },
+    { label: 'Gift', url: '/images/lifestyle_gallery_workspace_1779653492345.png' },
+    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+  ],
+  'rg-wedding': [
+    { label: 'Front', url: '/images/return_gift_wedding_favor.svg' },
+    { label: 'Pair', url: '/images/shape_heart_wedding_couple.png' },
+    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'Detail', url: '/images/banner_perfect_for_magnetic_surfaces.png' },
+    { label: 'Gift', url: '/images/luxury_living_room_bg_1782458094193.jpg' },
+    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+  ],
+  'rg-mandala': [
+    { label: 'Front', url: '/images/return_gift_gold_mandala.svg' },
+    { label: 'Pair', url: '/images/acrylic_magnets_hero_1782423101134.jpg' },
+    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'Detail', url: '/images/banner_premium_design_made_to_last.png' },
+    { label: 'Gift', url: '/images/lifestyle_gallery_workspace_1779653492345.png' },
+    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+  ]
+};
 
 export default function ReturnGiftDetailPage({
   gift,
   onBackToHome,
   onAddToCart,
-  onDirectCheckout,
-  onCustomizeShape
+  onDirectCheckout
 }: ReturnGiftDetailPageProps) {
-  const [activeTab, setActiveTab] = useState<'fixed' | 'personalize' | 'photo'>('fixed');
   const [quantity, setQuantity] = useState<number>(1);
-  const [customNames, setCustomNames] = useState<string>('');
-  const [customDate, setCustomDate] = useState<string>('');
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const [added, setAdded] = useState<boolean>(false);
+
+  // Hover-to-zoom state
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [zoomPos, setZoomPos] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
+
+  // Pincode checker state
+  const [pincode, setPincode] = useState<string>('');
+  const [deliveryResult, setDeliveryResult] = useState<string | null>(null);
+
+  // Gallery images for active gift
+  const gallery = RETURN_GIFT_GALLERIES[gift.id] || [
+    { label: 'Front', url: gift.imageUrl },
+    { label: 'Pair', url: '/images/acrylic_magnets_hero_1782423101134.jpg' },
+    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'Detail', url: '/images/banner_memory_deserves_place.png' },
+    { label: 'Gift', url: '/images/lifestyle_gallery_workspace_1779653492345.png' },
+    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+  ];
+  const activeImage = gallery[activeImageIndex] || gallery[0];
 
   // Bulk discount calculation
   const getDiscountPercent = (qty: number) => {
@@ -41,23 +93,24 @@ export default function ReturnGiftDetailPage({
     : gift.price;
   const totalPrice = unitPrice * quantity;
 
-  const handleAddReadyMade = (isCheckout = false) => {
-    const isPersonalized = activeTab === 'personalize' && (customNames || customDate);
-    const customCaption = isPersonalized 
-      ? [customNames, customDate].filter(Boolean).join(' · ')
-      : '';
+  // Zoom mouse movement
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setZoomPos({ x, y });
+  };
 
+  const handleOrder = (isDirectBuy = false) => {
     const cartItem: CartItem = {
       id: `rg-${gift.id}-${Date.now()}`,
       shapeId: gift.shapeId,
-      shapeName: isPersonalized 
-        ? `${gift.name} [Personalized] (${gift.dimensions})`
-        : `${gift.name} (${gift.dimensions})`,
+      shapeName: `${gift.name} (${gift.dimensions})`,
       quantity,
       previewUrl: gift.imageUrl,
       originalUrl: gift.imageUrl,
-      photoName: `${gift.name} - Return Gift`,
-      captionText: customCaption,
+      photoName: `${gift.name} - Fixed Art`,
+      captionText: '',
       photoScale: 1,
       photoPanX: 0,
       photoPanY: 0,
@@ -67,7 +120,7 @@ export default function ReturnGiftDetailPage({
       isReturnGift: true
     };
 
-    if (isCheckout) {
+    if (isDirectBuy) {
       onDirectCheckout(cartItem);
     } else {
       onAddToCart(cartItem);
@@ -76,9 +129,29 @@ export default function ReturnGiftDetailPage({
     }
   };
 
+  // Check pincode delivery
+  const handleCheckPincode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pincode.length !== 6) {
+      setDeliveryResult('Please enter a valid 6-digit pincode.');
+      return;
+    }
+    const days = 3;
+    const estDate = new Date();
+    estDate.setDate(estDate.getDate() + days);
+    const dateFormatted = estDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+    setDeliveryResult(`✓ Delivery available by ${dateFormatted}. Bulk batches dispatch within 24-48 hrs.`);
+  };
+
+  const todayStr = new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+  const deliveryDate = new Date();
+  deliveryDate.setDate(deliveryDate.getDate() + 3);
+  const deliveryEstStr = deliveryDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-neutral-900 font-sans selection:bg-[#E8DCCF] pb-28">
-      {/* Top Header / Breadcrumb Bar */}
+      
+      {/* ── Top Header / Breadcrumb Bar ────────────────────────────────────── */}
       <div className="sticky top-0 z-40 bg-[#FAF8F5]/95 backdrop-blur-md border-b border-neutral-200/70">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <button
@@ -91,80 +164,101 @@ export default function ReturnGiftDetailPage({
           </button>
 
           <span className="text-xs font-mono uppercase tracking-widest text-[#9E1B32] font-bold">
-            Return Gifts Collection
+            Fixed Art Keepsakes · Return Gifts
           </span>
 
-          <div className="flex items-center gap-2 text-xs text-neutral-500 font-mono">
-            <span>{gift.dimensions}</span>
+          <div className="text-xs text-neutral-500 font-mono">
+            {gift.dimensions}
           </div>
         </div>
       </div>
 
-      {/* Main Product Layout */}
+      {/* ── Main Product Detail Page Layout ─────────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-4 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           
-          {/* Left Column: Visual Showcase */}
+          {/* ════ LEFT COLUMN: MAIN IMAGE WITH HOVER ZOOM & OTHER IMAGES UNDER IT ════ */}
           <div className="lg:col-span-6 flex flex-col items-center">
-            <div className="w-full bg-[#1a1714] rounded-3xl p-6 sm:p-10 shadow-lg flex flex-col items-center justify-center relative overflow-hidden group">
-              {/* Image Frame */}
-              <div className="relative w-full max-w-sm aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20 bg-neutral-900">
-                <img
-                  src={gift.imageUrl}
-                  alt={gift.name}
-                  className="w-full h-full object-cover"
-                />
-
-                {/* Live Custom Text Overlay in Personalize mode */}
-                {activeTab === 'personalize' && (customNames || customDate) && (
-                  <div className="absolute inset-x-4 bottom-6 bg-black/70 backdrop-blur-md rounded-xl p-3 text-center border border-white/30 text-white shadow-xl animate-fade-in">
-                    {customNames && (
-                      <div className="font-serif text-sm font-semibold tracking-wide text-[#F9E7B9]">
-                        {customNames}
-                      </div>
-                    )}
-                    {customDate && (
-                      <div className="text-[10px] font-mono tracking-wider text-white/80 mt-0.5">
-                        {customDate}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Badges */}
-              <div className="absolute top-4 left-4 flex flex-col gap-1.5">
+            
+            {/* Main Image Container with Lens Zoom on Hover */}
+            <div
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              onMouseMove={handleMouseMove}
+              className="relative aspect-square w-full rounded-3xl overflow-hidden bg-[#FAF6F0] border border-neutral-200/80 cursor-crosshair group select-none shadow-xs"
+            >
+              <img
+                src={activeImage.url}
+                alt={gift.name}
+                className="w-full h-full object-cover transition-transform duration-100 ease-out pointer-events-none"
+                style={
+                  isHovered
+                    ? {
+                        transform: 'scale(2.2)',
+                        transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`
+                      }
+                    : {
+                        transform: 'scale(1)',
+                        transformOrigin: 'center center'
+                      }
+                }
+              />
+              <div className="absolute top-3.5 left-3.5">
                 <span className="rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-[10px] font-semibold text-white tracking-wide uppercase">
-                  Fixed Luxury Art
-                </span>
-                <span className="rounded-full bg-[#9E1B32] px-3 py-1 text-[10px] font-semibold text-white tracking-wide uppercase">
-                  3mm Cast Acrylic
+                  Fixed Artwork
                 </span>
               </div>
             </div>
 
-            {/* Inclusions Under Image */}
-            <div className="grid grid-cols-3 gap-2 w-full mt-4 text-center">
-              <div className="bg-white border border-neutral-200/80 rounded-xl p-2.5">
+            {/* Microcopy: Hover over the image to zoom */}
+            <div className="flex items-center justify-center gap-1.5 text-xs text-neutral-500 font-mono mt-3">
+              <ZoomIn className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Hover over the image to zoom</span>
+            </div>
+
+            {/* Other Images Under It: Front, Pair, Size, Detail, Gift, Pack */}
+            <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+              {gallery.map((img, idx) => (
+                <button
+                  key={img.label}
+                  type="button"
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-medium transition cursor-pointer ${
+                    activeImageIndex === idx
+                      ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
+                      : 'bg-[#FAF6F0] text-neutral-700 border-neutral-300/80 hover:bg-white'
+                  }`}
+                >
+                  {img.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Inclusions badges */}
+            <div className="grid grid-cols-3 gap-2 w-full mt-6 text-center">
+              <div className="bg-white border border-neutral-200/80 rounded-xl p-2.5 shadow-2xs">
                 <Sparkles className="h-4 w-4 mx-auto text-[#A38A6E] mb-1" />
                 <span className="text-[10px] font-semibold block text-neutral-800">Laser-Cut Acrylic</span>
-                <span className="text-[9px] text-neutral-400">Glass-clear finish</span>
+                <span className="text-[9px] text-neutral-400">Glass-clear 3mm</span>
               </div>
-              <div className="bg-white border border-neutral-200/80 rounded-xl p-2.5">
+              <div className="bg-white border border-neutral-200/80 rounded-xl p-2.5 shadow-2xs">
                 <ShieldCheck className="h-4 w-4 mx-auto text-[#A38A6E] mb-1" />
                 <span className="text-[10px] font-semibold block text-neutral-800">Neodymium Core</span>
-                <span className="text-[9px] text-neutral-400">Never slips</span>
+                <span className="text-[9px] text-neutral-400">Strong grip</span>
               </div>
-              <div className="bg-white border border-neutral-200/80 rounded-xl p-2.5">
+              <div className="bg-white border border-neutral-200/80 rounded-xl p-2.5 shadow-2xs">
                 <Gift className="h-4 w-4 mx-auto text-[#A38A6E] mb-1" />
                 <span className="text-[10px] font-semibold block text-neutral-800">Ready to Gift</span>
                 <span className="text-[9px] text-neutral-400">Box packaging</span>
               </div>
             </div>
+
           </div>
 
-          {/* Right Column: Customization & Purchase Options */}
+          {/* ════ RIGHT COLUMN: FIXED FRAME PURCHASE & BULK SAVINGS ════ */}
           <div className="lg:col-span-6 space-y-6">
+            
+            {/* Header info */}
             <div>
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#9E1B32] font-bold">
                 {gift.category}
@@ -185,10 +279,13 @@ export default function ReturnGiftDetailPage({
                   {gift.dimensions}
                 </span>
               </div>
+              <p className="text-xs text-neutral-600 mt-2 font-light leading-relaxed">
+                {gift.description}
+              </p>
             </div>
 
             {/* Price block */}
-            <div className="flex items-baseline gap-3 pb-4 border-b border-neutral-200/80">
+            <div className="flex items-baseline gap-3 pb-2 border-b border-neutral-200/80">
               <span className="font-serif text-3xl font-normal text-neutral-950">
                 ₹{unitPrice}
               </span>
@@ -198,218 +295,176 @@ export default function ReturnGiftDetailPage({
                 </span>
               )}
               {discountPercent > 0 && (
-                <span className="text-xs font-bold font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-bold font-mono text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">
                   {discountPercent}% Bulk Savings Applied
                 </span>
               )}
-            </div>
-
-            {/* 3 Modes: Fixed Art vs Personalize Text vs Replace Photo */}
-            <div className="space-y-3">
-              <span className="text-xs font-mono uppercase tracking-wider text-neutral-500 font-semibold block">
-                Choose How You Want to Order:
+              <span className="text-xs text-neutral-400 font-mono ml-auto">
+                Taxes included
               </span>
-              <div className="grid grid-cols-3 gap-2 p-1.5 bg-neutral-100 rounded-2xl border border-neutral-200">
+            </div>
+
+            {/* Tiered Bulk Discount Table */}
+            <div className="rounded-2xl bg-white border border-neutral-200/90 p-4 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
+                <span className="uppercase tracking-wider font-mono text-[11px] text-neutral-500">Event Bulk Pricing Tiers</span>
+                <span className="text-emerald-700 font-mono">Auto-applied in Bag</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 pt-1 text-center font-mono">
+                <div className={`p-2 rounded-xl border text-[11px] ${quantity >= 5 && quantity <= 10 ? 'bg-[#9E1B32]/10 border-[#9E1B32] font-bold text-[#9E1B32]' : 'bg-[#FAF8F5] border-neutral-200 text-neutral-600'}`}>
+                  <div>5–10 pcs</div>
+                  <div className="text-emerald-700 font-bold">10% OFF</div>
+                </div>
+                <div className={`p-2 rounded-xl border text-[11px] ${quantity >= 11 && quantity <= 25 ? 'bg-[#9E1B32]/10 border-[#9E1B32] font-bold text-[#9E1B32]' : 'bg-[#FAF8F5] border-neutral-200 text-neutral-600'}`}>
+                  <div>11–25 pcs</div>
+                  <div className="text-emerald-700 font-bold">20% OFF</div>
+                </div>
+                <div className={`p-2 rounded-xl border text-[11px] ${quantity >= 26 && quantity <= 50 ? 'bg-[#9E1B32]/10 border-[#9E1B32] font-bold text-[#9E1B32]' : 'bg-[#FAF8F5] border-neutral-200 text-neutral-600'}`}>
+                  <div>26–50 pcs</div>
+                  <div className="text-emerald-700 font-bold">30% OFF</div>
+                </div>
+                <div className={`p-2 rounded-xl border text-[11px] ${quantity >= 51 ? 'bg-[#9E1B32]/10 border-[#9E1B32] font-bold text-[#9E1B32]' : 'bg-[#FAF8F5] border-neutral-200 text-neutral-600'}`}>
+                  <div>51+ pcs</div>
+                  <div className="text-emerald-700 font-bold">40% OFF</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quantity Selector + Fast Add Buttons */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between bg-white rounded-2xl border border-neutral-200/90 p-3 shadow-2xs">
+                <div>
+                  <span className="text-xs font-semibold block text-neutral-900">Order Quantity</span>
+                  <span className="text-[10px] text-neutral-500 font-mono">
+                    Total: <strong className="text-neutral-950 font-mono text-sm">₹{totalPrice}</strong> ({quantity} {quantity === 1 ? 'piece' : 'pieces'})
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="h-8 w-8 rounded-xl bg-neutral-100 border border-neutral-200 text-neutral-700 flex items-center justify-center hover:bg-neutral-200 cursor-pointer transition text-sm"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-14 text-center font-mono text-sm font-bold bg-[#FAF8F5] border border-neutral-200 rounded-xl py-1 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="h-8 w-8 rounded-xl bg-neutral-100 border border-neutral-200 text-neutral-700 flex items-center justify-center hover:bg-neutral-200 cursor-pointer transition text-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Order Now and Add to Bag buttons */}
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('fixed')}
-                  className={`py-2 px-2 rounded-xl text-xs font-medium transition cursor-pointer text-center ${
-                    activeTab === 'fixed'
-                      ? 'bg-neutral-900 text-white shadow-xs font-bold'
-                      : 'text-neutral-700 hover:bg-white'
+                  onClick={() => handleOrder(false)}
+                  className={`py-3.5 px-4 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99] ${
+                    added
+                      ? 'bg-emerald-700 text-white'
+                      : 'bg-white border-2 border-neutral-900 text-neutral-900 hover:bg-neutral-100'
                   }`}
                 >
-                  Fixed Art
+                  {added ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Added to Bag!</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-4 w-4" />
+                      <span>Add to Bag</span>
+                    </>
+                  )}
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setActiveTab('personalize')}
-                  className={`py-2 px-2 rounded-xl text-xs font-medium transition cursor-pointer text-center flex items-center justify-center gap-1 ${
-                    activeTab === 'personalize'
-                      ? 'bg-neutral-900 text-white shadow-xs font-bold'
-                      : 'text-neutral-700 hover:bg-white'
-                  }`}
+                  onClick={() => handleOrder(true)}
+                  className="py-3.5 px-4 rounded-full text-xs font-bold uppercase tracking-wider bg-neutral-900 text-white hover:bg-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-[0.99]"
                 >
-                  <Edit3 className="h-3 w-3" />
-                  <span>Personalize</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('photo')}
-                  className={`py-2 px-2 rounded-xl text-xs font-medium transition cursor-pointer text-center flex items-center justify-center gap-1 ${
-                    activeTab === 'photo'
-                      ? 'bg-neutral-900 text-white shadow-xs font-bold'
-                      : 'text-neutral-700 hover:bg-white'
-                  }`}
-                >
-                  <Image className="h-3 w-3" />
-                  <span>My Photo</span>
+                  <span>Order Now →</span>
                 </button>
               </div>
             </div>
 
-            {/* Tab 1: Fixed Art Info */}
-            {activeTab === 'fixed' && (
-              <div className="rounded-2xl bg-white border border-neutral-200/80 p-4 space-y-2 text-xs text-neutral-600">
-                <p className="font-medium text-neutral-900">
-                  Ready-Made Luxury Keepsake as Shown
-                </p>
-                <p className="leading-relaxed">
-                  Printed directly from our master high-resolution auspicious artwork and hand-cut into acrylic. Ships ready for immediate gifting with zero extra editing needed.
-                </p>
-              </div>
-            )}
-
-            {/* Tab 2: Personalize with Names / Date */}
-            {activeTab === 'personalize' && (
-              <div className="rounded-2xl bg-white border border-[#D4AF37]/50 p-4 space-y-3 shadow-xs">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-900">
-                  <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" />
-                  <span>Add Names, Family Name or Event Date</span>
-                </div>
-                <div className="space-y-2">
-                  <label className="block space-y-1">
-                    <span className="text-[10px] font-mono uppercase text-neutral-400 font-semibold">Names / Family / Title</span>
-                    <input
-                      type="text"
-                      value={customNames}
-                      onChange={(e) => setCustomNames(e.target.value)}
-                      placeholder="e.g. Ananya & Rohan / The Sharma Family"
-                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs outline-none focus:ring-1 focus:ring-neutral-900"
-                    />
-                  </label>
-                  <label className="block space-y-1">
-                    <span className="text-[10px] font-mono uppercase text-neutral-400 font-semibold">Date / Shloka / Subtitle</span>
-                    <input
-                      type="text"
-                      value={customDate}
-                      onChange={(e) => setCustomDate(e.target.value)}
-                      placeholder="e.g. 14th December 2026 / Shubh Vivah"
-                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs outline-none focus:ring-1 focus:ring-neutral-900"
-                    />
-                  </label>
-                </div>
-                <p className="text-[11px] text-neutral-500 italic">
-                  *Your custom text is verified on the left preview and printed with metallic gold styling onto the acrylic frame.
-                </p>
-              </div>
-            )}
-
-            {/* Tab 3: Use My Photo (Direct link to Customizer Studio) */}
-            {activeTab === 'photo' && (
-              <div className="rounded-2xl bg-white border border-neutral-200/80 p-5 space-y-3 text-center">
-                <Image className="h-8 w-8 mx-auto text-[#A38A6E]" />
-                <h4 className="font-serif text-lg text-neutral-900">
-                  Want to put your own personal photo inside this frame shape?
-                </h4>
-                <p className="text-xs text-neutral-500 max-w-sm mx-auto leading-relaxed">
-                  Open our interactive Design Studio with the <strong>{gift.dimensions} {gift.shapeId}</strong> frame silhouette pre-selected.
-                </p>
+            {/* Check Delivery Card */}
+            <div className="rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-xs space-y-3">
+              <h3 className="font-serif text-lg font-medium text-neutral-900">Check Delivery</h3>
+              <p className="text-xs text-neutral-500">Enter your pincode to check delivery availability.</p>
+              <form onSubmit={handleCheckPincode} className="flex gap-2">
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Enter 6-digit pincode"
+                  className="flex-1 rounded-full border border-neutral-300 px-4 py-2.5 text-xs outline-none focus:ring-1 focus:ring-neutral-900 font-mono"
+                />
                 <button
-                  type="button"
-                  onClick={() => onCustomizeShape(gift.shapeId)}
-                  className="rounded-full bg-neutral-900 text-white px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 transition cursor-pointer shadow-md inline-flex items-center gap-2"
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-[#241F1A] text-white text-xs font-semibold hover:bg-black transition cursor-pointer"
                 >
-                  <span>Open Customizer With This Shape</span>
-                  <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
+                  Check
                 </button>
+              </form>
+              {deliveryResult && (
+                <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 font-mono">
+                  {deliveryResult}
+                </div>
+              )}
+            </div>
+
+            {/* How We Ship Card */}
+            <div className="rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-xs space-y-3">
+              <div className="space-y-1">
+                <h3 className="font-serif text-lg font-medium text-neutral-900">How We Ship</h3>
+                <p className="text-xs text-neutral-500">We make sure your event keepsakes reach safely and on time.</p>
               </div>
-            )}
 
-            {/* Quantity Selector & Bulk Savings Table */}
-            {activeTab !== 'photo' && (
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono uppercase tracking-wider text-neutral-500 font-semibold">
-                    Select Quantity:
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="h-8 w-8 rounded-xl bg-white border border-neutral-300 text-neutral-700 flex items-center justify-center hover:bg-neutral-100 cursor-pointer"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <input
-                      type="number"
-                      min={1}
-                      max={500}
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-14 text-center font-mono text-sm font-bold border border-neutral-300 rounded-xl py-1 bg-white outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="h-8 w-8 rounded-xl bg-white border border-neutral-300 text-neutral-700 flex items-center justify-center hover:bg-neutral-100 cursor-pointer"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFEA] text-[11px] font-medium text-neutral-800">
+                  <Check className="h-3 w-3 text-emerald-700" /> Fast Dispatch
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFEA] text-[11px] font-medium text-neutral-800">
+                  <Check className="h-3 w-3 text-emerald-700" /> Safe Packing
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFEA] text-[11px] font-medium text-neutral-800">
+                  <Check className="h-3 w-3 text-emerald-700" /> Event Guarantee
+                </span>
+              </div>
+
+              <div className="pt-2">
+                <div className="flex items-center justify-between text-[11px] font-mono text-neutral-600 mb-1">
+                  <span className="font-bold text-neutral-900">Order Today ({todayStr})</span>
+                  <span>Printing &amp; Packing</span>
+                  <span className="text-neutral-900 font-semibold">Delivery ({deliveryEstStr})</span>
                 </div>
-
-                {/* Quick Bulk Pill Shortcuts */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {[1, 5, 10, 25, 50, 100].map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      onClick={() => setQuantity(q)}
-                      className={`px-3 py-1 rounded-lg text-xs font-mono transition cursor-pointer border ${
-                        quantity === q
-                          ? 'bg-neutral-900 text-white border-neutral-900 font-bold'
-                          : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400'
-                      }`}
-                    >
-                      {q} {q === 1 ? 'pc' : 'pcs'}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Bulk Savings Notice */}
-                <div className="bg-[#FAF6F0] rounded-xl p-3 border border-[#E8DCCF] flex items-center justify-between text-xs font-mono">
-                  <span className="text-neutral-600">Total for {quantity} frames:</span>
-                  <span className="text-neutral-950 font-bold text-sm">₹{totalPrice}</span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleAddReadyMade(false)}
-                    className={`py-3.5 px-4 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                      added
-                        ? 'bg-emerald-700 text-white'
-                        : 'bg-neutral-900 text-white hover:bg-neutral-800'
-                    }`}
-                  >
-                    {added ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        <span>Added to Bag</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="h-4 w-4" />
-                        <span>Add to Bag</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleAddReadyMade(true)}
-                    className="py-3.5 px-4 rounded-full text-xs font-bold uppercase tracking-wider bg-[#9E1B32] text-white hover:bg-[#851629] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                  >
-                    <span>Buy Now · ₹{totalPrice}</span>
-                  </button>
+                <div className="relative flex items-center w-full py-1">
+                  <div className="h-1 bg-neutral-200 w-full rounded-full" />
+                  <div className="absolute left-0 h-3 w-3 rounded-full bg-[#241F1A]" />
+                  <div className="absolute left-1/2 -translate-x-1/2 h-3 w-3 rounded-full border-2 border-neutral-400 bg-white" />
+                  <div className="absolute right-0 h-3 w-3 rounded-full border-2 border-emerald-600 bg-white" />
                 </div>
               </div>
-            )}
+            </div>
+
           </div>
+
         </div>
       </div>
+
     </div>
   );
 }

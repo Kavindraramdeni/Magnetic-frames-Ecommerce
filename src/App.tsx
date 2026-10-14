@@ -188,11 +188,13 @@ export default function App() {
     }
   }, []);
 
-  const [activeWorkspaceShape, setActiveWorkspaceShape] = useState<MagnetShapeId>('arch');
+  const [activeWorkspaceShape, setActiveWorkspaceShape] = useState<MagnetShapeId>('love');
+  const [activeWorkspaceSize, setActiveWorkspaceSize] = useState<string | undefined>(undefined);
   const cartCount = cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0);
 
-  const goStudio = (id?: MagnetShapeId) => {
+  const goStudio = (id?: MagnetShapeId, size?: string) => {
     if (id) setActiveWorkspaceShape(id);
+    if (size) setActiveWorkspaceSize(size);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setCurrentView('studio');
   };
@@ -406,6 +408,7 @@ export default function App() {
       {currentView === 'studio' ? (
         <FrameStudio
           initialShapeId={activeWorkspaceShape}
+          initialSize={activeWorkspaceSize}
           cart={cart}
           setCart={setCart}
           onOpenCart={() => setIsCartOpen(true)}
