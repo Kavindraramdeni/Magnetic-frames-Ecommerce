@@ -17,6 +17,7 @@ import WhatsAppWidget from './components/WhatsAppWidget';
 import BulkCorporateModal from './components/BulkCorporateModal';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem, ReturnGiftProduct } from './types';
+import { calculateBogoDiscount } from './lib/pricing';
 
 
 function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
@@ -494,7 +495,15 @@ export default function App() {
         onClose={() => setIsBOGOOpen(false)}
         onCustomize={() => goStudio()}
         onShopReturnGifts={handleOpenReturnGifts}
-        onApplyCoupon={(code) => setCheckoutCoupon({ code, label: 'Buy 1 Get 1 Free', discount: 249 })}
+        onApplyCoupon={(code) => {
+          const bogo = calculateBogoDiscount(cart);
+          setCheckoutCoupon({ 
+            code, 
+            label: 'Buy 1 Get 1 Free', 
+            discount: bogo.discount 
+          });
+          setIsCartOpen(true);
+        }}
       />
 
       {/* Floating Real-time WhatsApp Support & Bulk Enquiry Modal */}

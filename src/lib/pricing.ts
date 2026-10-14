@@ -120,3 +120,39 @@ export function calculateCartPricing({
   };
 }
 
+export function calculateBogoDiscount(cart: { price: number; quantity?: number }[]): {
+  eligible: boolean;
+  freeCount: number;
+  discount: number;
+  message: string;
+} {
+  const unitPrices: number[] = [];
+  cart.forEach((item) => {
+    const q = Math.max(1, Math.min(500, Number(item.quantity) || 1));
+    const p = Math.max(0, Number(item.price) || 0);
+    for (let i = 0; i < q; i++) unitPrices.push(p);
+  });
+
+  if (unitPrices.length < 2) {
+    return {
+      eligible: false,
+      freeCount: 0,
+      discount: 0,
+      message: 'BOGO (Buy 1 Get 1 Free) requires at least 2 frames. Add 1 more frame to get it 100% FREE!'
+    };
+  }
+
+  // Sort prices ascending: cheapest items are discounted 100%
+  unitPrices.sort((a, b) => a - b);
+  const freeCount = Math.floor(unitPrices.length / 2);
+  const discount = unitPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+
+  return {
+    eligible: true,
+    freeCount,
+    discount,
+    message: `BOGO Applied: ${freeCount} free frame${freeCount > 1 ? 's' : ''} (-₹${discount})`
+  };
+}
+
+

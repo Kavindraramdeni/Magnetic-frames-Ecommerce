@@ -316,21 +316,26 @@ function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?
     const cleanCode = String(couponCode).toUpperCase().trim();
     const coupon = liveCoupons[cleanCode] || VALID_COUPONS[cleanCode];
 
-    if (cleanCode === "BOGO" && itemCount >= 2) {
-      // Authentic retail Buy 1 Get 1 Free: For every 2 frames, the cheaper one is free
-      const unitPrices: number[] = [];
-      cart.forEach((item: any) => {
-        let p = prices[item.shapeId] ?? SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] ?? SHAPE_PRICES.custom;
-        const VALID_SIZE_PRICES = [199, 229, 249, 279, 299, 349, 399, 499];
-        if (typeof item.price === "number" && VALID_SIZE_PRICES.includes(item.price)) {
-          p = item.price;
-        }
-        const q = Math.max(1, Math.min(500, parseInt(item.quantity) || 1));
-        for (let i = 0; i < q; i++) unitPrices.push(p);
-      });
-      unitPrices.sort((a, b) => a - b);
-      const freeCount = Math.floor(unitPrices.length / 2);
-      couponDiscount = unitPrices.slice(0, freeCount).reduce((sum, val) => sum + val, 0);
+    if (cleanCode === "BOGO") {
+      if (itemCount >= 2) {
+        // Authentic retail Buy 1 Get 1 Free: For every 2 frames, the cheaper one is free
+        const unitPrices: number[] = [];
+        cart.forEach((item: any) => {
+          let p = prices[item.shapeId] ?? SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] ?? SHAPE_PRICES.custom;
+          const VALID_SIZE_PRICES = [199, 229, 249, 279, 299, 349, 399, 499];
+          if (typeof item.price === "number" && VALID_SIZE_PRICES.includes(item.price)) {
+            p = item.price;
+          }
+          const q = Math.max(1, Math.min(500, parseInt(item.quantity) || 1));
+          for (let i = 0; i < q; i++) unitPrices.push(p);
+        });
+        unitPrices.sort((a, b) => a - b);
+        const freeCount = Math.floor(unitPrices.length / 2);
+        couponDiscount = unitPrices.slice(0, freeCount).reduce((sum, val) => sum + val, 0);
+      } else {
+        // Must buy at least 1 frame to get 1 free; 0 discount if only 1 frame in cart
+        couponDiscount = 0;
+      }
     } else if (coupon) {
       const minVal = coupon.minOrderValue || 0;
       if (subtotal >= minVal) {
@@ -1068,11 +1073,19 @@ app.post("/api/checkout/validate-coupon", async (req, res) => {
   const coupon = liveCoupons[cleanCode] || VALID_COUPONS[cleanCode];
   if (!coupon) return res.status(404).json({ error: "Invalid coupon code. Try BOGO, KRIA10, or WELCOME15" });
 
+  const totalItems = cart.reduce((sum: number, item: any) => sum + (parseInt(item.quantity) || 1), 0);
+  if (cleanCode === "BOGO" && totalItems < 2) {
+    return res.status(400).json({
+      valid: false,
+      error: "BOGO (Buy 1 Get 1 Free) requires at least 2 frames in your bag. Add 1 more frame to get it 100% FREE!"
+    });
+  }
+
   const { subtotal, couponDiscount, deliveryCharge, grandTotal } = calculateOrderTotals(cart, cleanCode);
   return res.json({
     valid: true,
     code: cleanCode,
-    label: coupon.label,
+    label: cleanCode === "BOGO" ? "Buy 1 Get 1 Free (Cheapest Frame FREE)" : coupon.label,
     couponDiscount,
     deliveryCharge,
     grandTotal

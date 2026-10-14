@@ -5,7 +5,7 @@ import {
   Sparkles, Truck, ArrowRight, Check, MessageSquare, ShieldCheck 
 } from 'lucide-react';
 import { CartItem } from '../types';
-import { bulkDiscountLabel, calculateBulkDiscount, deliveryChargeFor } from '../lib/pricing';
+import { bulkDiscountLabel, calculateBulkDiscount, deliveryChargeFor, calculateBogoDiscount } from '../lib/pricing';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -127,7 +127,10 @@ export default function CartDrawer({
   const cartItemCount = cart.reduce((acc, x) => acc + x.quantity, 0);
   const cartSubtotal = cart.reduce((acc, x) => acc + (x.price * x.quantity), 0);
   const bulkDiscount = calculateBulkDiscount(cartItemCount, cartSubtotal);
-  const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
+  const bogoResult = calculateBogoDiscount(cart);
+  const couponDiscount = appliedCoupon 
+    ? (appliedCoupon.code === 'BOGO' ? bogoResult.discount : appliedCoupon.discount) 
+    : 0;
   const deliveryCharge = deliveryChargeFor(Math.max(0, cartSubtotal - bulkDiscount - couponDiscount));
   const grandTotal = Math.max(0, cartSubtotal - bulkDiscount - couponDiscount + deliveryCharge);
 
@@ -346,23 +349,36 @@ export default function CartDrawer({
                 <span className="text-neutral-600">Promo Coupon:</span>
                 {appliedCoupon ? (
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-emerald-800">✓ {appliedCoupon.code} (-₹{appliedCoupon.discount})</span>
+                    <span className="font-mono font-bold text-emerald-800">
+                      ✓ {appliedCoupon.code} {couponDiscount > 0 ? `(-₹${couponDiscount})` : ''}
+                    </span>
                     <button onClick={() => setAppliedCoupon(null)} className="text-[10px] text-neutral-400 hover:text-red-600 underline cursor-pointer">Remove</button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => handleApplyCouponCode('KRIA10')} className="text-[11px] font-mono text-neutral-700 bg-neutral-100 hover:bg-neutral-200 px-2 py-0.5 rounded transition cursor-pointer">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button onClick={() => handleApplyCouponCode('BOGO')} className="text-[10px] font-mono text-[#9E1B32] font-bold bg-[#9E1B32]/10 hover:bg-[#9E1B32]/20 px-2 py-0.5 rounded transition cursor-pointer">
+                      🎁 BOGO
+                    </button>
+                    <button onClick={() => handleApplyCouponCode('KRIA10')} className="text-[10px] font-mono text-neutral-700 bg-neutral-100 hover:bg-neutral-200 px-2 py-0.5 rounded transition cursor-pointer">
                       ✓ KRIA10
                     </button>
-                    <button onClick={() => handleApplyCouponCode('FREESHIP')} className="text-[11px] font-mono text-neutral-700 bg-neutral-100 hover:bg-neutral-200 px-2 py-0.5 rounded transition cursor-pointer">
+                    <button onClick={() => handleApplyCouponCode('FREESHIP')} className="text-[10px] font-mono text-neutral-700 bg-neutral-100 hover:bg-neutral-200 px-2 py-0.5 rounded transition cursor-pointer">
                       ✓ FREESHIP
                     </button>
-                    <button onClick={() => setShowCouponInput(!showCouponInput)} className="text-[11px] underline text-neutral-900 font-medium ml-1 cursor-pointer">
-                      {showCouponInput ? 'Close' : 'Enter Code'}
+                    <button onClick={() => setShowCouponInput(!showCouponInput)} className="text-[10px] underline text-neutral-900 font-medium ml-1 cursor-pointer">
+                      {showCouponInput ? 'Close' : 'Code'}
                     </button>
                   </div>
                 )}
               </div>
+
+              {/* BOGO Quantity Helper Alert */}
+              {appliedCoupon?.code === 'BOGO' && cartItemCount < 2 && (
+                <div className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-2.5 font-medium flex items-start gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                  <span>Buy 1 Get 1 Free: Add 1 more frame to your bag to get it 100% FREE!</span>
+                </div>
+              )}
 
               {showCouponInput && !appliedCoupon && (
                 <form onSubmit={(e) => { e.preventDefault(); handleApplyCouponCode(couponInput); }} className="flex gap-2 pt-1">
@@ -394,10 +410,10 @@ export default function CartDrawer({
                   <span className="font-mono">-₹{bulkDiscount}</span>
                 </div>
               )}
-              {appliedCoupon && (
+              {appliedCoupon && couponDiscount > 0 && (
                 <div className="flex justify-between text-emerald-700 font-medium">
-                  <span>Coupon Discount</span>
-                  <span className="font-mono">-₹{appliedCoupon.discount}</span>
+                  <span>{appliedCoupon.code === 'BOGO' ? 'BOGO (1 Frame Free)' : 'Coupon Discount'}</span>
+                  <span className="font-mono">-₹{couponDiscount}</span>
                 </div>
               )}
               <div className="flex justify-between text-neutral-500">
@@ -415,7 +431,7 @@ export default function CartDrawer({
             {/* Primary Action Button: Proceed to Online Checkout */}
             <button
               type="button"
-              onClick={() => onProceedToCheckout(appliedCoupon)}
+              onClick={() => onProceedToCheckout(appliedCoupon ? { ...appliedCoupon, discount: couponDiscount } : null)}
               className="w-full bg-[#111111] hover:bg-black text-[#FAF8F5] py-3.5 px-6 rounded-xl font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition shadow-md active:scale-98 cursor-pointer"
             >
               <span>₹{grandTotal}</span>

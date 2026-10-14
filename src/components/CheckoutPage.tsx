@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, ArrowLeft, Check, Lock, ShieldCheck } from 'lucide-react';
 import { CartItem } from '../types';
 import { getStoredAttribution } from '../utils/analytics';
-import { bulkDiscountLabel, calculateBulkDiscount, deliveryChargeFor } from '../lib/pricing';
+import { bulkDiscountLabel, calculateBulkDiscount, deliveryChargeFor, calculateBogoDiscount } from '../lib/pricing';
 
 const MOCK_CHECKOUT_ENABLED = import.meta.env.VITE_ENABLE_MOCK === 'true';
 
@@ -36,7 +36,10 @@ export default function CheckoutPage({ cart, coupon, onBack, onClearCart }: Chec
   const itemCount = cart.reduce((a, i) => a + i.quantity, 0);
   const subtotal = cart.reduce((a, i) => a + i.price * i.quantity, 0);
   const bulk = calculateBulkDiscount(itemCount, subtotal);
-  const couponAmt = coupon?.discount ?? 0;
+  const bogoResult = calculateBogoDiscount(cart);
+  const couponAmt = coupon
+    ? (coupon.code === 'BOGO' ? (bogoResult.eligible ? bogoResult.discount : 0) : (coupon.discount ?? 0))
+    : 0;
   const delivery = deliveryChargeFor(Math.max(0, subtotal - bulk - couponAmt));
   const total = Math.max(0, subtotal - bulk - couponAmt + delivery);
 
@@ -339,7 +342,17 @@ export default function CheckoutPage({ cart, coupon, onBack, onClearCart }: Chec
                 <span className="font-mono">-₹{bulk}</span>
               </div>
             )}
-            {coupon && <div className="flex justify-between text-emerald-700 font-medium"><span>{coupon.code}</span><span className="font-mono">-₹{couponAmt}</span></div>}
+            {coupon && couponAmt > 0 && (
+              <div className="flex justify-between text-emerald-700 font-medium">
+                <span>{coupon.code === 'BOGO' ? 'BOGO (1 Frame Free)' : coupon.code}</span>
+                <span className="font-mono">-₹{couponAmt}</span>
+              </div>
+            )}
+            {coupon?.code === 'BOGO' && itemCount < 2 && (
+              <div className="text-[10px] text-amber-800 bg-amber-50 p-2 rounded-lg font-medium">
+                ⚠️ Buy 1 Get 1 Free: Add 1 more frame to cart to get it 100% FREE!
+              </div>
+            )}
             <div className="flex justify-between text-neutral-600"><span>Express Delivery</span><span className="font-mono">{delivery === 0 ? 'FREE' : `₹${delivery}`}</span></div>
             <div className="flex justify-between font-semibold text-sm pt-1 border-t border-neutral-100 text-neutral-900"><span>Total</span><span className="font-mono font-bold">₹{total}</span></div>
           </div>
