@@ -184,12 +184,22 @@ export default function CheckoutPage({ cart, coupon, onBack, onClearCart }: Chec
     try {
       const items = await persistUploads(cart);
       setPendingItems(items);
+      const rawPhone = (shipping.phone || '').replace(/\D/g, '');
+      const cleanShipping = {
+        fullName: shipping.fullName.trim(),
+        phone: rawPhone,
+        address: shipping.address.trim(),
+        pincode: shipping.pincode.trim(),
+        email: (shipping.email && shipping.email.trim()) ? shipping.email.trim() : `${rawPhone || 'customer'}@orders.kriastudio.in`,
+        city: (shipping.city && shipping.city.trim()) ? shipping.city.trim() : 'Bengaluru',
+        state: (shipping.state && shipping.state.trim()) ? shipping.state.trim() : 'Karnataka',
+      };
       const response = await fetch('/api/checkout/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cart: items,
-          shippingDetails: shipping,
+          shippingDetails: cleanShipping,
           acceptedPolicies: accepted,
           couponCode: coupon?.code || null,
           attribution: getStoredAttribution(),

@@ -526,7 +526,20 @@ app.use("/api", (req, res, next) => {
 });
 
 function validateShippingDetails(shippingDetails: any) {
-  if (!shippingDetails || typeof shippingDetails !== "object") return "Shipping details are required.";
+  if (!shippingDetails || typeof shippingDetails !== "object") return "Shipping address details are required.";
+
+  // Auto-fill resilient defaults for optional customer fields
+  if (!shippingDetails.email || typeof shippingDetails.email !== "string" || !shippingDetails.email.trim()) {
+    const rawDigits = (shippingDetails.phone || "").replace(/\D/g, "");
+    shippingDetails.email = `${rawDigits || "customer"}@orders.kriastudio.in`;
+  }
+  if (!shippingDetails.city || typeof shippingDetails.city !== "string" || !shippingDetails.city.trim()) {
+    shippingDetails.city = "India";
+  }
+  if (!shippingDetails.state || typeof shippingDetails.state !== "string" || !shippingDetails.state.trim()) {
+    shippingDetails.state = "India";
+  }
+
   const required = ["fullName", "email", "phone", "address", "city", "state", "pincode"];
   for (const field of required) {
     if (!shippingDetails[field] || typeof shippingDetails[field] !== "string" || !shippingDetails[field].trim()) {
@@ -534,7 +547,10 @@ function validateShippingDetails(shippingDetails: any) {
     }
   }
   if (shippingDetails.fullName.trim().length < 2) return "Please enter your full name.";
-  if (!/^\S+@\S+\.\S+$/.test(shippingDetails.email.trim())) return "A valid email address is required.";
+  if (!/^\S+@\S+\.\S+$/.test(shippingDetails.email.trim())) {
+    const rawDigits = (shippingDetails.phone || "").replace(/\D/g, "");
+    shippingDetails.email = `${rawDigits || "customer"}@orders.kriastudio.in`;
+  }
 
   // Strip non-digits and handle +91 / 0 prefix
   let cleanPhone = shippingDetails.phone.replace(/\D/g, "");

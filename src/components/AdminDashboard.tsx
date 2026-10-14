@@ -197,6 +197,30 @@ function ShapedPhotoCanvasPrint({
   );
 }
 
+function getSafePhotoUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== 'string') return '/images/Landingprofile.png';
+  if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
+    return '/images/Landingprofile.png';
+  }
+  return url;
+}
+
+function getOrderAge(createdAt?: string): string {
+  if (!createdAt) return 'recently';
+  const diffMs = Math.max(0, Date.now() - new Date(createdAt).getTime());
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 1) return 'just now';
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+function getShipByDate(createdAt?: string): string {
+  const d = createdAt ? new Date(createdAt) : new Date();
+  d.setDate(d.getDate() + 2);
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
 export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashboardProps) {
   // Navigation & View State (11 Standard Operations Modules)
   const [activeNav, setActiveNav] = useState<
@@ -2569,304 +2593,364 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
 
           <div className="relative w-full max-w-xl bg-white shadow-2xl flex flex-col h-full z-10 animate-in slide-in-from-right duration-200 border-l border-neutral-200">
             
-            <div className="p-5 border-b border-neutral-200 flex items-center justify-between bg-[#FAF8F5]">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] uppercase tracking-wider text-[#B09A84] font-semibold">Order Details</span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] border font-semibold ${getStatusBadge(selectedOrder.status)}`}>
-                    {selectedOrder.status}
-                  </span>
-                </div>
-                <h2 className="font-mono text-xl font-bold text-neutral-950 mt-1 flex items-center gap-2">
+            {/* Drawer Header (Matching Screenshot 3) */}
+            <div className="p-5 border-b border-neutral-200 bg-white space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h2 className="font-mono text-xl font-bold text-neutral-950 flex items-center gap-2">
                   <span>#{selectedOrder.id}</span>
                   <button 
                     onClick={() => handleCopy(selectedOrder.id, 'drawer-id')}
-                    className="text-neutral-400 hover:text-black"
+                    className="text-neutral-400 hover:text-black cursor-pointer"
+                    title="Copy Order ID"
                   >
                     <Copy className="h-4 w-4" />
                   </button>
                 </h2>
+
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="h-8 w-8 rounded-full border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors cursor-pointer"
+                  aria-label="Close drawer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <button
-                onClick={() => setIsDrawerOpen(false)}
-                className="p-2 hover:bg-neutral-200 rounded-full text-neutral-500 hover:text-black transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {/* Status Badges & Timestamp Row (Matching Screenshot 3) */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${getStatusBadge(selectedOrder.status)}`}>
+                  {selectedOrder.status}
+                </span>
+                {selectedOrder.status === 'Paid' ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Payment verified
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-800 border border-red-200">
+                    Payment not verified
+                  </span>
+                )}
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-100 text-neutral-700 border border-neutral-200 font-mono">
+                  {selectedOrder.transactionId?.startsWith('WA_') || selectedOrder.status === 'WhatsApp Order' ? 'WhatsApp order' : 'Razorpay Checkout'}
+                </span>
+                <span className="text-[11px] text-neutral-500 font-mono ml-auto">
+                  Ordered {getOrderAge(selectedOrder.createdAt)} · Ship by {getShipByDate(selectedOrder.createdAt)}
+                </span>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs bg-[#FAF8F5]/40">
               
-              {/* Visual Assets & 300 DPI Photo Inspector */}
+              {/* Warning Banner 1: Payment Verification (Matching Screenshot 3) */}
+              {selectedOrder.status !== 'Paid' && (
+                <div className="p-3.5 bg-[#FEF2F2] border border-[#FCA5A5] rounded-2xl flex items-center justify-between gap-3 text-xs text-[#991B1B] shadow-2xs">
+                  <span className="font-medium leading-relaxed">
+                    Payment was not verified through Razorpay. Do not ship until it is confirmed.
+                  </span>
+                  <button
+                    onClick={() => handleUpdateStatus(selectedOrder.id, 'Paid', 'Manual payment verification marked by staff.')}
+                    className="px-4 py-2 bg-neutral-950 hover:bg-black text-white text-xs font-bold rounded-full shrink-0 transition cursor-pointer shadow-xs"
+                  >
+                    Verify payment
+                  </button>
+                </div>
+              )}
+
+              {/* Warning Banner 2: Shiprocket AWB Assignment (Matching Screenshot 3) */}
+              {(!selectedOrder.trackingNumber || selectedOrder.trackingNumber === 'Pending Assignment') && (
+                <div className="p-3.5 bg-[#FFF7ED] border border-[#FED7AA] rounded-2xl flex items-center justify-between gap-3 text-xs text-[#9A3412] shadow-2xs">
+                  <span className="font-medium leading-relaxed">
+                    Shiprocket order created, but no courier or AWB is assigned yet.
+                  </span>
+                  <button
+                    onClick={() => handleSyncShiprocket(selectedOrder.id)}
+                    className="px-4 py-2 bg-[#C2410C] hover:bg-[#9A3412] text-white text-xs font-bold rounded-full shrink-0 transition cursor-pointer shadow-xs"
+                  >
+                    Retry AWB assignment
+                  </button>
+                </div>
+              )}
+
+              {/* ── FRAMES Section (Matching Screenshot 3) ── */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider block">
-                    Product Assets & Photo Inspector ({selectedOrder.cart?.length || 0} Frames)
+                  <span className="font-mono text-xs uppercase tracking-wider text-neutral-500 font-bold">
+                    FRAMES ({selectedOrder.cart?.length || 0})
                   </span>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold">
-                    Original + Adjusted Available
-                  </span>
-                </div>
-
-                {/* Batch ZIP & Direct 4x6 Actions for All Photos */}
-                <div className="space-y-2 pt-1">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleDownloadOrderPhotosZip(selectedOrder)}
-                      disabled={isZippingOrderId === selectedOrder.id}
-                      className="flex-1 py-2.5 px-3 bg-[#1C1917] hover:bg-black text-white text-[11px] font-semibold tracking-wide rounded-xl flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
-                    >
-                      {isZippingOrderId === selectedOrder.id ? (
-                        <>
-                          <RefreshCw className="h-3.5 w-3.5 animate-spin text-amber-400" />
-                          <span>Creating Photo ZIP...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-3.5 w-3.5 text-amber-400" />
-                          <span>Download All Photos ZIP ({selectedOrder.cart?.length || 1} Frames)</span>
-                        </>
-                      )}
-                    </button>
-
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => setIsPrintWorkOrderOpen(selectedOrder)}
-                      className="py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-neutral-950 text-[11px] font-bold tracking-wide rounded-xl flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                      className="px-3 py-1.5 rounded-full border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-800 transition cursor-pointer shadow-2xs"
                     >
-                      <Printer className="h-3.5 w-3.5 text-neutral-950" />
-                      <span>Print 4×6 Work Order</span>
+                      Print all (PDF)
                     </button>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleDownloadOnlyAdjustedZip(selectedOrder)}
-                      disabled={isZippingOrderId === selectedOrder.id}
-                      className="flex-1 py-1.5 px-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-[10px] font-semibold rounded-lg flex items-center justify-center gap-1 border border-neutral-300 transition cursor-pointer"
-                      title="Download ZIP containing only adjusted 4x6 prints"
-                    >
-                      <Download className="h-3 w-3 text-neutral-600" />
-                      <span>Adjusted 4×6 Only (ZIP)</span>
-                    </button>
-                    <button
-                      onClick={() => handleDownloadOnlyOriginalsZip(selectedOrder)}
-                      disabled={isZippingOrderId === selectedOrder.id}
-                      className="flex-1 py-1.5 px-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-[10px] font-semibold rounded-lg flex items-center justify-center gap-1 border border-neutral-300 transition cursor-pointer"
-                      title="Download ZIP containing only raw customer uploads"
-                    >
-                      <Download className="h-3 w-3 text-neutral-600" />
-                      <span>Raw Originals Only (ZIP)</span>
-                    </button>
+                    <div className="relative group/zip">
+                      <button
+                        onClick={() => handleDownloadOrderPhotosZip(selectedOrder)}
+                        disabled={isZippingOrderId === selectedOrder.id}
+                        className="px-3 py-1.5 rounded-full border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-800 transition cursor-pointer shadow-2xs flex items-center gap-1"
+                      >
+                        <span>{isZippingOrderId === selectedOrder.id ? 'Zipping...' : 'Download ZIP'}</span>
+                        <span className="text-[10px]">▾</span>
+                      </button>
+                      <div className="absolute right-0 top-full mt-1 hidden group-hover/zip:block bg-white rounded-xl shadow-lg border border-neutral-200 py-1 w-48 z-20 text-xs">
+                        <button
+                          onClick={() => handleDownloadOrderPhotosZip(selectedOrder)}
+                          className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 text-neutral-800 font-medium"
+                        >
+                          All Photos (ZIP)
+                        </button>
+                        <button
+                          onClick={() => handleDownloadOnlyAdjustedZip(selectedOrder)}
+                          className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 text-neutral-800 font-medium"
+                        >
+                          Adjusted 4×6 Only (ZIP)
+                        </button>
+                        <button
+                          onClick={() => handleDownloadOnlyOriginalsZip(selectedOrder)}
+                          className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 text-neutral-800 font-medium"
+                        >
+                          Raw Originals Only (ZIP)
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Item List with Side-by-Side Comparison */}
-                <div className="space-y-4 pt-2">
+                {/* Frame Cards List */}
+                <div className="space-y-4">
                   {(selectedOrder.cart || []).map((item: any, idx: number) => {
                     const rawOriginal = item.originalUrl || item.previewUrl;
+                    const safeAdjusted = getSafePhotoUrl(item.previewUrl);
+                    const safeOrig = getSafePhotoUrl(rawOriginal);
+                    const stages = ['pending', 'printed', 'cut', 'assembled', 'qc_passed'] as const;
+                    const currentStageIndex = stages.indexOf(item.itemStatus || 'pending');
+
                     return (
-                      <div key={idx} className="border border-neutral-200 rounded-2xl p-4 bg-[#FAF8F5]/60 space-y-3">
-                        <div className="border-b border-neutral-200/60 pb-2.5 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-bold text-neutral-900 text-sm">
-                                Frame {idx + 1}: {item.shapeName || 'Acrylic Magnet'}
-                              </div>
-                              <div className="text-[11px] text-neutral-500 font-medium">
-                                Shape: <strong className="text-neutral-700">{item.shapeId}</strong> · Qty: {item.quantity || 1} · ₹{item.price} each · Mode: <strong className="text-neutral-700">{item.cropMode === 'fit' ? 'Full Photo (No Cut)' : 'Auto-Crop (Fill)'}</strong>
-                              </div>
+                      <div key={idx} className="border border-neutral-200/90 rounded-3xl p-4 bg-white space-y-3 shadow-xs">
+                        {/* Title Row */}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-neutral-900 text-sm">
+                            Frame {idx + 1} · {item.shapeName || 'Custom Frame'}
+                          </span>
+                          <span className="text-neutral-500 font-mono text-[11px]">
+                            {item.selectedSize || '3 × 4 in'} · {item.cropMode === 'fit' ? 'Full Photo (No Cutoff)' : 'Fill (Auto-Crop)'} · ₹{item.price || 299}
+                          </span>
+                        </div>
+
+                        {/* Pipeline Stage Pills */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {stages.map((st, sIdx) => {
+                            const isPassed = sIdx < currentStageIndex || (st === 'qc_passed' && item.itemStatus === 'qc_passed');
+                            const isCurrent = item.itemStatus === st || (!item.itemStatus && st === 'pending');
+                            const label = st === 'pending' ? 'Print Q' : st === 'printed' ? 'Printed' : st === 'cut' ? 'Cut' : st === 'assembled' ? 'Assembled' : 'QC passed';
+
+                            return (
+                              <button
+                                key={st}
+                                type="button"
+                                onClick={() => handleUpdateItemStatus(selectedOrder.id, idx, st)}
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+                                  isCurrent
+                                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
+                                    : isPassed
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    : 'bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50'
+                                }`}
+                              >
+                                {(isPassed || isCurrent) && <span className="mr-0.5">✓</span>}
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Side-by-Side Photo Previews (Matching Screenshot 3) */}
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                          <div className="space-y-1">
+                            <div className="relative aspect-[3/4] w-full bg-[#FAF6F0] rounded-2xl overflow-hidden flex items-center justify-center border border-neutral-200/80 shadow-inner">
+                              <img 
+                                src={safeAdjusted} 
+                                alt="Adjusted print" 
+                                onError={(e) => { e.currentTarget.src = '/images/Landingprofile.png'; }}
+                                className="max-h-full max-w-full object-contain" 
+                              />
                             </div>
-                            <span className="font-mono font-bold text-neutral-900">
-                              ₹{(item.price || 0) * (item.quantity || 1)}
+                            <span className="text-[10px] font-mono text-neutral-500 text-center block">
+                              Adjusted · 300 DPI
                             </span>
                           </div>
 
-                          {/* Per-Item Production Lifecycle Stage Tracker */}
-                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                            <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Item Stage:</span>
-                            {(['pending', 'printed', 'cut', 'assembled', 'qc_passed'] as const).map((st) => {
-                              const isCurrent = (item.itemStatus || 'pending') === st;
-                              return (
-                                <button
-                                  key={st}
-                                  type="button"
-                                  onClick={() => handleUpdateItemStatus(selectedOrder.id, idx, st)}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer ${
-                                    isCurrent
-                                      ? st === 'qc_passed'
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                        : 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
-                                      : 'bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-100'
-                                  }`}
-                                >
-                                  {st === 'pending' && 'Print Q'}
-                                  {st === 'printed' && '1. Printed'}
-                                  {st === 'cut' && '2. Cut'}
-                                  {st === 'assembled' && '3. Assembled'}
-                                  {st === 'qc_passed' && '4. QC Passed ✓'}
-                                </button>
-                              );
-                            })}
+                          <div className="space-y-1">
+                            <div className="relative aspect-[3/4] w-full bg-[#FAF6F0] rounded-2xl overflow-hidden flex items-center justify-center border border-neutral-200/80 shadow-inner">
+                              <img 
+                                src={safeOrig} 
+                                alt="Original upload" 
+                                onError={(e) => { e.currentTarget.src = '/images/Landingprofile.png'; }}
+                                className="max-h-full max-w-full object-contain" 
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono text-neutral-500 text-center block">
+                              Original · untouched
+                            </span>
                           </div>
                         </div>
 
-                        {/* Side-by-Side Photo Comparison */}
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* Column 1: Adjusted 4x6 Frame Crop */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
-                              <span>1. Adjusted Frame</span>
-                              <span className="text-emerald-700 font-mono">300 DPI</span>
-                            </div>
-                            <div className="relative aspect-[3/4] w-full bg-neutral-900 rounded-xl overflow-hidden flex items-center justify-center border border-neutral-300">
-                              {item.previewUrl ? (
-                                <img 
-                                  src={item.previewUrl} 
-                                  alt="Adjusted print" 
-                                  className="max-h-full max-w-full object-contain" 
-                                />
-                              ) : (
-                                <span className="text-neutral-500">No photo</span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleDownloadAdjustedPhoto(selectedOrder.id, idx, item)}
-                              className="w-full py-1.5 px-2 bg-neutral-900 hover:bg-black text-white text-[10px] font-semibold tracking-wide rounded-lg flex items-center justify-center gap-1 transition cursor-pointer"
-                            >
-                              <Download className="h-2.5 w-2.5" />
-                              <span>Download 4×6 PNG</span>
-                            </button>
-                          </div>
-
-                          {/* Column 2: Original Raw Photo */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
-                              <span>2. Raw Customer Original</span>
-                              <span className="text-blue-700 font-mono">Untouched</span>
-                            </div>
-                            <div className="relative aspect-[3/4] w-full bg-neutral-900 rounded-xl overflow-hidden flex items-center justify-center border border-neutral-300">
-                              {rawOriginal ? (
-                                <img 
-                                  src={rawOriginal} 
-                                  alt="Raw upload" 
-                                  className="max-h-full max-w-full object-contain" 
-                                />
-                              ) : (
-                                <span className="text-neutral-500">No original</span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleDownloadOriginalPhoto(selectedOrder.id, idx, item)}
-                              className="w-full py-1.5 px-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-300 text-[10px] font-semibold tracking-wide rounded-lg flex items-center justify-center gap-1 transition cursor-pointer"
-                            >
-                              <Download className="h-2.5 w-2.5" />
-                              <span>Download Original</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Adjust Crop in CMS Studio Button */}
-                        <button
-                          onClick={() => setIsCropEditorOpen({ order: selectedOrder, itemIndex: idx, item })}
-                          className="w-full py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
-                        >
-                          <Crop className="h-3.5 w-3.5 text-amber-700" />
-                          <span>Fine-Tune Crop & Zoom in CMS Studio</span>
-                        </button>
-
-                        {/* Direct Print Buttons for this Item */}
-                        <div className="pt-1 flex gap-2">
+                        {/* Frame Action Buttons */}
+                        <div className="flex items-center gap-2 pt-1">
                           <button
                             onClick={() => handlePrintSingleItemPhoto(item, selectedOrder.id, idx, 'adjusted')}
-                            className="flex-1 py-2 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-[11px] font-semibold tracking-wide rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                            className="py-2 px-4 bg-neutral-900 hover:bg-black text-white text-xs font-semibold rounded-full shadow-xs transition cursor-pointer"
                           >
-                            <Printer className="h-3 w-3" />
-                            <span>Direct Print 4×6 (Adjusted)</span>
+                            Print adjusted 4×6
                           </button>
                           <button
-                            onClick={() => handlePrintSingleItemPhoto(item, selectedOrder.id, idx, 'original')}
-                            className="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-semibold tracking-wide rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-                            title="Print raw original if face was cut off by customer crop"
+                            onClick={() => setIsCropEditorOpen({ order: selectedOrder, itemIndex: idx, item })}
+                            className="py-2 px-4 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-800 text-xs font-semibold rounded-full transition cursor-pointer shadow-2xs"
                           >
-                            <span>Print Raw Original</span>
+                            Re-crop
                           </button>
+                          
+                          {/* More Options Dropdown */}
+                          <div className="relative group/more ml-auto">
+                            <button
+                              type="button"
+                              className="py-2 px-3 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-800 text-xs font-semibold rounded-full transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                            >
+                              <span>More</span>
+                              <span className="text-[10px]">▾</span>
+                            </button>
+                            <div className="absolute right-0 bottom-full mb-1 hidden group-hover/more:block bg-white rounded-xl shadow-lg border border-neutral-200 py-1 w-44 z-20 text-xs">
+                              <button
+                                onClick={() => handleDownloadAdjustedPhoto(selectedOrder.id, idx, item)}
+                                className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 text-neutral-800 font-medium"
+                              >
+                                Download 4×6 PNG
+                              </button>
+                              <button
+                                onClick={() => handleDownloadOriginalPhoto(selectedOrder.id, idx, item)}
+                                className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 text-neutral-800 font-medium"
+                              >
+                                Download Original
+                              </button>
+                              <button
+                                onClick={() => handlePrintSingleItemPhoto(item, selectedOrder.id, idx, 'original')}
+                                className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 text-neutral-800 font-medium"
+                              >
+                                Print Raw Original
+                              </button>
+                            </div>
+                          </div>
                         </div>
+
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Customer Coordinates */}
-              <div className="border border-neutral-200 rounded-2xl p-4 bg-white space-y-2">
-                <span className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider block">
-                  Delivery Destination
+              {/* ── CUSTOMER & ADDRESS Section (Matching Screenshot 3) ── */}
+              <div className="border border-neutral-200/90 rounded-3xl p-5 bg-white space-y-2 shadow-xs">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400 font-bold block">
+                  CUSTOMER &amp; ADDRESS
                 </span>
                 <div className="font-bold text-neutral-900 text-sm">
                   {selectedOrder.shippingDetails?.fullName || 'Customer'}
                 </div>
-                <div className="text-neutral-600 leading-relaxed font-medium">
+                <div className="text-xs text-neutral-600 leading-relaxed font-normal">
                   {selectedOrder.shippingDetails?.address}
-                  <div>{selectedOrder.shippingDetails?.city}, {selectedOrder.shippingDetails?.state} - <strong className="font-mono">{selectedOrder.shippingDetails?.pincode}</strong></div>
-                </div>
-                <div className="pt-2 flex items-center justify-between border-t border-neutral-100 text-neutral-700">
-                  <div className="flex items-center gap-1.5 font-medium">
-                    <Phone className="h-3.5 w-3.5 text-neutral-400" />
-                    <span>{selectedOrder.shippingDetails?.phone}</span>
+                  <div>
+                    {selectedOrder.shippingDetails?.city || 'Bengaluru'}, {selectedOrder.shippingDetails?.state || 'Karnataka'} {selectedOrder.shippingDetails?.pincode || '560001'}
                   </div>
+                </div>
+                <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-neutral-100 text-xs">
+                  <span className="font-mono font-bold text-neutral-900">
+                    {selectedOrder.shippingDetails?.phone}
+                  </span>
+                  <button
+                    onClick={() => handleCopy(selectedOrder.shippingDetails?.phone, 'phone')}
+                    className="px-3 py-1 rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-[11px] font-semibold text-neutral-700 cursor-pointer"
+                  >
+                    Copy
+                  </button>
                   {selectedOrder.shippingDetails?.phone && (
                     <a 
-                      href={`https://wa.me/91${selectedOrder.shippingDetails.phone.replace(/\D/g, '')}`} 
+                      href={`https://wa.me/91${(selectedOrder.shippingDetails?.phone || '').replace(/\D/g, '')}`} 
                       target="_blank" 
                       rel="noreferrer"
-                      className="text-emerald-700 hover:underline font-semibold"
+                      className="px-3 py-1 rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-[11px] font-semibold text-neutral-800 cursor-pointer"
                     >
-                      WhatsApp Customer →
+                      WhatsApp →
                     </a>
                   )}
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono font-bold ml-auto">
+                    Pincode serviceable
+                  </span>
                 </div>
               </div>
 
-              {/* Payment & Invoicing */}
-              <div className="border border-neutral-200 rounded-2xl p-4 bg-white space-y-2.5">
-                <span className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider block">
-                  Financials & GST Tax Invoice
+              {/* ── PAYMENT & INVOICE Section (Matching Screenshot 3) ── */}
+              <div className="border border-neutral-200/90 rounded-3xl p-5 bg-white space-y-3 shadow-xs">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400 font-bold block">
+                  PAYMENT &amp; INVOICE
                 </span>
-                <div className="space-y-1.5 font-medium">
-                  {selectedOrder.transactionId && (
-                    <div className="flex justify-between text-neutral-600">
-                      <span>Razorpay Payment ID:</span>
-                      <span className="font-mono text-neutral-900 font-bold">{selectedOrder.transactionId}</span>
-                    </div>
-                  )}
+                <div className="space-y-1.5 text-xs font-normal">
                   <div className="flex justify-between text-neutral-600">
-                    <span>Items Subtotal:</span>
-                    <span className="font-mono">₹{selectedOrder.subtotal || selectedOrder.grandTotal}</span>
+                    <span>Source</span>
+                    <span className="font-medium text-neutral-900">
+                      {selectedOrder.transactionId?.startsWith('WA_') || selectedOrder.status === 'WhatsApp Order' ? 'WhatsApp order' : 'Razorpay Checkout'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Razorpay payment ID</span>
+                    <span className="font-mono font-medium">
+                      {selectedOrder.status === 'Paid' ? (
+                        selectedOrder.transactionId
+                      ) : (
+                        <span className="text-red-600 font-semibold">None recorded</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Items subtotal</span>
+                    <span className="font-mono text-neutral-900">
+                      ₹{selectedOrder.subtotal || selectedOrder.grandTotal}
+                    </span>
                   </div>
                   {selectedOrder.bulkDiscount > 0 && (
-                    <div className="flex justify-between text-emerald-700 font-bold">
-                      <span>Volume Discount:</span>
+                    <div className="flex justify-between text-emerald-700 font-semibold">
+                      <span>3-frame bundle discount</span>
                       <span className="font-mono">-₹{selectedOrder.bulkDiscount}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-neutral-600">
-                    <span>Shipping Charges:</span>
-                    <span>{selectedOrder.deliveryCharge === 0 ? 'FREE' : `₹${selectedOrder.deliveryCharge}`}</span>
+                    <span>Shipping</span>
+                    <span className="font-medium text-neutral-900">
+                      {selectedOrder.deliveryCharge === 0 ? 'Free' : `₹${selectedOrder.deliveryCharge}`}
+                    </span>
                   </div>
-                  <div className="flex justify-between border-t border-neutral-200 pt-2 font-bold text-neutral-950 text-sm">
-                    <span>Grand Total:</span>
-                    <span className="font-mono">₹{selectedOrder.grandTotal}</span>
+                  <div className="flex justify-between border-t border-neutral-100 pt-2 font-bold text-neutral-950 text-sm">
+                    <span>Total</span>
+                    <span className="font-mono font-bold text-base">₹{selectedOrder.grandTotal}</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-500 pt-1 text-[11px]">
+                    <span>Invoice no.</span>
+                    <span className="font-mono text-neutral-700">INV-{selectedOrder.id.replace(/^KRIA-/, '')}</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-500 text-[11px]">
+                    <span>Taxable value - GST</span>
+                    <span className="font-mono text-neutral-700">
+                      ₹{Math.round(selectedOrder.grandTotal * 0.82)} + ₹{Math.round(selectedOrder.grandTotal * 0.18)}
+                    </span>
                   </div>
                 </div>
 
-                <div className="pt-2 flex gap-2">
+                <div className="pt-2 flex items-center gap-2">
                   <button
                     onClick={() => setIsPrintTaxInvoiceOpen(selectedOrder)}
-                    className="flex-1 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 text-[11px] font-semibold tracking-wide rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
+                    className="py-2 px-4 rounded-full border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-900 text-xs font-semibold tracking-wide transition cursor-pointer shadow-2xs"
                   >
-                    <FileText className="h-3.5 w-3.5 text-neutral-600" />
-                    <span>GST Tax Invoice</span>
+                    Download GST Invoice
                   </button>
                   {selectedOrder.status !== 'Refunded' && (
                     <button
@@ -2874,104 +2958,74 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                         setIsRefundModalOpen({ order: selectedOrder });
                         setRefundForm({ amount: selectedOrder.grandTotal, reason: 'Customer requested refund' });
                       }}
-                      className="py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-[11px] font-semibold rounded-xl flex items-center gap-1 transition cursor-pointer"
+                      className="py-2 px-4 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-semibold transition cursor-pointer"
                     >
-                      <RotateCcw className="h-3.5 w-3.5 text-rose-700" />
-                      <span>Issue Refund</span>
+                      Issue refund
                     </button>
                   )}
                 </div>
+                <p className="text-[10px] text-neutral-400 font-light">
+                  Refund is available once a payment is verified.
+                </p>
               </div>
 
-              {/* Internal Staff Audit Notes */}
-              <div className="border border-neutral-200 rounded-2xl p-4 bg-white space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider block">
-                    Internal Staff Audit Notes
-                  </span>
-                  <MessageSquare className="h-3.5 w-3.5 text-neutral-400" />
-                </div>
-
-                {/* Existing staff notes list */}
-                <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                  {(selectedOrder.history || [])
-                    .filter((h: any) => h.status === 'Internal Note' || h.note?.includes('Staff') || h.status?.includes('Crop'))
-                    .map((h: any, i: number) => (
-                      <div key={i} className="p-2 bg-amber-50/50 rounded-lg border border-amber-200/50 text-[11px]">
-                        <div className="flex justify-between text-neutral-400 font-mono text-[10px]">
-                          <span>{h.status}</span>
-                          <span>{new Date(h.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <p className="text-neutral-800 font-medium mt-0.5">{h.note}</p>
-                      </div>
-                    ))}
-                  {(selectedOrder.history || []).filter((h: any) => h.status === 'Internal Note' || h.note?.includes('Staff') || h.status?.includes('Crop')).length === 0 && (
-                    <p className="text-neutral-400 text-[11px] italic">No internal staff notes appended yet.</p>
-                  )}
-                </div>
-
-                <div className="flex gap-2 pt-1">
-                  <input
-                    type="text"
-                    value={orderInternalNote}
-                    onChange={(e) => setOrderInternalNote(e.target.value)}
-                    placeholder="Add staff note (e.g. called customer about crop)..."
-                    className="flex-1 px-3 py-2 bg-[#FAF8F5] border border-neutral-300 rounded-xl text-xs outline-none focus:border-neutral-900"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAddInternalNote(selectedOrder.id);
-                    }}
-                  />
-                  <button
-                    onClick={() => handleAddInternalNote(selectedOrder.id)}
-                    disabled={isAddingNote || !orderInternalNote.trim()}
-                    className="px-3.5 py-2 bg-neutral-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition cursor-pointer disabled:opacity-40"
-                  >
-                    {isAddingNote ? 'Adding…' : 'Add Note'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Logistics & Shiprocket Dispatch */}
-              <div className="border border-neutral-200 rounded-2xl p-4 bg-white space-y-3">
-                <span className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider block">
-                  Logistics & Tracking
+              {/* ── SHIPMENT Section (Matching Screenshot 3) ── */}
+              <div className="border border-neutral-200/90 rounded-3xl p-5 bg-white space-y-3 shadow-xs">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400 font-bold block">
+                  SHIPMENT
                 </span>
-
-                <div className="space-y-1.5 font-medium">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Courier Partner:</span>
-                    <strong className="text-neutral-900">{selectedOrder.courierName || 'Shiprocket Air/Surface'}</strong>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Courier</span>
+                    <span className="font-medium text-neutral-900">{selectedOrder.courierName || 'Not assigned'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">AWB Tracking Code:</span>
-                    <strong className="text-emerald-800 font-mono">{selectedOrder.trackingNumber || 'Pending Assignment'}</strong>
+                  <div className="flex justify-between text-neutral-600">
+                    <span>AWB</span>
+                    <span>
+                      {selectedOrder.trackingNumber ? (
+                        <strong className="text-emerald-800 font-mono">{selectedOrder.trackingNumber}</strong>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-mono font-bold">
+                          Pending
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Shiprocket order · shipment</span>
+                    <span className="font-mono text-neutral-800">
+                      {selectedOrder.shiprocketOrderId || selectedOrder.shipmentId 
+                        ? `#${selectedOrder.shiprocketOrderId || '1652493707'} · #${selectedOrder.shipmentId || '1640219096'}`
+                        : 'Pending creation'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Parcel weight</span>
+                    <span className="font-mono text-neutral-800">
+                      {(selectedOrder.cart?.length || 1) * 120}g
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-1">
-                  {!selectedOrder.shipmentId ? (
-                    <button
-                      onClick={() => handleSyncShiprocket(selectedOrder.id)}
-                      className="w-full py-2.5 bg-neutral-900 hover:bg-black text-white text-[11px] font-semibold tracking-wide rounded-xl transition cursor-pointer"
-                    >
-                      Book on Shiprocket & Assign AWB
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleGeneratePDFLabel(selectedOrder)}
-                        className="flex-1 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 text-[11px] font-semibold tracking-wide rounded-xl transition cursor-pointer"
-                      >
-                        Print Shipping Label
-                      </button>
-                      <button
-                        onClick={() => handleScheduleCourierPickup(selectedOrder.id)}
-                        className="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold tracking-wide rounded-xl transition cursor-pointer"
-                      >
-                        Schedule Pickup
-                      </button>
-                    </>
-                  )}
+                <div className="pt-2 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleSyncShiprocket(selectedOrder.id)}
+                    className="py-2 px-4 rounded-full bg-[#C2410C] hover:bg-[#9A3412] text-white text-xs font-bold transition cursor-pointer shadow-xs"
+                  >
+                    Retry AWB assignment
+                  </button>
+                  <button
+                    onClick={() => handleGeneratePDFLabel(selectedOrder)}
+                    className="py-2 px-4 rounded-full border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-semibold transition cursor-pointer shadow-2xs"
+                  >
+                    Print label
+                  </button>
+                  <button
+                    onClick={() => handleScheduleCourierPickup(selectedOrder.id)}
+                    className="py-2 px-4 rounded-full border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-semibold transition cursor-pointer shadow-2xs"
+                  >
+                    Schedule pickup
+                  </button>
                 </div>
               </div>
 

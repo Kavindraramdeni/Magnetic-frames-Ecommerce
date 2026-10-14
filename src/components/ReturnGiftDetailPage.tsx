@@ -426,40 +426,6 @@ export default function ReturnGiftDetailPage({
               )}
             </div>
 
-            {/* How We Ship Card */}
-            <div className="rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-xs space-y-3">
-              <div className="space-y-1">
-                <h3 className="font-serif text-lg font-medium text-neutral-900">How We Ship</h3>
-                <p className="text-xs text-neutral-500">We make sure your event keepsakes reach safely and on time.</p>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFEA] text-[11px] font-medium text-neutral-800">
-                  <Check className="h-3 w-3 text-emerald-700" /> Fast Dispatch
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFEA] text-[11px] font-medium text-neutral-800">
-                  <Check className="h-3 w-3 text-emerald-700" /> Safe Packing
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFEA] text-[11px] font-medium text-neutral-800">
-                  <Check className="h-3 w-3 text-emerald-700" /> Event Guarantee
-                </span>
-              </div>
-
-              <div className="pt-2">
-                <div className="flex items-center justify-between text-[11px] font-mono text-neutral-600 mb-1">
-                  <span className="font-bold text-neutral-900">Order Today ({todayStr})</span>
-                  <span>Printing &amp; Packing</span>
-                  <span className="text-neutral-900 font-semibold">Delivery ({deliveryEstStr})</span>
-                </div>
-                <div className="relative flex items-center w-full py-1">
-                  <div className="h-1 bg-neutral-200 w-full rounded-full" />
-                  <div className="absolute left-0 h-3 w-3 rounded-full bg-[#241F1A]" />
-                  <div className="absolute left-1/2 -translate-x-1/2 h-3 w-3 rounded-full border-2 border-neutral-400 bg-white" />
-                  <div className="absolute right-0 h-3 w-3 rounded-full border-2 border-emerald-600 bg-white" />
-                </div>
-              </div>
-            </div>
-
           </div>
 
         </div>
