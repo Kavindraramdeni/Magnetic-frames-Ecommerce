@@ -121,6 +121,7 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
 }
 
 const VALID_COUPONS: Record<string, { type: "percent" | "flat" | "free_shipping"; value: number; label: string }> = {
+  BOGO: { type: "percent", value: 50, label: "Buy 1 Get 1 Free (50% Off 2 Frames)" },
   KRIA10: { type: "percent", value: 10, label: "10% Off Studio Special" },
   WELCOME15: { type: "percent", value: 15, label: "15% Off Welcome Gift" },
   KRIA50: { type: "flat", value: 50, label: "₹50 Flat Instant Discount" },
@@ -248,8 +249,12 @@ function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?
   let subtotal = 0;
   let itemCount = 0;
   cart.forEach((item: any) => {
-    const backendPrice = prices[item.shapeId] ?? SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] ?? SHAPE_PRICES.custom;
-    const qty = Math.max(1, Math.min(99, parseInt(item.quantity) || 1));
+    let backendPrice = prices[item.shapeId] ?? SHAPE_PRICES[item.shapeId as keyof typeof SHAPE_PRICES] ?? SHAPE_PRICES.custom;
+    const VALID_SIZE_PRICES = [199, 229, 249, 279, 299, 349, 399, 499];
+    if (typeof item.price === "number" && VALID_SIZE_PRICES.includes(item.price)) {
+      backendPrice = item.price;
+    }
+    const qty = Math.max(1, Math.min(500, parseInt(item.quantity) || 1));
     itemCount += qty;
     subtotal += backendPrice * qty;
   });

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <linearGradient id="m_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A0B2E"/>
+      <stop offset="50%" stop-color="#11051F"/>
+      <stop offset="100%" stop-color="#08020E"/>
+    </linearGradient>
+    <linearGradient id="m_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFEAA7"/>
+      <stop offset="50%" stop-color="#DFB15B"/>
+      <stop offset="100%" stop-color="#9E7422"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#m_bg)" />
+  <rect x="30" y="30" width="540" height="540" rx="28" fill="none" stroke="url(#m_gold)" stroke-width="2" opacity="0.6" />
+  <rect x="42" y="42" width="516" height="516" rx="20" fill="none" stroke="url(#m_gold)" stroke-width="1" stroke-dasharray="6 6" opacity="0.4" />
+  
+  <g transform="translate(300, 260)" stroke="url(#m_gold)" fill="none">
+    <circle cx="0" cy="0" r="130" stroke-width="1.5" opacity="0.4" />
+    <circle cx="0" cy="0" r="110" stroke-width="1" stroke-dasharray="4 4" opacity="0.6" />
+    <circle cx="0" cy="0" r="80" stroke-width="1.5" />
+    <circle cx="0" cy="0" r="50" stroke-width="1" />
+    <circle cx="0" cy="0" r="20" fill="url(#m_gold)" opacity="0.8" />
+    
+    <g transform="rotate(0)"><path d="M0 -20 Q20 -50 0 -80 Q-20 -50 0 -20" stroke-width="1.5" fill="url(#m_gold)" fill-opacity="0.15"/><path d="M0 -80 Q35 -105 0 -130 Q-35 -105 0 -80" stroke-width="1.2" fill="url(#m_gold)" fill-opacity="0.2"/><circle cx="0" cy="-130" r="3" fill="url(#m_gold)"/></g>
+    <g transform="rotate(45)"><path d="M0 -20 Q20 -50 0 -80 Q-20 -50 0 -20" stroke-width="1.5" fill="url(#m_gold)" fill-opacity="0.15"/><path d="M0 -80 Q35 -105 0 -130 Q-35 -105 0 -80" stroke-width="1.2" fill="url(#m_gold)" fill-opacity="0.2"/><circle cx="0" cy="-130" r="3" fill="url(#m_gold)"/></g>
+    <g transform="rotate(90)"><path d="M0 -20 Q20 -50 0 -80 Q-20 -50 0 -20" stroke-width="1.5" fill="url(#m_gold)" fill-opacity="0.15"/><path d="M0 -80 Q35 -105 0 -130 Q-35 -105 0 -80" stroke-width="1.2" fill="url(#m_gold)" fill-opacity="0.2"/><circle cx="0" cy="-130" r="3" fill="url(#m_gold)"/></g>
+    <g transform="rotate(135)"><path d="M0 -20 Q20 -50 0 -80 Q-20 -50 0 -20" stroke-width="1.5" fill="url(#m_gold)" fill-opacity="0.15"/><path d="M0 -80 Q35 -105 0 -130 Q-35 -105 0 -80" stroke-width="1.2" fill="url(#m_gold)" fill-opacity="0.2"/><circle cx="0" cy="-130" r="3" fill="url(#m_gold)"/></g>
+    <g transform="rotate(180)"><path d="M0 -20 Q20 -50 0 -80 Q-20 -50 0 -20" stroke-width="1.5" fill="url(#m_gold)" fill-opacity="0.15"/><path d="M0 -80 Q35 -105 0 -130 Q-35 -105 0 -80" stroke-width="1.2" fill="url(#m_gold)" fill-opacity="0.2"/><circle cx="0" cy="-130" r="3" fill="url(#m_gold)"/></g>
+    <g transform="rotate(225)"><path d="M0 -20 Q20 -50 0 -80 Q-20 -50 0 -20" stroke-width="1.5" fill="url(#m_gold)" fill-opacity="0.15"/><path d="M0 -80 Q35 -105 0 -130 Q-35 -105 0 -80" stroke-width="1.2" fill="url(#m_gold)" fill-opacity="0.2"/><circle cx="0" cy="-130" r="3" fill="url(#m_gold)"/></g>
+    <g transform="rotate(270)"><path d="M0 -20 Q20 -50 0 -80 Q-20 -50 0 -20" stroke-width="1.5" fill="url(#m_gold)" fill-opacity="0.15"/><path d="M0 -80 Q35 -105 0 -130 Q-35 -105 0 -80" stroke-width="1.2" fill="url(#m_gold)" fill-opacity="0.2"/><circle cx="0" cy="-130" r="3" fill="url(#m_gold)"/></g>
+    <g transform="rotate(315)"><path d="M0 -20 Q20 -50 0 -80 Q-20 -50 0 -20" stroke-width="1.5" fill="url(#m_gold)" fill-opacity="0.15"/><path d="M0 -80 Q35 -105 0 -130 Q-35 -105 0 -80" stroke-width="1.2" fill="url(#m_gold)" fill-opacity="0.2"/><circle cx="0" cy="-130" r="3" fill="url(#m_gold)"/></g>
+  </g>
+  
+  <text x="300" y="450" text-anchor="middle" fill="url(#m_gold)" font-family="serif" font-size="24" letter-spacing="3" font-weight="bold">AUSPICIOUS HERITAGE</text>
+  <text x="300" y="485" text-anchor="middle" fill="#FFFFFF" font-family="sans-serif" font-size="13" letter-spacing="4" opacity="0.9">FESTIVE &amp; CORPORATE RETURN GIFT</text>
+  <text x="300" y="520" text-anchor="middle" fill="url(#m_gold)" font-family="serif" font-style="italic" font-size="13" opacity="0.75">"Wishing you prosperity, boundless joy and success"</text>
+</svg>

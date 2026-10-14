@@ -10,6 +10,8 @@ import StoreHome from './components/StoreHome';
 import FrameStudio from './components/FrameStudio';
 import CheckoutPage from './components/CheckoutPage';
 import MobileDock from './components/MobileDock';
+import GalleryPage from './components/GalleryPage';
+import BOGOModal from './components/BOGOModal';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem } from './types';
 
@@ -71,7 +73,8 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery'>('home');
+  const [isBOGOOpen, setIsBOGOOpen] = useState(false);
   const [adminToken, setAdminToken] = useState<string>(() => {
     try {
       return localStorage.getItem('adminToken') || '';
@@ -204,6 +207,60 @@ export default function App() {
     setCurrentView('checkout');
   };
 
+  const handleOpenReturnGifts = () => {
+    if (currentView !== 'home') {
+      setCurrentView('home');
+      setTimeout(() => {
+        const el = document.getElementById('return-gifts-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const el = document.getElementById('return-gifts-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleOpenAboutUs = () => {
+    if (currentView !== 'home') {
+      setCurrentView('home');
+      setTimeout(() => {
+        const el = document.getElementById('about-us-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const el = document.getElementById('about-us-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleOpenShop = () => {
+    if (currentView !== 'home') {
+      setCurrentView('home');
+      setTimeout(() => {
+        const el = document.getElementById('shop-frames-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const el = document.getElementById('shop-frames-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleOpenGallery = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentView('gallery');
+  };
+
+  const handleAddToCart = (item: CartItem) => {
+    setCart((prev) => [...prev, item]);
+    setIsCartOpen(true);
+  };
+
+  const handleDirectCheckout = (item: CartItem) => {
+    setCart((prev) => [...prev, item]);
+    goCheckout();
+  };
+
   const openAdmin = async () => {
     const password = window.prompt('Enter admin password');
     if (!password) return;
@@ -327,8 +384,12 @@ export default function App() {
         <Header
           cartItemsCount={cartCount}
           onOpenCart={() => setIsCartOpen(true)}
-          onHome={goHome}
+          onHome={handleOpenShop}
           onStudio={() => goStudio()}
+          onOpenReturnGifts={handleOpenReturnGifts}
+          onOpenGallery={handleOpenGallery}
+          onOpenAboutUs={handleOpenAboutUs}
+          onOpenBOGO={() => setIsBOGOOpen(true)}
           onOpenB2B={() => setCurrentView('b2b')}
           activeView={currentView}
         />
@@ -352,8 +413,20 @@ export default function App() {
           }}
           onClearCart={handleClearCart}
         />
+      ) : currentView === 'gallery' ? (
+        <GalleryPage
+          onBackToHome={goHome}
+          onCustomize={() => goStudio()}
+          onOpenReturnGifts={handleOpenReturnGifts}
+        />
       ) : (
-        <StoreHome onCustomize={goStudio} />
+        <StoreHome 
+          onCustomize={goStudio}
+          onAddToCart={handleAddToCart}
+          onDirectCheckout={handleDirectCheckout}
+          onOpenGallery={handleOpenGallery}
+          onOpenBOGO={() => setIsBOGOOpen(true)}
+        />
       )}
 
       {currentView !== 'studio' && (
@@ -369,8 +442,10 @@ export default function App() {
           <MobileDock
             active={currentView}
             cartCount={cartCount}
-            onHome={goHome}
+            onHome={handleOpenShop}
             onStudio={() => goStudio()}
+            onReturnGifts={handleOpenReturnGifts}
+            onGallery={handleOpenGallery}
             onCart={() => setIsCartOpen(true)}
           />
         </>
@@ -386,6 +461,14 @@ export default function App() {
         onProceedToCheckout={(coupon) => {
           goCheckout(coupon);
         }}
+      />
+
+      <BOGOModal
+        isOpen={isBOGOOpen}
+        onClose={() => setIsBOGOOpen(false)}
+        onCustomize={() => goStudio()}
+        onShopReturnGifts={handleOpenReturnGifts}
+        onApplyCoupon={(code) => setCheckoutCoupon({ code, label: 'Buy 1 Get 1 Free', discount: 249 })}
       />
     </div>
   );

@@ -1,96 +1,128 @@
-import { MagnetShape, Testimonial, FAQItem, LifestyleItem } from './types';
+import { MagnetShape, Testimonial, FAQItem, LifestyleItem, ReturnGiftProduct } from './types';
 import { SHAPE_PRICES } from './catalog';
 
 export const BASE_SHAPES: MagnetShape[] = [
   {
     id: 'love',
     name: 'Sculpted Heart',
-    price: SHAPE_PRICES.love,
+    price: 249,
+    originalPrice: 349,
     dimensions: '3 × 3 inch',
     description: 'A beautifully contoured, soft heart layout that looks like sculpted glass rather than a cliché. Ideal for anniversaries, couples, and pets.',
     shapeClass: 'shape-heart border border-white/40',
     frameRatio: 'aspect-square',
-    tagline: 'Romantic & Cozy (K10)'
+    tagline: 'Romantic & Cozy · 3 Sizes',
+    isTrending: true,
+    sizes: [
+      { size: '2 × 2 inch', label: '2 × 2"', price: 199, originalPrice: 299 },
+      { size: '3 × 3 inch', label: '3 × 3"', price: 249, originalPrice: 349 },
+      { size: '4 × 4 inch', label: '4 × 4"', price: 299, originalPrice: 399 }
+    ]
   },
   {
     id: 'circle',
     name: 'Minimal Circle',
-    price: SHAPE_PRICES.circle,
+    price: 249,
+    originalPrice: 349,
     dimensions: '3 × 3 inch',
     description: 'Pure, modern, and perfectly balanced. Strips away the noise to draw immediate focus to your favorite faces or macro food and flower captures.',
     shapeClass: 'rounded-full border-2 border-white/40',
     frameRatio: 'aspect-square',
-    tagline: 'Timeless & Focused (K11)'
+    tagline: 'Timeless & Focused · 3 Sizes',
+    isTrending: true,
+    sizes: [
+      { size: '2 × 2 inch', label: '2 × 2"', price: 199, originalPrice: 299 },
+      { size: '3 × 3 inch', label: '3 × 3"', price: 249, originalPrice: 349 },
+      { size: '4 × 4 inch', label: '4 × 4"', price: 299, originalPrice: 399 }
+    ]
   },
   {
     id: 'polaroid',
     name: 'Classic Polaroid',
-    price: SHAPE_PRICES.polaroid,
+    price: 279,
+    originalPrice: 379,
     dimensions: '3 × 4 inch',
     description: 'The nostalgic white border with a glossy image container and custom modern handwritten-font captioning. Features an extra thick acrylic stand feel.',
     shapeClass: 'shape-polaroid border border-white/50 bg-white/90 p-3 pt-3 pb-8 text-black shadow-md',
     frameRatio: 'aspect-[4/5]',
-    tagline: 'Retro Nostalgia (K1)'
-  },
-  {
-    id: 'scalloped-stand',
-    name: 'Premium Scalloped Stand',
-    price: SHAPE_PRICES['scalloped-stand'],
-    dimensions: '5 × 7 inch',
-    description: 'Our statement desk accessory. A beautiful scalloped-edge red border framing your photo, supported by a clear laser-cut acrylic stand. Perfect for office desks, bedside tables, or shelf decor.',
-    shapeClass: 'shape-scalloped border-4 border-[#8B0000] bg-[#FAF8F5] p-4',
-    frameRatio: 'aspect-[3/4]',
-    tagline: 'Elegant Desk Display (K8)'
-  },
-  {
-    id: 'arch',
-    name: 'The Arch Frame',
-    price: SHAPE_PRICES.arch,
-    dimensions: '3 × 4 inch',
-    description: 'An elegant, architectural shape that mimics high-end design trends. Perfectly captures portraits, vertical travel landscapes, and architecture shots.',
-    shapeClass: 'shape-arch border-2 border-white/40',
-    frameRatio: 'aspect-[3/4]',
-    tagline: 'Architectural Dome (K6)'
-  },
-  {
-    id: 'landscape',
-    name: 'Horizontal Snapshot',
-    price: SHAPE_PRICES.landscape,
-    dimensions: '4 × 3 inch',
-    description: 'The classic wide-angle horizon snapshot. Perfect for memorable landscapes, beautiful sunsets, or large joyful group photos.',
-    shapeClass: 'rounded-2xl border border-white/50',
-    frameRatio: 'aspect-[1.4/1]',
-    tagline: 'Horizontal Classic (K2)'
-  },
-  {
-    id: 'hexagon',
-    name: 'Honeycomb Hexagon',
-    price: SHAPE_PRICES.hexagon,
-    dimensions: '3 × 3 inch',
-    description: 'A striking geometric hive structure. Order multiple hexagon magnets to connect and puzzle your favorite moments together on your memo board!',
-    shapeClass: 'shape-hexagon border border-white/40',
-    frameRatio: 'aspect-[1.15/1]',
-    tagline: 'Geometric Hive'
-  },
-  {
-    id: 'oval',
-    name: 'Timeless Oval',
-    price: SHAPE_PRICES.oval,
-    dimensions: '3 × 4 inch',
-    description: 'A classic portrait capsule profile that draws historical cameo elegance. Accents headshots, baby milestones, and macro florals beautifully.',
-    shapeClass: 'shape-oval border-2 border-white/40',
-    frameRatio: 'aspect-[2/3]',
-    tagline: 'Portrait Capsule'
+    tagline: 'Retro Nostalgia · 2 Sizes',
+    isTrending: true,
+    sizes: [
+      { size: '2 × 3 inch', label: '2 × 3"', price: 229, originalPrice: 329 },
+      { size: '3 × 4 inch', label: '3 × 4"', price: 279, originalPrice: 379 }
+    ]
   },
   {
     id: 'grande',
-    name: 'Grande Portrait',
-    price: SHAPE_PRICES.grande,
+    name: 'Statement Grande',
+    price: 349,
+    originalPrice: 499,
     dimensions: '4 × 6 inch',
     description: 'Our flagship oversized vertical portrait. Perfect as a premium focal piece on your fridge or message board to display stunning detailed prints.',
     shapeClass: 'rounded-[32px] border-2 border-white/40',
     frameRatio: 'aspect-[2/3]',
-    tagline: 'Premium Centerpiece (K9)'
+    tagline: 'Premium Centerpiece · 4 × 6"',
+    isTrending: true,
+    sizes: [
+      { size: '4 × 6 inch', label: '4 × 6"', price: 349, originalPrice: 499 }
+    ]
+  }
+];
+
+export const CUSTOMIZABLE_FRAMES = BASE_SHAPES;
+
+export const RETURN_GIFTS: ReturnGiftProduct[] = [
+  {
+    id: 'rg-ganesha',
+    name: 'Divine Blessings Ganesha Frame',
+    category: 'Spiritual & Housewarming',
+    theme: 'Pooja, Housewarming & Traditional Weddings',
+    dimensions: '3 × 4 inch',
+    price: 199,
+    originalPrice: 299,
+    imageUrl: '/images/return_gift_ganesha.svg',
+    description: 'Auspicious gold-embossed Shubh Labh Lord Ganesha art framed in high-clarity 3mm acrylic with magnetic backing. Ideal for welcoming guests at home ceremonies.',
+    tagline: 'Auspicious Keepsake · Ready to Gift',
+    shapeId: 'arch'
+  },
+  {
+    id: 'rg-teddy',
+    name: 'Baby Joy & Milestones Nursery Frame',
+    category: '1st Birthday & Baby Shower',
+    theme: 'Cradle Ceremony, Naming Day & 1st Birthday Parties',
+    dimensions: '3 × 3 inch',
+    price: 199,
+    originalPrice: 299,
+    imageUrl: '/images/return_gift_baby_teddy.svg',
+    description: 'Heartwarming watercolor nursery teddy and celebratory balloons artwork. A delightful keepsake for guests celebrating your little one.',
+    tagline: 'Birthday Favor · Ready to Gift',
+    shapeId: 'circle'
+  },
+  {
+    id: 'rg-wedding',
+    name: 'Floral Monogram Wedding Favor Frame',
+    category: 'Wedding & Reception Favors',
+    theme: 'Wedding Return Gifts & Engagement Celebrations',
+    dimensions: '3 × 4 inch',
+    price: 199,
+    originalPrice: 299,
+    imageUrl: '/images/return_gift_wedding_favor.svg',
+    description: 'Luxury botanical wreath with gold filigree and "Thank You for Celebrating With Us". An unforgettable wedding favor that stays on guests\' refrigerators forever.',
+    tagline: 'Wedding Keepsake · Ready to Gift',
+    shapeId: 'polaroid'
+  },
+  {
+    id: 'rg-mandala',
+    name: 'Auspicious Heritage Golden Mandala Frame',
+    category: 'Festive & Corporate Gifting',
+    theme: 'Diwali, Corporate Thank-You & Anniversaries',
+    dimensions: '3 × 3 inch',
+    price: 199,
+    originalPrice: 299,
+    imageUrl: '/images/return_gift_gold_mandala.svg',
+    description: 'Intricate royal gold mandala art on midnight velvet background conveying prosperity and harmony. The ultimate luxury keepsake for corporate & festive gifting.',
+    tagline: 'Heritage Gift · Ready to Gift',
+    shapeId: 'circle'
   }
 ];
 

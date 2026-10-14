@@ -1,5 +1,12 @@
 export type MagnetShapeId = 'cloud' | 'circle' | 'arch' | 'polaroid' | 'filmstrip' | 'love' | 'custom' | 'landscape' | 'portrait' | 'portrait-wide' | 'grande' | 'circle-bloom' | 'hexagon' | 'crest' | 'oval' | 'scalloped-stand';
 
+export interface FrameSizeOption {
+  size: string; // e.g. "2 × 2 inch"
+  label: string; // e.g. "2 × 2\""
+  price: number;
+  originalPrice: number;
+}
+
 export interface MagnetShape {
   id: MagnetShapeId;
   name: string;
@@ -10,8 +17,23 @@ export interface MagnetShape {
   shapeClass: string; // Tailwind border-radius or custom styling
   frameRatio: string; // aspect-ratio class like aspect-[4/5]
   tagline: string;
+  sizes?: FrameSizeOption[];
   isCustomSilhouette?: boolean;
   isTrending?: boolean;
+}
+
+export interface ReturnGiftProduct {
+  id: string;
+  name: string;
+  category: string;
+  theme: string;
+  dimensions: string;
+  price: number;
+  originalPrice: number;
+  imageUrl: string;
+  description: string;
+  tagline: string;
+  shapeId: MagnetShapeId;
 }
 
 export interface CustomOrder {
@@ -72,4 +94,6 @@ export interface CartItem {
   customText?: string;
   objectKey?: string;
   price: number;
+  selectedSize?: string;
+  isReturnGift?: boolean;
 }

@@ -223,6 +223,17 @@ export default function CartDrawer({
                           "{item.captionText}"
                         </p>
                       )}
+
+                      {item.selectedSize && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono text-neutral-500">{item.selectedSize}</span>
+                          {item.isReturnGift && (
+                            <span className="text-[9px] font-mono bg-[#9E1B32]/10 text-[#9E1B32] px-1.5 py-0.5 rounded-sm font-semibold uppercase">
+                              Return Gift
+                            </span>
+                          )}
+                        </div>
+                      )}
                       
                       <div className="flex items-center justify-between pt-1">
                         {/* Direct Editable Quantity Input for Bulk & Single Orders */}

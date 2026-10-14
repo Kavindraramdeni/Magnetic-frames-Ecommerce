@@ -215,13 +215,14 @@ export default function FrameStudio({
   onBackToHome,
   cartCount = 0
 }: FrameStudioProps) {
-  // Shape & Catalog State (Vintage Film Strip filtered out permanently)
+  // Shape & Catalog State: Strictly the 4 customizable frame products
   const [shapes, setShapes] = useState<MagnetShape[]>(() => 
-    BASE_SHAPES.filter(s => s.id !== 'filmstrip')
+    BASE_SHAPES.filter(s => ['love', 'circle', 'polaroid', 'grande'].includes(s.id))
   );
   const [selectedShapeId, setSelectedShapeId] = useState<MagnetShapeId>(() => 
-    initialShapeId === 'filmstrip' ? 'arch' : initialShapeId
+    ['love', 'circle', 'polaroid', 'grande'].includes(initialShapeId as any) ? (initialShapeId as MagnetShapeId) : 'love'
   );
+  const [selectedSize, setSelectedSize] = useState<string>('');
 
   // Photo & Transform State
   const [photoUrl, setPhotoUrl] = useState<string>('');
@@ -253,17 +254,17 @@ export default function FrameStudio({
   const canvasRef = useRef<HTMLDivElement>(null);
   const shapeScrollRef = useRef<HTMLDivElement>(null);
 
-  // Load live shapes from database (filter out filmstrip)
+  // Load live shapes from database (filter to 4 customizable shapes)
   useEffect(() => {
     fetchLiveCatalogShapes().then((live) => {
       if (live?.length) {
-        setShapes(live.filter(s => s.id !== 'filmstrip'));
+        setShapes(live.filter(s => ['love', 'circle', 'polaroid', 'grande'].includes(s.id)));
       }
     });
   }, []);
 
   useEffect(() => {
-    if (initialShapeId && initialShapeId !== 'filmstrip') {
+    if (initialShapeId && ['love', 'circle', 'polaroid', 'grande'].includes(initialShapeId)) {
       setSelectedShapeId(initialShapeId);
     }
   }, [initialShapeId]);
@@ -286,7 +287,16 @@ export default function FrameStudio({
     return shapes.find((s) => s.id === selectedShapeId) || shapes[0] || BASE_SHAPES[0];
   }, [shapes, selectedShapeId]);
 
-  const lineTotal = activeShape.price * quantity;
+  const activeSizeOption = useMemo(() => {
+    if (activeShape.sizes && activeShape.sizes.length > 0) {
+      const match = activeShape.sizes.find(s => s.size === selectedSize);
+      return match || activeShape.sizes[0];
+    }
+    return { size: activeShape.dimensions, label: activeShape.dimensions, price: activeShape.price, originalPrice: (activeShape.originalPrice || activeShape.price + 100) };
+  }, [activeShape, selectedSize]);
+
+  const currentPrice = activeSizeOption.price;
+  const lineTotal = currentPrice * quantity;
   const frameConfig = useMemo(() => getShapeFrameConfig(selectedShapeId), [selectedShapeId]);
 
   // Honest Print Quality Calculation
@@ -412,7 +422,7 @@ export default function FrameStudio({
     const item: CartItem = {
       id: `cart-${Date.now()}`,
       shapeId: activeShape.id,
-      shapeName: activeShape.name,
+      shapeName: `${activeShape.name} (${activeSizeOption.size})`,
       quantity,
       previewUrl: photoUrl,
       originalUrl: originalPhotoUrl || photoUrl,
@@ -431,7 +441,8 @@ export default function FrameStudio({
         shapeId: activeShape.id,
         cropMode
       },
-      price: activeShape.price,
+      price: currentPrice,
+      selectedSize: activeSizeOption.size,
     };
 
     setCart((prev) => [...prev, item]);
@@ -538,14 +549,42 @@ export default function FrameStudio({
         </div>
       </section>
 
-      {/* ── ACTIVE SHAPE TITLE (LARGE ELEGANT SERIF AS IN IMAGE 2) ───────────── */}
+      {/* ── ACTIVE SHAPE TITLE & SIZE SELECTOR PILLS ───────────── */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 pt-3 pb-2">
-        <h1 className="font-serif text-3xl sm:text-4xl font-normal text-neutral-950 leading-tight">
-          {activeShape.name}
-        </h1>
-        <p className="text-xs text-neutral-500 mt-0.5 font-light">
-          Personalize your luxury magnetic acrylic frame · {activeShape.dimensions}
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="font-serif text-3xl sm:text-4xl font-normal text-neutral-950 leading-tight">
+              {activeShape.name}
+            </h1>
+            <p className="text-xs text-neutral-500 mt-0.5 font-light">
+              Personalize your luxury magnetic acrylic frame · {activeSizeOption.size}
+            </p>
+          </div>
+
+          {/* Size Selector Pills */}
+          {activeShape.sizes && activeShape.sizes.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-neutral-100 p-1 rounded-2xl border border-neutral-200 self-start sm:self-auto">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 font-semibold px-2">Size:</span>
+              {activeShape.sizes.map((opt) => {
+                const isSizeActive = (activeSizeOption.size === opt.size);
+                return (
+                  <button
+                    key={opt.size}
+                    type="button"
+                    onClick={() => setSelectedSize(opt.size)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-medium transition cursor-pointer ${
+                      isSizeActive
+                        ? 'bg-neutral-900 text-white shadow-xs font-bold'
+                        : 'bg-transparent text-neutral-700 hover:bg-white'
+                    }`}
+                  >
+                    {opt.label} · ₹{opt.price}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* ── MAIN STUDIO CONTENT: CANVAS PREVIEW & PHOTO CONTROLS ─────────────── */}
