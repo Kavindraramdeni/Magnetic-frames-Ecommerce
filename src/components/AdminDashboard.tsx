@@ -60,74 +60,40 @@ function playNewOrderChime() {
   }
 }
 
-// ── Shape Silhouette Cutting Outline Helper for 4x6 Photo Prints ─────────────
-function drawShapeCutOutline(ctx: CanvasRenderingContext2D, shapeId: string, x: number, y: number, w: number, h: number) {
-  ctx.save();
-  ctx.setLineDash([8, 5]);
-  ctx.lineWidth = 1.8;
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-
-  switch (shapeId) {
-    case 'love': {
-      ctx.beginPath();
-      const topCurveHeight = h * 0.3;
-      ctx.moveTo(x + w / 2, y + h);
-      ctx.bezierCurveTo(x, y + h * 0.6, x, y + topCurveHeight, x + w * 0.25, y + topCurveHeight * 0.3);
-      ctx.bezierCurveTo(x + w * 0.4, y, x + w / 2, y + topCurveHeight * 0.6, x + w / 2, y + topCurveHeight * 0.8);
-      ctx.bezierCurveTo(x + w / 2, y + topCurveHeight * 0.6, x + w * 0.6, y, x + w * 0.75, y + topCurveHeight * 0.3);
-      ctx.bezierCurveTo(x + w, y + topCurveHeight, x + w, y + h * 0.6, x + w / 2, y + h);
-      ctx.closePath();
-      ctx.stroke();
-      break;
-    }
-    case 'circle':
-    case 'circle-bloom': {
-      ctx.beginPath();
-      const r = Math.min(w, h) / 2;
-      ctx.arc(x + w / 2, y + h / 2, r, 0, Math.PI * 2);
-      ctx.stroke();
-      break;
-    }
-    case 'arch': {
-      ctx.beginPath();
-      const r = w / 2;
-      ctx.arc(x + r, y + r, r, Math.PI, 0, false);
-      ctx.lineTo(x + w, y + h);
-      ctx.lineTo(x, y + h);
-      ctx.closePath();
-      ctx.stroke();
-      break;
-    }
-    case 'hexagon': {
-      ctx.beginPath();
-      const hw = w / 2;
-      ctx.moveTo(x + hw * 0.5, y);
-      ctx.lineTo(x + hw * 1.5, y);
-      ctx.lineTo(x + w, y + h / 2);
-      ctx.lineTo(x + hw * 1.5, y + h);
-      ctx.lineTo(x + hw * 0.5, y + h);
-      ctx.lineTo(x, y + h / 2);
-      ctx.closePath();
-      ctx.stroke();
-      break;
-    }
-    case 'oval': {
-      ctx.beginPath();
-      ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      break;
-    }
-    default: {
-      ctx.beginPath();
-      ctx.rect(x, y, w, h);
-      ctx.stroke();
-      break;
+// ── Dimension Parser for Accurate Physical Print Sizing ──────────────────────
+export function parseSelectedDimensions(sizeStr?: string, shapeId?: string): { widthInches: number; heightInches: number; label: string } {
+  if (sizeStr) {
+    const clean = String(sizeStr).toLowerCase().replace(/['"”]/g, '').trim();
+    const match = clean.match(/(\d+(?:\.\d+)?)\s*(?:[x*×]|by)\s*(\d+(?:\.\d+)?)/);
+    if (match) {
+      const w = parseFloat(match[1]);
+      const h = parseFloat(match[2]);
+      if (w > 0 && h > 0) {
+        return { widthInches: w, heightInches: h, label: `${w} × ${h}"` };
+      }
     }
   }
-  ctx.restore();
+  switch (shapeId) {
+    case 'grande':
+      return { widthInches: 4, heightInches: 6, label: '4 × 6"' };
+    case 'polaroid':
+    case 'arch':
+    case 'oval':
+      return { widthInches: 3, heightInches: 4, label: '3 × 4"' };
+    case 'landscape':
+      return { widthInches: 4, heightInches: 3, label: '4 × 3"' };
+    case 'scalloped-stand':
+      return { widthInches: 5, heightInches: 7, label: '5 × 7"' };
+    case 'love':
+    case 'circle':
+    case 'hexagon':
+    default:
+      return { widthInches: 3, heightInches: 3, label: '3 × 3"' };
+  }
 }
 
-// ── 4x6 Photo Paper Canvas Component with Cut Line Outlines ──────────────────
+
+// ── Exact Physical Dimension Photo Paper Canvas (No Cutting Lines) ───────────
 function ShapedPhotoCanvasPrint({ 
   item, 
   orderId = 'ORDER', 
@@ -140,6 +106,7 @@ function ShapedPhotoCanvasPrint({
   photoMode?: 'adjusted' | 'original'; 
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dims = parseSelectedDimensions(item.selectedSize, item.shapeId);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -147,7 +114,7 @@ function ShapedPhotoCanvasPrint({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Standard 4x6 Photo Paper Dimensions (600px x 900px, 300 DPI preview)
+    // Standard 4x6 Photo Paper Dimensions (600px x 900px at 150 DPI preview, 150 px = 1 inch)
     const W = 600;
     const H = 900;
     canvas.width = W;
@@ -160,32 +127,26 @@ function ShapedPhotoCanvasPrint({
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, W, H);
 
-      // Sizing calculation for photo inside 4x6 sheet
-      const imgRatio = (img.width || 1) / (img.height || 1);
-      let drawW = 460;
-      let drawH = 460 / imgRatio;
-      if (drawH > 700) {
-        drawH = 700;
-        drawW = 700 * imgRatio;
-      }
+      // Exact physical scaling matching customer selection size (1 inch = 150 px)
+      const targetW = Math.min(W, Math.round(dims.widthInches * 150));
+      const targetH = Math.min(H, Math.round(dims.heightInches * 150));
 
-      const drawX = (W - drawW) / 2;
-      const drawY = (H - drawH) / 2;
-      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      const drawX = Math.round((W - targetW) / 2);
+      const drawY = Math.round((H - targetH) / 2);
 
-      // Draw dashed cutting guide outline for this specific shape
-      drawShapeCutOutline(ctx, item.shapeId || 'frame', drawX, drawY, drawW, drawH);
+      // Draw photo cleanly with zero dashed or cutting lines on top of artwork
+      ctx.drawImage(img, drawX, drawY, targetW, targetH);
 
-      // Print order & cut text in margins outside the photo
-      ctx.fillStyle = '#777777';
-      ctx.font = '11px sans-serif';
-      ctx.fillText(`✂ CUT ALONG DASHED LINE · KRIA STUDIO #${orderId} · FRAME ${itemIdx + 1} (${item.shapeName || item.shapeId})`, 25, 35);
-      ctx.fillText(`4×6 PHOTO SHEET · MODE: ${photoMode.toUpperCase()} · ${item.quantity || 1} UNIT(S)`, 25, H - 25);
+      // Print order & sizing metadata in margins well outside the artwork area
+      ctx.fillStyle = '#888888';
+      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(`KRIA STUDIO #${orderId} · FRAME ${itemIdx + 1} (${item.shapeName || item.shapeId}) · EXACT SIZE: ${dims.label}`, 25, 35);
+      ctx.fillText(`4×6 PHOTO SHEET · PHYSICAL: ${dims.widthInches}" × ${dims.heightInches}" · MODE: ${photoMode.toUpperCase()} · ${item.quantity || 1} UNIT(S)`, 25, H - 25);
     };
 
     const targetUrl = photoMode === 'original' ? (item.originalUrl || item.previewUrl) : item.previewUrl;
     img.src = targetUrl;
-  }, [item, orderId, itemIdx, photoMode]);
+  }, [item, orderId, itemIdx, photoMode, dims]);
 
   return (
     <div className="w-full flex flex-col items-center justify-center print-photo-page py-4 print:py-0">
@@ -193,6 +154,9 @@ function ShapedPhotoCanvasPrint({
         ref={canvasRef} 
         className="w-full max-w-[340px] h-auto shadow-md border border-neutral-200 block print:shadow-none print:border-none print:max-w-none print:w-[4in] print:h-[6in]"
       />
+      <span className="text-[10px] text-neutral-500 font-mono mt-2 print:hidden">
+        Exact print output: {dims.label} on 4×6 photo sheet
+      </span>
     </div>
   );
 }
@@ -267,7 +231,19 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const [orderInternalNote, setOrderInternalNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [editingPriceProduct, setEditingPriceProduct] = useState<any | null>(null);
-  const [editPriceForm, setEditPriceForm] = useState<{ price: number; originalPrice: number }>({ price: 0, originalPrice: 0 });
+  const [editPriceForm, setEditPriceForm] = useState<{ price: number; originalPrice: number; stock: number; isTrending: boolean }>({ price: 0, originalPrice: 0, stock: 100, isTrending: true });
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<'all' | 'frames' | 'gifts'>('all');
+  const [newProductForm, setNewProductForm] = useState({
+    name: '',
+    price: 299,
+    originalPrice: 399,
+    dimensions: '3 × 3 in',
+    description: '',
+    shape: 'Frame',
+    stock: 100,
+    isTrending: true
+  });
 
   // Catalog, B2B, Coupons & Settings State
   const [productsList, setProductsList] = useState<any[]>([]);
@@ -755,6 +731,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
   const handlePrintSingleItemPhoto = (item: any, orderId = 'KRIA', idx = 0, mode = 'adjusted') => {
     const photoUrl = mode === 'original' ? (item.originalUrl || item.previewUrl) : item.previewUrl;
     if (!photoUrl) return;
+    const dims = parseSelectedDimensions(item.selectedSize, item.shapeId);
     try {
       const printWin = window.open('', '_blank');
       if (printWin) {
@@ -762,33 +739,74 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
           <!DOCTYPE html>
           <html>
             <head>
-              <title>4x6 Photo Print - ${orderId} - Frame ${idx + 1} (${item.shapeName || 'Frame'})</title>
+              <title>Print ${dims.label} - ${orderId} - Frame ${idx + 1}</title>
               <style>
-                @page { size: 4in 6in; margin: 0; }
+                @page { 
+                  size: 4in 6in; 
+                  margin: 0; 
+                }
+                * { box-sizing: border-box; }
                 body { 
-                  margin: 0; padding: 0; 
-                  display: flex; flex-direction: column; align-items: center; justify-content: center; 
-                  background: white; width: 4in; height: 6in; overflow: hidden; font-family: sans-serif;
+                  margin: 0; 
+                  padding: 0; 
+                  display: flex; 
+                  flex-direction: column; 
+                  align-items: center; 
+                  justify-content: center; 
+                  background: white; 
+                  width: 4in; 
+                  height: 6in; 
+                  overflow: hidden; 
+                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                 }
-                .header-info {
-                  position: absolute; top: 0.15in; left: 0.25in; right: 0.25in;
-                  font-size: 8pt; color: #666; display: flex; justify-content: space-between;
+                .meta-header {
+                  position: absolute; 
+                  top: 0.12in; 
+                  left: 0.25in; 
+                  right: 0.25in;
+                  font-size: 7.5pt; 
+                  color: #777; 
+                  display: flex; 
+                  justify-content: space-between;
                 }
-                .img-container {
-                  width: 3.5in; height: 5.2in;
-                  display: flex; align-items: center; justify-content: center;
-                  position: relative;
+                .print-frame {
+                  width: ${dims.widthInches}in; 
+                  height: ${dims.heightInches}in;
+                  display: flex; 
+                  align-items: center; 
+                  justify-content: center;
+                  background: white;
+                  overflow: hidden;
                 }
-                img { max-width: 100%; max-height: 100%; object-fit: contain; }
+                img { 
+                  width: 100%; 
+                  height: 100%; 
+                  object-fit: cover; 
+                  display: block; 
+                }
+                .meta-footer {
+                  position: absolute; 
+                  bottom: 0.12in; 
+                  left: 0.25in; 
+                  right: 0.25in;
+                  font-size: 7.5pt; 
+                  color: #777; 
+                  display: flex; 
+                  justify-content: space-between;
+                }
               </style>
             </head>
             <body>
-              <div class="header-info">
-                <span>✂ CUT GUIDE · KRIA #${orderId} · ${item.shapeName || item.shapeId}</span>
-                <span>${mode.toUpperCase()} PHOTO</span>
+              <div class="meta-header">
+                <span>KRIA STUDIO #${orderId} · FRAME ${idx + 1} (${item.shapeName || item.shapeId})</span>
+                <span>EXACT SIZE: ${dims.label} (100% SCALE)</span>
               </div>
-              <div class="img-container">
+              <div class="print-frame">
                 <img src="${photoUrl}" onload="window.print(); window.close();" />
+              </div>
+              <div class="meta-footer">
+                <span>Direct 300 DPI Output · Acrylic Ready</span>
+                <span>MODE: ${mode.toUpperCase()}</span>
               </div>
             </body>
           </html>
@@ -1183,7 +1201,9 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     setEditingPriceProduct(product);
     setEditPriceForm({
       price: Number(product.price || 0),
-      originalPrice: Number(product.originalPrice || (product.price ? product.price + 100 : 349))
+      originalPrice: Number(product.originalPrice || (product.price ? product.price + 100 : 349)),
+      stock: typeof product.stock === 'number' ? product.stock : 100,
+      isTrending: Boolean(product.isTrending || product.is_trending)
     });
   };
 
@@ -1196,18 +1216,74 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
         body: JSON.stringify({
           ...editingPriceProduct,
           price: editPriceForm.price,
-          originalPrice: editPriceForm.originalPrice
+          originalPrice: editPriceForm.originalPrice,
+          stock: editPriceForm.stock,
+          isTrending: editPriceForm.isTrending ? 1 : 0
         })
       });
       if (response.ok) {
         await fetchProducts();
         setEditingPriceProduct(null);
-        alert('Product prices updated!');
       } else {
         alert('Failed saving price');
       }
     } catch (e: any) {
       alert(e.message || 'Error updating price');
+    }
+  };
+
+  const handleToggleProductBogo = async (product: any) => {
+    try {
+      const nextTrending = !(product.isTrending || product.is_trending);
+      await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({
+          ...product,
+          isTrending: nextTrending ? 1 : 0
+        })
+      });
+      await fetchProducts();
+    } catch (e) {}
+  };
+
+  const handleCreateNewProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProductForm.name || !newProductForm.price) return;
+    try {
+      const res = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({
+          name: newProductForm.name,
+          price: Number(newProductForm.price),
+          originalPrice: Number(newProductForm.originalPrice),
+          dimensions: newProductForm.dimensions,
+          description: newProductForm.description || `Handmade acrylic magnetic keepsake: ${newProductForm.name}`,
+          shape: newProductForm.shape,
+          stock: Number(newProductForm.stock),
+          isTrending: newProductForm.isTrending ? 1 : 0
+        })
+      });
+      if (res.ok) {
+        await fetchProducts();
+        setIsAddProductOpen(false);
+        setNewProductForm({
+          name: '',
+          price: 299,
+          originalPrice: 399,
+          dimensions: '3 × 3 in',
+          description: '',
+          shape: 'Frame',
+          stock: 100,
+          isTrending: true
+        });
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to create product.');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Error creating product.');
     }
   };
 
@@ -2460,47 +2536,304 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
           )}
 
           {/* ════ VIEW 8: PRODUCTS CATALOG & PRICING ════════════════════════════ */}
-          {activeNav === 'products' && (
-            <div className="space-y-4 text-xs">
-              <div className="bg-white border border-neutral-200 rounded-3xl p-6 shadow-2xs space-y-4">
-                <div className="flex justify-between items-center border-b border-neutral-200 pb-3">
-                  <div>
-                    <h3 className="font-sans text-lg font-bold tracking-tight text-neutral-900">Custom Shapes & Standard Catalog</h3>
-                    <p className="text-neutral-500 text-xs mt-0.5 font-medium">Manage live prices, retail MRPs, and active catalog products</p>
+          {activeNav === 'products' && (() => {
+            const isGiftItem = (p: any) => p.id?.startsWith('rg-') || ['Ganesha', 'Teddy', 'Wedding', 'Mandala'].some(g => p.name?.includes(g));
+            const isFrameItem = (p: any) => ['love', 'circle', 'polaroid', 'grande', 'arch', 'hexagon', 'oval', 'landscape'].includes(p.id) || !isGiftItem(p);
+
+            const filteredProducts = productsList.filter(p => {
+              if (catalogCategoryFilter === 'frames') return isFrameItem(p);
+              if (catalogCategoryFilter === 'gifts') return isGiftItem(p);
+              return true;
+            });
+
+            return (
+              <div className="space-y-5 text-xs font-sans">
+                {/* Catalog Header Card */}
+                <div className="bg-white border border-neutral-200 rounded-3xl p-6 shadow-2xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 pb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-[#B8860B] font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          LIVE CATALOG &amp; PRICING
+                        </span>
+                        <span className="text-xs text-neutral-400 font-mono">{productsList.length} products total</span>
+                      </div>
+                      <h3 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 mt-1">
+                        Catalog Products, Prices &amp; 1+1 Offers
+                      </h3>
+                      <p className="text-neutral-500 text-xs mt-0.5 font-normal">
+                        Control real-time selling prices, strike-through MRPs, stock quantities, and 1+1 (BOGO) promotional badges.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => fetchProducts()}
+                        className="p-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl transition cursor-pointer"
+                        title="Reload catalog from database"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddProductOpen(true)}
+                        className="px-4 py-2.5 bg-neutral-900 hover:bg-black text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add New Product</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Category Filter Pills */}
+                  <div className="flex items-center gap-2 pt-1 flex-wrap">
+                    {[
+                      { id: 'all', label: `All Products (${productsList.length})` },
+                      { id: 'frames', label: 'Personalized Frames (4 Shapes)' },
+                      { id: 'gifts', label: 'Return Gift Keepsakes' }
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setCatalogCategoryFilter(tab.id as any)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+                          catalogCategoryFilter === tab.id
+                            ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
+                            : 'bg-[#FAF8F5] text-neutral-600 border-neutral-200 hover:bg-white'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Products Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-2">
+                    {filteredProducts.map((product) => {
+                      const orig = Number(product.originalPrice || product.original_price || Math.round(product.price * 1.35));
+                      const discountPct = orig > product.price ? Math.round(((orig - product.price) / orig) * 100) : 0;
+                      const isBogo = Boolean(product.isTrending || product.is_trending);
+                      const isOutOfStock = product.stock === 0 || product.stock === '0';
+                      const previewImg = SHAPE_SAMPLE_IMAGES[product.id] || product.imageUrl || product.image_url || '/images/Landingprofile.png';
+
+                      return (
+                        <div
+                          key={product.id}
+                          className="border border-neutral-200 rounded-2xl p-4 bg-[#FAF8F5]/40 hover:bg-white transition-all duration-200 shadow-2xs hover:shadow-md flex flex-col justify-between space-y-3 group"
+                        >
+                          <div>
+                            {/* Product Visual & Badges */}
+                            <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-neutral-100 mb-3 border border-neutral-200/60">
+                              <img
+                                src={previewImg}
+                                alt={product.name}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                onError={(e) => { e.currentTarget.src = '/images/Landingprofile.png'; }}
+                              />
+                              
+                              {/* Stock status pill */}
+                              <div className="absolute top-2 left-2">
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                                  isOutOfStock
+                                    ? 'bg-rose-600 text-white'
+                                    : 'bg-emerald-700 text-white'
+                                } shadow-2xs`}>
+                                  {isOutOfStock ? 'Out of Stock' : `In Stock (${product.stock ?? '500+'})`}
+                                </span>
+                              </div>
+
+                              {/* 1+1 BOGO Pill */}
+                              {isBogo && (
+                                <div className="absolute bottom-2 left-2">
+                                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-[#9E1B32] to-[#B8860B] text-white text-[9px] font-bold uppercase tracking-wider shadow-xs flex items-center gap-1">
+                                    <Sparkles className="h-2.5 w-2.5" />
+                                    <span>1+1 BOGO Offer</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Product Info */}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <h4 className="font-serif font-bold text-neutral-950 text-sm leading-snug line-clamp-1">
+                                  {product.name}
+                                </h4>
+                                <span className="font-mono text-[10px] text-neutral-400 shrink-0">
+                                  {product.dimensions || '3 × 3 in'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-neutral-500 font-light line-clamp-1">
+                                {product.tagline || product.description || 'Acrylic magnetic keepsake'}
+                              </p>
+                            </div>
+
+                            {/* Pricing Row */}
+                            <div className="pt-2 flex items-baseline gap-2">
+                              <span className="text-xl font-bold text-neutral-900 font-mono">
+                                ₹{product.price}
+                              </span>
+                              {orig > product.price && (
+                                <>
+                                  <span className="text-xs text-neutral-400 line-through font-mono">
+                                    ₹{orig}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                    {discountPct}% OFF
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Control Actions */}
+                          <div className="space-y-1.5 pt-2 border-t border-neutral-100">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPriceModal(product)}
+                              className="w-full py-2 bg-neutral-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-1"
+                            >
+                              <span>Edit Price &amp; Stock</span>
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleProductBogo(product)}
+                              className={`w-full py-1.5 rounded-xl text-[11px] font-semibold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                                isBogo
+                                  ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                                  : 'bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50'
+                              }`}
+                            >
+                              <Gift className="h-3 w-3 text-[#A38A6E]" />
+                              <span>{isBogo ? 'Disable 1+1 Offer' : 'Enable 1+1 Offer'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {productsList.map((product) => (
-                    <div key={product.id} className="border border-neutral-200 rounded-2xl p-4 bg-[#FAF8F5]/50 hover:bg-white transition space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-neutral-900 text-sm">{product.name}</span>
-                        <span className="text-[11px] bg-neutral-100 px-2 py-0.5 rounded text-neutral-600 uppercase font-semibold">
-                          {product.shape || 'Frame'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xl font-bold text-neutral-900 font-mono">₹{product.price}</span>
-                        {product.originalPrice && product.originalPrice > product.price && (
-                          <span className="text-xs text-neutral-400 line-through font-mono">₹{product.originalPrice}</span>
-                        )}
-                      </div>
-
-                      <div className="pt-2 flex gap-2">
-                        <button
-                          onClick={() => handleOpenPriceModal(product)}
-                          className="w-full py-2 bg-neutral-900 hover:bg-black text-white text-[11px] font-semibold tracking-wide rounded-xl transition cursor-pointer"
-                        >
-                          Edit Pricing →
+                {/* Add New Product Modal */}
+                {isAddProductOpen && (
+                  <div className="fixed inset-0 z-50 bg-neutral-900/80 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
+                    <div className="bg-white rounded-3xl w-full max-w-lg border border-neutral-300 shadow-2xl p-6 space-y-4 text-left text-xs">
+                      <div className="flex justify-between items-start border-b border-neutral-200 pb-3">
+                        <div>
+                          <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold">NEW CATALOG ITEM</span>
+                          <h3 className="font-serif text-lg font-bold text-neutral-900">Add New Acrylic Product</h3>
+                        </div>
+                        <button onClick={() => setIsAddProductOpen(false)} className="p-1 text-neutral-400 hover:text-black">
+                          <X className="h-5 w-5" />
                         </button>
                       </div>
+
+                      <form onSubmit={handleCreateNewProduct} className="space-y-3">
+                        <div>
+                          <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">Product Name</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Sculpted Arch Magnet"
+                            value={newProductForm.name}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
+                            className="w-full border border-neutral-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-black"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">Selling Price (₹)</label>
+                            <input
+                              type="number"
+                              required
+                              value={newProductForm.price}
+                              onChange={(e) => setNewProductForm({ ...newProductForm, price: Number(e.target.value) })}
+                              className="w-full border border-neutral-300 rounded-xl px-3 py-2 font-mono font-bold text-base outline-none focus:border-black"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">MRP Strike Price (₹)</label>
+                            <input
+                              type="number"
+                              value={newProductForm.originalPrice}
+                              onChange={(e) => setNewProductForm({ ...newProductForm, originalPrice: Number(e.target.value) })}
+                              className="w-full border border-neutral-300 rounded-xl px-3 py-2 font-mono text-base outline-none focus:border-black text-neutral-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">Physical Dimensions</label>
+                            <input
+                              type="text"
+                              value={newProductForm.dimensions}
+                              onChange={(e) => setNewProductForm({ ...newProductForm, dimensions: e.target.value })}
+                              placeholder="e.g. 3 × 3 in or 4 × 6 in"
+                              className="w-full border border-neutral-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-black"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">Available Stock (Units)</label>
+                            <input
+                              type="number"
+                              value={newProductForm.stock}
+                              onChange={(e) => setNewProductForm({ ...newProductForm, stock: Number(e.target.value) })}
+                              className="w-full border border-neutral-300 rounded-xl px-3 py-2 font-mono text-xs outline-none focus:border-black"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">Description / Tagline</label>
+                          <textarea
+                            rows={2}
+                            value={newProductForm.description}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, description: e.target.value })}
+                            placeholder="Brief luxury product summary"
+                            className="w-full border border-neutral-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-black resize-none"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <input
+                            type="checkbox"
+                            id="new-product-trending"
+                            checked={newProductForm.isTrending}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, isTrending: e.target.checked })}
+                            className="h-4 w-4 rounded accent-black"
+                          />
+                          <label htmlFor="new-product-trending" className="text-xs font-semibold text-neutral-800 cursor-pointer">
+                            Mark as 1+1 (BOGO) Offer Eligible on Storefront
+                          </label>
+                        </div>
+
+                        <div className="flex gap-2 pt-3">
+                          <button
+                            type="submit"
+                            className="flex-1 bg-neutral-900 hover:bg-black text-white font-bold py-2.5 rounded-xl transition cursor-pointer"
+                          >
+                            Save &amp; Publish Product
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddProductOpen(false)}
+                            className="px-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold rounded-xl transition cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ════ VIEW 9: OFFERS & COUPONS ══════════════════════════════════════ */}
           {activeNav === 'offers' && (
@@ -2802,7 +3135,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                             onClick={() => handlePrintSingleItemPhoto(item, selectedOrder.id, idx, 'adjusted')}
                             className="py-2 px-4 bg-neutral-900 hover:bg-black text-white text-xs font-semibold rounded-full shadow-xs transition cursor-pointer"
                           >
-                            Print adjusted 4×6
+                            Print adjusted {item.selectedSize ? `(${item.selectedSize})` : ''}
                           </button>
                           <button
                             onClick={() => setIsCropEditorOpen({ order: selectedOrder, itemIndex: idx, item })}
@@ -3239,32 +3572,66 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             </div>
 
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">Standard Base Price (₹)</label>
+                  <input 
+                    type="number" 
+                    value={editPriceForm.price} 
+                    onChange={(e) => setEditPriceForm({ ...editPriceForm, price: Number(e.target.value) })}
+                    className="w-full border-2 border-neutral-300 rounded-xl px-4 py-2 font-mono text-lg font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">MRP / Strike Price (₹)</label>
+                  <input 
+                    type="number" 
+                    value={editPriceForm.originalPrice} 
+                    onChange={(e) => setEditPriceForm({ ...editPriceForm, originalPrice: Number(e.target.value) })}
+                    className="w-full border-2 border-neutral-300 rounded-xl px-4 py-2 font-mono text-base font-bold text-neutral-600"
+                  />
+                </div>
+              </div>
+
+              {editPriceForm.originalPrice > editPriceForm.price && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex justify-between items-center font-medium">
+                  <span>Customer Savings:</span>
+                  <strong className="font-bold font-mono">
+                    ₹{editPriceForm.originalPrice - editPriceForm.price} ({Math.round(((editPriceForm.originalPrice - editPriceForm.price) / editPriceForm.originalPrice) * 100)}% OFF)
+                  </strong>
+                </div>
+              )}
+
               <div>
-                <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">Standard Base Price (₹)</label>
+                <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">Stock Quantity (Units)</label>
                 <input 
                   type="number" 
-                  value={editPriceForm.price} 
-                  onChange={(e) => setEditPriceForm({ ...editPriceForm, price: Number(e.target.value) })}
-                  className="w-full border-2 border-neutral-300 rounded-xl px-4 py-2 font-mono text-lg font-bold"
+                  value={editPriceForm.stock} 
+                  onChange={(e) => setEditPriceForm({ ...editPriceForm, stock: Number(e.target.value) })}
+                  className="w-full border border-neutral-300 rounded-xl px-3 py-2 font-mono text-sm"
                 />
               </div>
-              <div>
-                <label className="text-[11px] font-semibold uppercase text-neutral-600 block mb-1">MRP / Strike Price (₹)</label>
-                <input 
-                  type="number" 
-                  value={editPriceForm.originalPrice} 
-                  onChange={(e) => setEditPriceForm({ ...editPriceForm, originalPrice: Number(e.target.value) })}
-                  className="w-full border-2 border-neutral-300 rounded-xl px-4 py-2 font-mono text-base font-bold text-neutral-600"
+
+              <div className="flex items-center gap-2 pt-1 border-t border-neutral-100">
+                <input
+                  type="checkbox"
+                  id="edit-bogo-toggle"
+                  checked={editPriceForm.isTrending}
+                  onChange={(e) => setEditPriceForm({ ...editPriceForm, isTrending: e.target.checked })}
+                  className="h-4 w-4 rounded accent-black cursor-pointer"
                 />
+                <label htmlFor="edit-bogo-toggle" className="text-xs font-semibold text-neutral-800 cursor-pointer">
+                  Eligible for 1+1 (Buy 1 Get 1 Free) Launch Offer
+                </label>
               </div>
             </div>
 
             <div className="flex gap-3 pt-2">
               <button 
                 onClick={handleSavePriceModal}
-                className="flex-1 bg-neutral-900 hover:bg-black text-white font-semibold text-xs tracking-wide py-3 rounded-xl transition cursor-pointer"
+                className="flex-1 bg-neutral-900 hover:bg-black text-white font-semibold text-xs tracking-wide py-3 rounded-xl transition cursor-pointer shadow-sm"
               >
-                Save Prices
+                Save &amp; Update Live
               </button>
               <button 
                 onClick={() => setEditingPriceProduct(null)}
@@ -3383,15 +3750,15 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
             </div>
 
             {/* Instruction banner */}
-            <div className="bg-amber-50/70 border-b border-amber-200/80 px-5 py-2.5 flex items-center justify-between text-xs text-amber-950 print:hidden">
+            <div className="bg-emerald-50/70 border-b border-emerald-200/80 px-5 py-2.5 flex items-center justify-between text-xs text-emerald-950 print:hidden">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-700 shrink-0" />
+                <AlertCircle className="h-4 w-4 text-emerald-700 shrink-0" />
                 <span>
-                  <strong>Printing Guide:</strong> Load 4×6 inch (100×150mm) photo paper into your printer. Cut along the dashed line by hand, then insert the photo between the two acrylic magnetic pieces.
+                  <strong>Precision Print Output:</strong> Scaled directly to the customer's selected frame size at 300 DPI with zero cutting lines across the photo. Insert print cleanly between crystal acrylic magnetic plates.
                 </span>
               </div>
-              <span className="text-[11px] font-mono text-amber-800 shrink-0 hidden md:inline">
-                Default: 300 DPI Bleed
+              <span className="text-[11px] font-mono text-emerald-800 shrink-0 hidden md:inline">
+                Exact Scale · 300 DPI
               </span>
             </div>
 
@@ -3448,7 +3815,7 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                                 : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
                             }`}
                           >
-                            Adjusted 4×6 (Customer Crop)
+                            Adjusted {item.selectedSize ? `(${item.selectedSize})` : '(Customer Crop)'}
                           </button>
                           <button
                             type="button"

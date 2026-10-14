@@ -16,39 +16,31 @@ interface FrameStudioProps {
   cartCount?: number;
 }
 
-// Gallery images for the 4 customizable frame shapes
+// 4 Visual Showcase Galleries (Frame Photo, Direction to Use, On Fridge, Gift Box)
 const SHAPE_GALLERIES: Record<string, { label: string; url: string }[]> = {
   love: [
-    { label: 'Front', url: '/images/shape_heart_wedding_couple.png' },
-    { label: 'Pair', url: '/images/couple_portrait_sample_1782458143228.jpg' },
-    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
-    { label: 'Fridge', url: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg' },
-    { label: 'Gift', url: '/images/banner_memory_deserves_place.png' },
-    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+    { label: 'Frame Photo', url: '/images/shape_heart_wedding_couple.png' },
+    { label: 'How to Use', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'On Fridge', url: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg' },
+    { label: 'Gift Box', url: '/images/banner_memory_deserves_place.png' }
   ],
   circle: [
-    { label: 'Front', url: '/images/shape_circle_family_dog.jpg' },
-    { label: 'Pair', url: '/images/acrylic_magnets_hero_1782423101134.jpg' },
-    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
-    { label: 'Fridge', url: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg' },
-    { label: 'Gift', url: '/images/banner_perfect_for_magnetic_surfaces.png' },
-    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+    { label: 'Frame Photo', url: '/images/shape_circle_family_dog.jpg' },
+    { label: 'How to Use', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'On Fridge', url: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg' },
+    { label: 'Gift Box', url: '/images/banner_perfect_for_magnetic_surfaces.png' }
   ],
   polaroid: [
-    { label: 'Front', url: '/images/shape_polaroid_magnet_1780939416510.png' },
-    { label: 'Pair', url: '/images/scenic_landscape_sample_1782458156606.jpg' },
-    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
-    { label: 'Fridge', url: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg' },
-    { label: 'Gift', url: '/images/lifestyle_gallery_workspace_1779653492345.png' },
-    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+    { label: 'Frame Photo', url: '/images/shape_polaroid_magnet_1780939416510.png' },
+    { label: 'How to Use', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'On Fridge', url: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg' },
+    { label: 'Gift Box', url: '/images/lifestyle_gallery_workspace_1779653492345.png' }
   ],
   grande: [
-    { label: 'Front', url: '/images/shape_arch_magnet_1779653475722.png' },
-    { label: 'Pair', url: '/images/luxury_living_room_bg_1782458094193.jpg' },
-    { label: 'Size', url: '/images/banner_easy_4step_installation.png' },
-    { label: 'Fridge', url: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg' },
-    { label: 'Gift', url: '/images/banner_premium_design_made_to_last.png' },
-    { label: 'Pack', url: '/images/clean_studio_bg_1782458110845.jpg' }
+    { label: 'Frame Photo', url: '/images/shape_arch_magnet_1779653475722.png' },
+    { label: 'How to Use', url: '/images/banner_easy_4step_installation.png' },
+    { label: 'On Fridge', url: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg' },
+    { label: 'Gift Box', url: '/images/banner_premium_design_made_to_last.png' }
   ]
 };
 
@@ -121,18 +113,37 @@ export default function FrameStudio({
     setZoomPos({ x, y });
   };
 
-  // Check pincode delivery
-  const handleCheckPincode = (e: React.FormEvent) => {
+  // Real-time Pincode checker
+  const handleCheckPincode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pincode.length !== 6) {
-      setDeliveryResult('Please enter a valid 6-digit pincode.');
+    const cleanPin = pincode.trim().replace(/\D/g, '');
+    if (cleanPin.length !== 6) {
+      setDeliveryResult('Please enter a valid 6-digit Indian PIN code.');
       return;
     }
-    const days = 3;
-    const estDate = new Date();
-    estDate.setDate(estDate.getDate() + days);
-    const dateFormatted = estDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-    setDeliveryResult(`✓ Free Delivery available by ${dateFormatted}. Express dispatch within 24 hours.`);
+    setDeliveryResult('Checking real-time courier serviceability…');
+    try {
+      const res = await fetch('/api/shiprocket/check-serviceability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pincode: cleanPin })
+      });
+      const data = await res.json();
+      if (data.serviceable) {
+        const days = data.estimatedDays || 3;
+        const estDate = new Date();
+        estDate.setDate(estDate.getDate() + days);
+        const dateFormatted = estDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+        setDeliveryResult(`✓ Free Express Delivery by ${dateFormatted} via ${data.courierName || 'Courier Partner'}${data.region ? ` (${data.region})` : ''}. Dispatched within 24h.`);
+      } else {
+        setDeliveryResult(data.error || 'Pincode not currently serviceable.');
+      }
+    } catch {
+      const estDate = new Date();
+      estDate.setDate(estDate.getDate() + 3);
+      const dateFormatted = estDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+      setDeliveryResult(`✓ Free Delivery available by ${dateFormatted}. Express dispatch within 24 hours.`);
+    }
   };
 
   // Add customized item to cart
@@ -215,20 +226,31 @@ export default function FrameStudio({
               <span>Hover over the image to zoom</span>
             </div>
 
-            {/* Thumbnails Under Image: Front, Pair, Size, Fridge, Gift, Pack */}
-            <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
-              {gallery.map((img, idx) => (
+            {/* 4 Visual Showcase Thumbnails: Frame Photo, How to Use, On Fridge, Gift Box */}
+            <div className="grid grid-cols-4 gap-2.5 sm:gap-3 mt-4 w-full max-w-md">
+              {gallery.slice(0, 4).map((img, idx) => (
                 <button
                   key={img.label}
                   type="button"
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-medium transition cursor-pointer ${
+                  className={`flex flex-col items-center gap-1.5 p-1.5 rounded-2xl border-2 transition-all cursor-pointer group ${
                     activeImageIndex === idx
-                      ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
-                      : 'bg-[#FAF6F0] text-neutral-700 border-neutral-300/80 hover:bg-white'
+                      ? 'border-neutral-900 bg-white shadow-sm ring-2 ring-neutral-900/10'
+                      : 'border-neutral-200/90 bg-[#FAF6F0] hover:border-neutral-400 hover:bg-white'
                   }`}
                 >
-                  {img.label}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-neutral-100 flex items-center justify-center">
+                    <img 
+                      src={img.url} 
+                      alt={img.label} 
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <span className={`text-[10px] font-mono font-semibold tracking-tight text-center leading-tight line-clamp-1 ${
+                    activeImageIndex === idx ? 'text-neutral-900' : 'text-neutral-500 group-hover:text-neutral-800'
+                  }`}>
+                    {img.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -353,6 +375,27 @@ export default function FrameStudio({
         initialSize={currentSizeOption.size}
         onAddToCart={handleAddToCart}
       />
+
+      {/* ── Mobile Sticky Bottom CTA Bar ── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200 px-4 py-3 flex items-center justify-between shadow-lg">
+        <div>
+          <span className="text-[10px] text-neutral-500 font-mono block uppercase">{activeShape.name} · {currentSizeOption.size}</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-bold font-mono text-neutral-900">₹{currentSizeOption.price}</span>
+            {activeShape.originalPrice > currentSizeOption.price && (
+              <span className="text-xs text-neutral-400 line-through font-mono">₹{activeShape.originalPrice}</span>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCustomizeOpen(true)}
+          className="px-6 py-2.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider shadow-md active:scale-95 transition cursor-pointer flex items-center gap-1.5"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-[#E8DCCF]" />
+          <span>Customize</span>
+        </button>
+      </div>
 
     </div>
   );

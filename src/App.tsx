@@ -13,6 +13,8 @@ import MobileDock from './components/MobileDock';
 import GalleryPage from './components/GalleryPage';
 import BOGOModal from './components/BOGOModal';
 import ReturnGiftDetailPage from './components/ReturnGiftDetailPage';
+import WhatsAppWidget from './components/WhatsAppWidget';
+import BulkCorporateModal from './components/BulkCorporateModal';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem, ReturnGiftProduct } from './types';
 
@@ -77,6 +79,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery' | 'return-gift-detail'>('home');
   const [selectedReturnGift, setSelectedReturnGift] = useState<ReturnGiftProduct | null>(null);
   const [isBOGOOpen, setIsBOGOOpen] = useState(false);
+  const [isBulkCorporateOpen, setIsBulkCorporateOpen] = useState(false);
   const [adminToken, setAdminToken] = useState<string>(() => {
     try {
       return localStorage.getItem('adminToken') || '';
@@ -493,6 +496,20 @@ export default function App() {
         onShopReturnGifts={handleOpenReturnGifts}
         onApplyCoupon={(code) => setCheckoutCoupon({ code, label: 'Buy 1 Get 1 Free', discount: 249 })}
       />
+
+      {/* Floating Real-time WhatsApp Support & Bulk Enquiry Modal */}
+      {currentView !== 'admin' && currentView !== 'cms' && (
+        <>
+          <WhatsAppWidget
+            onOpenBulkModal={() => setIsBulkCorporateOpen(true)}
+            onOpenTracking={() => setCurrentView('tracking')}
+          />
+          <BulkCorporateModal
+            isOpen={isBulkCorporateOpen}
+            onClose={() => setIsBulkCorporateOpen(false)}
+          />
+        </>
+      )}
     </div>
   );
 }
