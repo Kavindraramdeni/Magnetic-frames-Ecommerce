@@ -50,8 +50,8 @@ export async function fetchAndVerifyRazorpayPayment(
   expectedOrderId: string,
   expectedAmountPaise: number
 ): Promise<VerifyPaymentResult | VerifyPaymentError> {
-  const keyId = (process.env.RAZORPAY_KEY_ID || "").trim().replace(/['"]/g, "");
-  const keySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim().replace(/['"]/g, "");
+  const keyId = (process.env.RAZORPAY_KEY_ID || "rzp_test_TGaGgMONy7ZDwz").trim().replace(/['"]/g, "");
+  const keySecret = (process.env.RAZORPAY_KEY_SECRET || "YXOAZFrYF8Zt0UD8iWE65Wfx").trim().replace(/['"]/g, "");
 
   if (!keyId || !keySecret) {
     return { ok: false, reason: "Razorpay API credentials not configured." };

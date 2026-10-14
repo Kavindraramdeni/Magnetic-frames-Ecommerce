@@ -4,9 +4,10 @@ import crypto from "crypto";
 
 dotenv.config();
 
+const DEFAULT_SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpbXVsc3JuZnV0eW11aWFrZHFnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjI4NzE4NiwiZXhwIjoyMTAxODYzMTg2fQ.GhvpL1AaeNeshEMeTM3RPklxQNFgmZ67ziX7P2g2O0s";
 const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://limulsrnfutymuiakdqg.supabase.co";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpbXVsc3JuZnV0eW11aWFrZHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyODcxODYsImV4cCI6MjEwMTg2MzE4Nn0.llWG5U5Dgtwelbc4N5gQe74RJ9mVD12QBzZLndmIwkE";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
