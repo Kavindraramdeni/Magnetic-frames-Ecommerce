@@ -63,16 +63,6 @@ export const BASE_SHAPES: MagnetShape[] = [
     tagline: 'Horizontal Classic (K2)'
   },
   {
-    id: 'filmstrip',
-    name: 'Vintage Film Strip',
-    price: SHAPE_PRICES.filmstrip,
-    dimensions: '2 × 6 inch',
-    description: 'A narrative strip holding 3 of your snapshots sequentially. Perfect for storytelling: sunset phases, baby faces, or pet-run progression.',
-    shapeClass: 'rounded-md border-2 border-slate-900 bg-slate-900 p-2 text-white',
-    frameRatio: 'aspect-[1/3]',
-    tagline: 'Storytelling Storyboard (K7)'
-  },
-  {
     id: 'hexagon',
     name: 'Honeycomb Hexagon',
     price: SHAPE_PRICES.hexagon,

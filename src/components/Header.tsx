@@ -1,180 +1,57 @@
-import React, { useState } from 'react';
-import { Sparkles, MessageSquare, Menu, X, Heart, Sparkle, ShoppingBag, Building2 } from 'lucide-react';
-
+import React from 'react';
+import { ShoppingBag } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 
 interface HeaderProps {
-  onScrollToCustomizer: () => void;
-  onScrollToGallery: () => void;
-  onScrollToShapes: () => void;
   cartItemsCount?: number;
   onOpenCart?: () => void;
-  onOpenBulkModal?: () => void;
+  onHome?: () => void;
+  onStudio?: () => void;
   onOpenB2B?: () => void;
+  activeView?: string;
 }
 
-export default function Header({ 
-  onScrollToCustomizer, 
-  onScrollToGallery, 
-  onScrollToShapes,
+export default function Header({
   cartItemsCount = 0,
   onOpenCart,
-  onOpenBulkModal,
-  onOpenB2B
+  onHome,
+  onStudio,
+  onOpenB2B,
+  activeView = 'home',
 }: HeaderProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   return (
-    <header className="sticky top-0 z-50 w-full transition-all duration-300 shadow-xs bg-white/95 backdrop-blur-md border-b border-neutral-200/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-        
-        {/* Logo Mark: Luxury Atelier Aesthetic */}
-        <div className="flex items-center">
-          <a href="/" className="group flex items-center gap-3">
-            <BrandLogo size={36} color="#111111" className="group-hover:scale-105 transition-transform duration-300" />
-            <div className="flex flex-col">
-              <span className="font-serif text-xl font-bold tracking-wide text-[#111111] leading-none">
-                KRIA
-              </span>
-              <span className="font-sans text-[8px] tracking-[0.25em] uppercase text-[#888888] font-black mt-1 leading-none">
-                STUDIO
-              </span>
-            </div>
-          </a>
-        </div>
+    <header className="sticky top-0 z-50 w-full bg-[#FAF8F5]/90 backdrop-blur-xl border-b border-neutral-200/60">
+      <div className="max-w-6xl mx-auto px-4 h-16 sm:h-[4.5rem] flex items-center justify-between">
+        <button type="button" onClick={onHome} className="flex items-center gap-2.5 group">
+          <BrandLogo size={30} color="#111111" className="transition-transform duration-300 group-hover:scale-105" />
+          <span className="flex flex-col text-left">
+            <span className="font-serif text-lg leading-none tracking-wide">KRIA</span>
+            <span className="text-[8px] tracking-[0.28em] uppercase text-neutral-400 font-semibold mt-0.5">Studio</span>
+          </span>
+        </button>
 
-        {/* Desktop Navigation with Animated Underline Micro-interactions */}
-        <nav className="hidden md:flex items-center gap-6 font-sans text-xs tracking-widest font-semibold text-[#555555]">
-          <button 
-            onClick={onScrollToCustomizer}
-            className="relative py-2 hover:text-black transition-colors duration-200 cursor-pointer uppercase font-bold text-neutral-900 after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-neutral-900 after:transition-all after:duration-300"
-          >
-            ORDER NOW ✨
+        <nav className="hidden md:flex items-center gap-8 text-xs font-medium tracking-wider text-neutral-500 uppercase">
+          <button type="button" onClick={onHome} className={`nav-link transition-colors ${activeView === 'home' ? 'text-neutral-900 font-semibold' : 'hover:text-neutral-900'}`}>
+            Shop
           </button>
-          <button 
-            onClick={onScrollToGallery}
-            className="relative py-2 hover:text-black transition-colors duration-200 cursor-pointer uppercase after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-neutral-900 after:transition-all after:duration-300"
-          >
-            LIFESTYLE INSPIRATION
-          </button>
-          <button 
-            onClick={onOpenB2B}
-            className="relative text-emerald-950 font-bold tracking-wider transition-colors duration-200 cursor-pointer uppercase flex items-center gap-1.5 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-300/90 hover:bg-emerald-100 shadow-2xs"
-          >
-            💼 B2B WHOLESALE (MOQ 5+)
+          <button type="button" onClick={onStudio} className={`nav-link transition-colors ${activeView === 'studio' ? 'text-neutral-900 font-semibold' : 'hover:text-neutral-900'}`}>
+            Design Studio
           </button>
         </nav>
 
-        {/* Desktop CTA & Elegant Badging */}
-        <div className="hidden md:flex items-center gap-5">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-100 text-[#666666] rounded-full text-[10px] font-mono border border-neutral-200/40 font-bold uppercase tracking-wider">
-            <Sparkle className="h-3 w-3 text-[#B09A84] animate-spin-slow" />
-            Made in India
-          </span>
-          <button
-            onClick={onOpenCart || onScrollToCustomizer}
-            id="header-cart-btn"
-            className="relative p-3 bg-[#111111] text-white hover:bg-neutral-800 active:scale-95 transition-all duration-200 rounded-full shadow-md flex items-center justify-center cursor-pointer group animate-in zoom-in duration-300"
-            title="View Design Tray"
-          >
-            <ShoppingBag className="h-5 w-5 text-[#E8DCCF] group-hover:scale-105 transition-transform" />
-            <span className={`absolute -top-1 -right-1 font-mono text-[9px] font-bold h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white transition-all shadow ${
-              cartItemsCount > 0 ? 'bg-[#B09A84] text-white' : 'bg-neutral-200 text-neutral-600'
-            }`}>
+        <button
+          type="button"
+          onClick={onOpenCart}
+          className="relative h-10 w-10 rounded-full bg-neutral-900 text-white flex items-center justify-center active:scale-95 transition-transform"
+          aria-label="Open bag"
+        >
+          <ShoppingBag className="h-4.5 w-4.5 text-[#E8DCCF]" />
+          {cartItemsCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-4.5 min-w-4.5 px-1 rounded-full bg-[#C4A574] text-[9px] font-bold text-neutral-900 flex items-center justify-center">
               {cartItemsCount}
             </span>
-          </button>
-        </div>
-
-        {/* Mobile Menu Trigger & B2B Wholesale Quick Link */}
-        <div className="md:hidden flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={onOpenB2B}
-            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-950 text-[10px] font-mono font-bold tracking-wider px-2.5 py-1.5 rounded-full border border-emerald-300 flex items-center gap-1 active:scale-95 transition-all shadow-2xs"
-          >
-            💼 B2B (MOQ 5+)
-          </button>
-          <button
-            onClick={onOpenCart || onScrollToCustomizer}
-            className="relative p-2.5 bg-[#111111] text-white rounded-full active:scale-95 transition-transform flex items-center justify-center"
-            title="View Design Tray"
-          >
-            <ShoppingBag className="h-4.5 w-4.5 text-[#E8DCCF]" />
-            <span className={`absolute -top-1 -right-1 font-mono text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white transition-all shadow ${
-              cartItemsCount > 0 ? 'bg-[#B09A84] text-white' : 'bg-neutral-200 text-neutral-600'
-            }`}>
-              {cartItemsCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 text-[#111111] hover:bg-neutral-100 rounded-full transition-colors focus:outline-none"
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="h-5.5 w-5.5" /> : <Menu className="h-5.5 w-5.5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Drawer */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-[#FAF8F5]/98 border-b border-neutral-200 py-6 px-6 animate-in slide-in-from-top duration-300">
-          <div className="flex flex-col gap-5 font-sans text-sm tracking-widest font-bold text-[#666666]">
-            <button
-              onClick={() => {
-                onScrollToShapes();
-                setIsMenuOpen(false);
-              }}
-              className="text-left py-2 hover:text-black border-b border-neutral-100 uppercase"
-            >
-              SHOP NOW
-            </button>
-            <button
-              onClick={() => {
-                onScrollToGallery();
-                setIsMenuOpen(false);
-              }}
-              className="text-left py-2 hover:text-black border-b border-neutral-100 uppercase"
-            >
-              LIFESTYLE INSPIRATION
-            </button>
-            <a
-              href="#faqs"
-              onClick={() => setIsMenuOpen(false)}
-              className="text-left py-2 hover:text-black border-b border-neutral-100 uppercase"
-            >
-              SPECIFICATIONS
-            </a>
-            <button
-              onClick={() => {
-                if (onOpenB2B) onOpenB2B();
-                setIsMenuOpen(false);
-              }}
-              className="text-left py-2 text-emerald-950 font-bold border-b border-neutral-100 uppercase flex items-center justify-between bg-emerald-50 px-3 rounded-lg"
-            >
-              💼 B2B WHOLESALE (MOQ 5+)
-              <Building2 className="h-4 w-4 text-emerald-700" />
-            </button>
-            
-            <button
-              onClick={() => {
-                onScrollToCustomizer();
-                setIsMenuOpen(false);
-              }}
-              className="bg-[#111111] text-[#FAF8F5] text-center py-4 rounded-xl font-bold tracking-widest uppercase transition-colors shadow-md mt-2 flex items-center justify-center gap-2"
-            >
-              <Sparkles className="h-4 w-4 text-[#E8DCCF]" />
-              CUSTOMIZE YOUR PHOTO
-            </button>
-
-            <span className="text-[10px] text-neutral-400 font-mono text-center mt-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-semibold">
-              <Heart className="h-3 w-3 text-[#B09A84] fill-[#B09A84]" />
-              100% custom hand-polished acrylic
-            </span>
-          </div>
-        </div>
-      )}
+          )}
+        </button>
       </div>
     </header>
   );

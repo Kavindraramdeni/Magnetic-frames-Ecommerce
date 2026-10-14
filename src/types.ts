@@ -52,6 +52,7 @@ export interface CropSpecification {
   panY: number;        // Normalized vertical offset percentage (-100 to 100)
   aspectRatio: number; // Target frame aspect ratio (width / height)
   shapeId: MagnetShapeId;
+  cropMode?: 'fill' | 'fit'; // 'fill' = auto-crop edge-to-edge, 'fit' = full photo without cutoffs
 }
 
 export interface CartItem {
@@ -60,11 +61,13 @@ export interface CartItem {
   shapeName: string;
   quantity: number;
   previewUrl: string;
+  originalUrl?: string;
   photoName: string;
   captionText: string;
   photoScale: number;
   photoPanX: number;
   photoPanY: number;
+  cropMode?: 'fill' | 'fit';
   cropSpec?: CropSpecification;
   customText?: string;
   objectKey?: string;

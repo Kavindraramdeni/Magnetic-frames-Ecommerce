@@ -5,6 +5,7 @@ export interface CropSpec {
   panX?: number;
   panY?: number;
   aspectRatio?: number;
+  cropMode?: 'fill' | 'fit';
 }
 
 /**
@@ -55,6 +56,17 @@ export async function renderAdjustedImage(
   if (customWidth && customHeight) {
     targetWidth = customWidth;
     targetHeight = customHeight;
+  }
+
+  // If customer selected 'fit' (Full Photo, No Cutoff), fit entire photo without extracting/cutting off faces
+  if (cropSpec?.cropMode === 'fit') {
+    return await sharp(inputBuffer)
+      .resize(targetWidth, targetHeight, {
+        fit: 'contain',
+        background: { r: 255, g: 255, b: 255, alpha: 1 }
+      })
+      .png({ quality: 100 })
+      .toBuffer();
   }
 
   // Calculate base unzoomed crop frame inside source image fitting target aspect ratio

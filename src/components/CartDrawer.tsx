@@ -5,6 +5,7 @@ import {
   Sparkles, Truck, ArrowRight, Check, MessageSquare, ShieldCheck 
 } from 'lucide-react';
 import { CartItem } from '../types';
+import { bulkDiscountLabel, calculateBulkDiscount, deliveryChargeFor } from '../lib/pricing';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -125,9 +126,9 @@ export default function CartDrawer({
   // Pricing calculations
   const cartItemCount = cart.reduce((acc, x) => acc + x.quantity, 0);
   const cartSubtotal = cart.reduce((acc, x) => acc + (x.price * x.quantity), 0);
-  const bulkDiscount = cartItemCount >= 10 ? Math.round(cartSubtotal * 0.15) : 0;
+  const bulkDiscount = calculateBulkDiscount(cartItemCount, cartSubtotal);
   const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
-  const deliveryCharge = cartSubtotal === 0 ? 0 : (cartSubtotal >= 699 ? 0 : 60);
+  const deliveryCharge = deliveryChargeFor(Math.max(0, cartSubtotal - bulkDiscount - couponDiscount));
   const grandTotal = Math.max(0, cartSubtotal - bulkDiscount - couponDiscount + deliveryCharge);
 
   return createPortal(
@@ -378,7 +379,7 @@ export default function CartDrawer({
               </div>
               {bulkDiscount > 0 && (
                 <div className="flex justify-between text-emerald-700 font-medium">
-                  <span>10+ Bulk Discount (15%)</span>
+                  <span>{bulkDiscountLabel(cartItemCount) || 'Volume discount'}</span>
                   <span className="font-mono">-₹{bulkDiscount}</span>
                 </div>
               )}

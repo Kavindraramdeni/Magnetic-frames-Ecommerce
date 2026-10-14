@@ -106,48 +106,28 @@ export default function Customizer({
   };
   
   // Workspace Photo Adjustment States
-  const [photoUrl, setPhotoUrl] = useState<string>(initialPhotoUrl || PRESET_PHOTOS[0].url);
-  const [photoName, setPhotoName] = useState<string>(initialPhotoName || PRESET_PHOTOS[0].name);
+  const [photoUrl, setPhotoUrl] = useState<string>(initialPhotoUrl || '');
+  const [photoName, setPhotoName] = useState<string>(initialPhotoName || '');
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [photoScale, setPhotoScale] = useState<number>(initialScale);
   const [photoPanX, setPhotoPanX] = useState<number>(initialPanX);
   const [photoPanY, setPhotoPanY] = useState<number>(initialPanY);
   const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
 
-  // --- MULTI-PHOTO GALLERY POOL (Upload multiple photos & assign shapes individually) ---
-  const [photoPool, setPhotoPool] = useState<PhotoPoolItem[]>([
+  // Multi-Photo Gallery Pool (Empty by default for genuine customer photo crafting)
+  const [photoPool, setPhotoPool] = useState<PhotoPoolItem[]>(initialPhotoUrl ? [
     {
       id: 'pool-1',
-      url: initialPhotoUrl || PRESET_PHOTOS[0].url,
-      name: initialPhotoName || PRESET_PHOTOS[0].name,
+      url: initialPhotoUrl,
+      name: initialPhotoName || 'Your photo',
       scale: initialScale || 1.0,
       panX: initialPanX || 0,
       panY: initialPanY || 0,
       assignedShapeId: 'arch',
       captionText: 'Precious Moments'
-    },
-    {
-      id: 'pool-2',
-      url: PRESET_PHOTOS[1].url,
-      name: PRESET_PHOTOS[1].name,
-      scale: 1.0,
-      panX: 0,
-      panY: 0,
-      assignedShapeId: 'circle',
-      captionText: 'Sunny Memories'
-    },
-    {
-      id: 'pool-3',
-      url: PRESET_PHOTOS[2].url,
-      name: PRESET_PHOTOS[2].name,
-      scale: 1.05,
-      panX: 0,
-      panY: 0,
-      assignedShapeId: 'polaroid',
-      captionText: 'Retro Times'
     }
-  ]);
-  const [activePhotoId, setActivePhotoId] = useState<string>('pool-1');
+  ] : []);
+  const [activePhotoId, setActivePhotoId] = useState<string>(initialPhotoUrl ? 'pool-1' : '');
 
   // Synchronize workspace adjustments back into active item in photoPool
   useEffect(() => {

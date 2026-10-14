@@ -111,10 +111,12 @@
 
 .shape-heart {
   clip-path: url(#heart-clip);
+  -webkit-clip-path: url(#heart-clip);
 }
 
 .shape-hexagon {
   clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  -webkit-clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
 }
 
 .shape-crest {

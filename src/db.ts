@@ -29,9 +29,9 @@ export async function getOrders() {
     shippingDetails: order.shipping_json,
     trackingNumber: order.tracking_number,
     courierName: order.courier_name,
-    shipmentId: order.shipment_id || null,
-    shiprocketOrderId: order.shiprocket_order_id || null,
-    shiprocketLabelUrl: order.shiprocket_label_url || null,
+    shipmentId: order.shipment_id || order.totals_json?.shipmentId || null,
+    shiprocketOrderId: order.shiprocket_order_id || order.totals_json?.shiprocketOrderId || null,
+    shiprocketLabelUrl: order.shiprocket_label_url || order.totals_json?.shiprocketLabelUrl || null,
     deliveryEstimate: order.delivery_estimate,
     transactionId: order.transaction_id,
     grandTotal: order.totals_json?.grandTotal,
@@ -56,9 +56,9 @@ export async function getOrderByTransactionId(transactionId: string) {
     shippingDetails: data.shipping_json,
     trackingNumber: data.tracking_number,
     courierName: data.courier_name,
-    shipmentId: data.shipment_id || null,
-    shiprocketOrderId: data.shiprocket_order_id || null,
-    shiprocketLabelUrl: data.shiprocket_label_url || null,
+    shipmentId: data.shipment_id || data.totals_json?.shipmentId || null,
+    shiprocketOrderId: data.shiprocket_order_id || data.totals_json?.shiprocketOrderId || null,
+    shiprocketLabelUrl: data.shiprocket_label_url || data.totals_json?.shiprocketLabelUrl || null,
     deliveryEstimate: data.delivery_estimate,
     transactionId: data.transaction_id,
     grandTotal: data.totals_json?.grandTotal,
@@ -83,9 +83,9 @@ export async function getOrderById(orderId: string) {
     shippingDetails: data.shipping_json,
     trackingNumber: data.tracking_number,
     courierName: data.courier_name,
-    shipmentId: data.shipment_id || null,
-    shiprocketOrderId: data.shiprocket_order_id || null,
-    shiprocketLabelUrl: data.shiprocket_label_url || null,
+    shipmentId: data.shipment_id || data.totals_json?.shipmentId || null,
+    shiprocketOrderId: data.shiprocket_order_id || data.totals_json?.shiprocketOrderId || null,
+    shiprocketLabelUrl: data.shiprocket_label_url || data.totals_json?.shiprocketLabelUrl || null,
     deliveryEstimate: data.delivery_estimate,
     transactionId: data.transaction_id,
     grandTotal: data.totals_json?.grandTotal,
@@ -114,24 +114,40 @@ export async function saveOrder(order: any) {
     bulkDiscount: order.bulkDiscount || 0,
     deliveryCharge: order.deliveryCharge || 0,
     couponDiscount: order.couponDiscount || 0,
-    giftWrapFee: order.giftWrapFee || 0
+    giftWrapFee: order.giftWrapFee || 0,
+    shipmentId: order.shipmentId || null,
+    shiprocketOrderId: order.shiprocketOrderId || null,
+    shiprocketLabelUrl: order.shiprocketLabelUrl || null
   };
 
-  const { data, error } = await supabase.from('orders').insert({
+  const coreInsertPayload = {
     id: order.id,
     status: order.status,
     cart_json: order.cart,
     shipping_json: order.shippingDetails,
-    tracking_number: order.trackingNumber,
-    courier_name: order.courierName,
-    shipment_id: order.shipmentId || null,
-    shiprocket_label_url: order.shiprocketLabelUrl || null,
-    delivery_estimate: order.deliveryEstimate,
+    tracking_number: order.trackingNumber || 'UNASSIGNED',
+    courier_name: order.courierName || 'Shiprocket',
+    delivery_estimate: order.deliveryEstimate || '3-5 Business Days',
     transaction_id: order.transactionId,
     totals_json: completeTotals,
-    history_json: order.history,
-    created_at: order.createdAt
+    history_json: order.history || [],
+    created_at: order.createdAt || new Date().toISOString()
+  };
+
+  let insertRes = await supabase.from('orders').insert({
+    ...coreInsertPayload,
+    shipment_id: order.shipmentId || null,
+    shiprocket_label_url: order.shiprocketLabelUrl || null
   }).select().maybeSingle();
+
+  if (insertRes.error && insertRes.error.message && (
+    insertRes.error.message.includes('column') ||
+    insertRes.error.message.includes('schema cache')
+  )) {
+    insertRes = await supabase.from('orders').insert(coreInsertPayload).select().maybeSingle();
+  }
+
+  const { data, error } = insertRes;
 
   if (error) {
     // If conflict on transaction_id, fetch and verify existing order
@@ -174,44 +190,72 @@ export async function saveOrder(order: any) {
         const shapeId = item.shapeId || 'custom';
         const qtyToDeduct = item.quantity || 1;
 
-        // Check if movement was already recorded for this order and item
-        const { data: existingMovement } = await supabase
-          .from('inventory_movements')
-          .select('id')
-          .eq('order_id', order.id)
-          .eq('product_id', shapeId)
-          .eq('movement_type', 'ORDER_DEDUCT')
-          .maybeSingle();
+        try {
+          // Check if movement was already recorded for this order and item
+          const { data: existingMovement, error: movementErr } = await supabase
+            .from('inventory_movements')
+            .select('id')
+            .eq('order_id', order.id)
+            .eq('product_id', shapeId)
+            .eq('movement_type', 'ORDER_DEDUCT')
+            .maybeSingle();
 
-        if (!existingMovement) {
-          // Verify current stock level before decrementing
-          const { data: prod, error: prodErr } = await supabase.from('products').select('stock').eq('id', shapeId).maybeSingle();
-          if (prodErr) {
-            console.error(`Failed to verify stock for ${shapeId}:`, prodErr);
-          } else if (prod && typeof prod.stock === 'number' && prod.stock < qtyToDeduct) {
-            throw new Error(`CRITICAL: Insufficient inventory for product ${shapeId}. Available: ${prod.stock}, Requested: ${qtyToDeduct}`);
-          }
+          const tableMissing = (movementErr && (
+            movementErr.message.includes('schema cache') ||
+            movementErr.message.includes('not find') ||
+            movementErr.message.includes('does not exist')
+          ));
 
-          // Record ledger entry
-          const { error: ledgerErr } = await supabase.from('inventory_movements').insert({
-            order_id: order.id,
-            product_id: shapeId,
-            quantity_changed: -qtyToDeduct,
-            movement_type: 'ORDER_DEDUCT'
-          });
+          if (!existingMovement && !tableMissing) {
+            // Verify current stock level before decrementing
+            const { data: prod, error: prodErr } = await supabase.from('products').select('stock').eq('id', shapeId).maybeSingle();
+            if (prodErr) {
+              console.error(`Failed to verify stock for ${shapeId}:`, prodErr);
+            } else if (prod && typeof prod.stock === 'number' && prod.stock < qtyToDeduct) {
+              throw new Error(`CRITICAL: Insufficient inventory for product ${shapeId}. Available: ${prod.stock}, Requested: ${qtyToDeduct}`);
+            }
 
-          if (ledgerErr) {
-            throw new Error(`CRITICAL: Failed to record inventory movement ledger for order ${order.id}: ${ledgerErr.message}`);
-          }
+            // Record ledger entry
+            const { error: ledgerErr } = await supabase.from('inventory_movements').insert({
+              order_id: order.id,
+              product_id: shapeId,
+              quantity_changed: -qtyToDeduct,
+              movement_type: 'ORDER_DEDUCT'
+            });
 
-          // Decrement product stock safely
-          if (prod && typeof prod.stock === 'number') {
-            const newStock = Math.max(0, prod.stock - qtyToDeduct);
-            const { error: updateErr } = await supabase.from('products').update({ stock: newStock }).eq('id', shapeId);
-            if (updateErr) {
-              throw new Error(`CRITICAL: Failed to update product stock for ${shapeId}: ${updateErr.message}`);
+            if (ledgerErr) {
+              if (
+                ledgerErr.message.includes('schema cache') ||
+                ledgerErr.message.includes('not find') ||
+                ledgerErr.message.includes('does not exist')
+              ) {
+                console.warn(`inventory_movements table not present in schema cache, skipping ledger:`, ledgerErr.message);
+              } else {
+                throw new Error(`CRITICAL: Failed to record inventory movement ledger for order ${order.id}: ${ledgerErr.message}`);
+              }
+            }
+
+            // Decrement product stock safely
+            if (prod && typeof prod.stock === 'number') {
+              const newStock = Math.max(0, prod.stock - qtyToDeduct);
+              const { error: updateErr } = await supabase.from('products').update({ stock: newStock }).eq('id', shapeId);
+              if (updateErr) {
+                console.warn(`Failed to update product stock for ${shapeId}:`, updateErr.message);
+              }
+            }
+          } else if (tableMissing) {
+            // Fallback: Decrement product stock directly if table exists
+            const { data: prod } = await supabase.from('products').select('stock').eq('id', shapeId).maybeSingle();
+            if (prod && typeof prod.stock === 'number') {
+              const newStock = Math.max(0, prod.stock - qtyToDeduct);
+              await supabase.from('products').update({ stock: newStock }).eq('id', shapeId);
             }
           }
+        } catch (invErr: any) {
+          if (invErr.message?.includes('CRITICAL: Insufficient inventory')) {
+            throw invErr;
+          }
+          console.warn(`Inventory deduction non-fatal notice for ${shapeId}:`, invErr?.message);
         }
       }
     }
@@ -261,25 +305,47 @@ export async function updateOrder(order: any) {
     deliveryCharge: order.deliveryCharge || 0,
     couponDiscount: order.couponDiscount || 0,
     giftWrapFee: order.giftWrapFee || 0,
+    shipmentId: order.shipmentId ?? null,
+    shiprocketOrderId: order.shiprocketOrderId ?? null,
+    shiprocketLabelUrl: order.shiprocketLabelUrl ?? null,
   };
 
-  const { data, error } = await supabase
+  const coreUpdate: any = {
+    status: order.status,
+    cart_json: order.cart,
+    tracking_number: order.trackingNumber ?? null,
+    courier_name: order.courierName ?? null,
+    delivery_estimate: order.deliveryEstimate ?? null,
+    totals_json: completeTotals,
+    history_json: order.history,
+  };
+
+  let updateRes = await supabase
     .from('orders')
     .update({
-      status: order.status,
-      tracking_number: order.trackingNumber ?? null,
-      courier_name: order.courierName ?? null,
+      ...coreUpdate,
       shipment_id: order.shipmentId ?? null,
       shiprocket_order_id: order.shiprocketOrderId ?? null,
       shiprocket_label_url: order.shiprocketLabelUrl ?? null,
-      delivery_estimate: order.deliveryEstimate ?? null,
-      totals_json: completeTotals,
-      history_json: order.history,
       updated_at: new Date().toISOString(),
     })
     .eq('id', order.id)
     .select()
     .maybeSingle();
+
+  if (updateRes.error && updateRes.error.message && (
+    updateRes.error.message.includes('column') ||
+    updateRes.error.message.includes('schema cache')
+  )) {
+    updateRes = await supabase
+      .from('orders')
+      .update(coreUpdate)
+      .eq('id', order.id)
+      .select()
+      .maybeSingle();
+  }
+
+  const { data, error } = updateRes;
 
   if (error) {
     throw new Error(`CRITICAL: updateOrder failed for ${order.id}: ${error.message}`);

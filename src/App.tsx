@@ -1,25 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
-import TopMarquee from './components/TopMarquee';
-import Hero from './components/Hero';
-import ShapeShowcase from './components/ShapeShowcase';
-import LifestyleGallery from './components/LifestyleGallery';
-import Customizer from './components/Customizer';
-import FAQAndReviews from './components/FAQAndReviews';
 import Footer from './components/Footer';
-import StyleCarousel from './components/StyleCarousel';
-import SectionWrapper from './components/SectionWrapper';
 import AdminDashboard from './components/AdminDashboard';
 import CartDrawer from './components/CartDrawer';
-import BulkCorporateModal from './components/BulkCorporateModal';
-import WhatsAppWidget from './components/WhatsAppWidget';
 import BlogSection from './components/BlogSection';
 import WholesaleB2BPage from './components/WholesaleB2BPage';
 import CMSLayout from './cms/CMSLayout';
+import StoreHome from './components/StoreHome';
+import FrameStudio from './components/FrameStudio';
+import CheckoutPage from './components/CheckoutPage';
+import MobileDock from './components/MobileDock';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem } from './types';
-import { BASE_SHAPES } from './data';
-import { MessageSquare, Sparkles, ShoppingBag } from 'lucide-react';
 
 
 function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
@@ -79,9 +71,14 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b'>('home');
-  const [adminToken, setAdminToken] = useState<string>('');
-  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b'>('home');
+  const [adminToken, setAdminToken] = useState<string>(() => {
+    try {
+      return localStorage.getItem('adminToken') || '';
+    } catch {
+      return '';
+    }
+  });
 
   // Lifted cart state with localStorage persistence and sanitization
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -120,7 +117,6 @@ export default function App() {
   }, [cart]);
 
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutCoupon, setCheckoutCoupon] = useState<{ code: string; label: string; discount: number } | null>(null);
 
   const handleUpdateQuantity = (id: string, newQty: number) => {
@@ -141,17 +137,23 @@ export default function App() {
     setCart([]);
   };
 
-  // Customizer preloaded image and name carrying over from Immersive Style Experience
-  const [customizerPhotoUrl, setCustomizerPhotoUrl] = useState<string | null>(null);
-  const [customizerPhotoName, setCustomizerPhotoName] = useState<string | null>(null);
-
   useEffect(() => {
-    // Initialize analytics event listener & capture UTMs
     initAnalytics(import.meta.env.VITE_META_PIXEL_ID, import.meta.env.VITE_GA_MEASUREMENT_ID);
-
-    // Deep-linking query params (?shape=heart, ?shape=filmstrip, etc.) for direct ad campaigns
     try {
       const searchParams = new URLSearchParams(window.location.search);
+
+      // Deep link to Admin / CMS desk
+      if (searchParams.has('admin') || searchParams.has('cms') || searchParams.get('view') === 'admin' || searchParams.get('view') === 'cms') {
+        const storedToken = localStorage.getItem('adminToken');
+        if (storedToken) {
+          setAdminToken(storedToken);
+          setCurrentView('admin');
+        } else {
+          openAdmin();
+        }
+        return;
+      }
+
       const shapeParam = searchParams.get('shape');
       if (shapeParam) {
         const clean = shapeParam.toLowerCase().trim();
@@ -173,56 +175,54 @@ export default function App() {
         const resolvedShape = SHAPE_ALIASES[clean];
         if (resolvedShape) {
           setActiveWorkspaceShape(resolvedShape);
-          setTimeout(() => {
-            scrollToCustomizer();
-          }, 300);
+          setCurrentView('studio');
         }
       }
     } catch (e) {
       console.warn('Deep link param resolution error:', e);
     }
   }, []);
-  const [customizerPhotoScale, setCustomizerPhotoScale] = useState<number>(1.0);
-  const [customizerPhotoPanX, setCustomizerPhotoPanX] = useState<number>(0);
-  const [customizerPhotoPanY, setCustomizerPhotoPanY] = useState<number>(0);
 
-  // Navigation References for luxury smooth scroll
-  const customizerRef = useRef<HTMLDivElement>(null);
-  const shapesRef = useRef<HTMLDivElement>(null);
-  const galleryRef = useRef<HTMLDivElement>(null);
-
-  // Active shape state loaded directly in the customizer workspace when customized
   const [activeWorkspaceShape, setActiveWorkspaceShape] = useState<MagnetShapeId>('arch');
+  const cartCount = cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0);
 
-  const scrollToCustomizer = () => {
-    customizerRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const goStudio = (id?: MagnetShapeId) => {
+    if (id) setActiveWorkspaceShape(id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentView('studio');
   };
 
-  const scrollToShapes = () => {
-    shapesRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const goHome = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentView('home');
   };
 
-  const scrollToGallery = () => {
-    galleryRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const goCheckout = (coupon?: { code: string; label: string; discount: number } | null) => {
+    if (coupon !== undefined) setCheckoutCoupon(coupon);
+    setIsCartOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentView('checkout');
   };
 
-  // When user selects shape from collection card, scroll to Customizer workspace directly
-  const handleSelectShapeToCustomize = (id: MagnetShapeId) => {
-    setActiveWorkspaceShape(id);
-    if (currentView !== 'home') setCurrentView('home');
-    setTimeout(() => {
-      scrollToCustomizer();
-    }, 100);
+  const openAdmin = async () => {
+    const password = window.prompt('Enter admin password');
+    if (!password) return;
+    const response = await fetch('/api/admin/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    if (!response.ok) {
+      alert('Invalid admin password');
+      return;
+    }
+    const data = await response.json();
+    setAdminToken(data.token);
+    localStorage.setItem('adminToken', data.token);
+    setCurrentView('admin');
   };
 
-  // Redirect style-experience to B2B Wholesale page
-  if (currentView === 'style-experience') {
-    setCurrentView('b2b');
-  }
-
-
-
-  if (currentView === 'b2b') {
+  if (currentView === 'b2b' || currentView === 'style-experience') {
     return (
       <>
         <WholesaleB2BPage
@@ -251,13 +251,8 @@ export default function App() {
           onUpdateQuantity={handleUpdateQuantity}
           onRemoveItem={handleRemoveItem}
           onClearCart={handleClearCart}
-          onProceedToCheckout={() => {
-            setIsCartOpen(false);
-            setCurrentView('home');
-            setIsCheckoutOpen(true);
-            setTimeout(() => {
-              scrollToCustomizer();
-            }, 100);
+          onProceedToCheckout={(coupon) => {
+            goCheckout(coupon);
           }}
         />
       </>
@@ -316,8 +311,8 @@ export default function App() {
     );
   }
 
-  // If the staff is viewing the operations terminal
-  if (currentView === 'admin') {
+  // Unified Operations Desk: Orders, 300 DPI Photo Inspect, Shiprocket, Label & GST Invoice
+  if (currentView === 'admin' || currentView === 'cms') {
     return (
       <AdminDashboard 
         onBackToHome={() => setCurrentView('home')}
@@ -326,147 +321,62 @@ export default function App() {
     );
   }
 
-  // The New Professional CMS
-  if (currentView === 'cms') {
-    return <CMSLayout onBackToHome={() => setCurrentView('home')} />;
-  }
-
   return (
     <div id="home-root" className="min-h-screen bg-[#FAF8F5] text-[#111111] font-sans antialiased overflow-x-hidden selection:bg-[#E8DCCF] selection:text-neutral-900">
-      
-      {/* Global CSS SVG ClipPath definitions for complex custom shapes */}
-      <svg className="absolute w-0 h-0 pointer-events-none opacity-0 overflow-hidden" aria-hidden="true">
-        <defs>
-          <clipPath id="heart-clip" clipPathUnits="objectBoundingBox">
-            <path d="M 0.5, 0.25 C 0.35, 0.05, 0.05, 0.05, 0.05, 0.35 C 0.05, 0.65, 0.25, 0.85, 0.5, 1 C 0.75, 0.85, 0.95, 0.65, 0.95, 0.35 C 0.95, 0.05, 0.65, 0.05, 0.5, 0.25 Z" />
-          </clipPath>
-        </defs>
-      </svg>
-
-      {/* Top Announcement Marquee Strip */}
-      <TopMarquee />
-
-      {/* Header with anchors */}
-      <Header 
-        onScrollToCustomizer={scrollToCustomizer}
-        onScrollToShapes={scrollToShapes}
-        onScrollToGallery={scrollToGallery}
-        cartItemsCount={cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenBulkModal={() => setIsBulkModalOpen(true)}
-        onOpenB2B={() => setCurrentView('b2b')}
-      />
-
-      {/* Hero Header Banner */}
-      <SectionWrapper 
-        backgroundImage="/images/Landingprofile.png"
-        overlayColor="rgba(250, 248, 245, 0.4)"
-      >
-        <Hero 
-          onScrollToCustomizer={scrollToCustomizer}
-          onScrollToShapes={scrollToShapes}
-          onOpenStyleExperience={() => setCurrentView('style-experience')}
+      {currentView !== 'studio' && (
+        <Header
+          cartItemsCount={cartCount}
+          onOpenCart={() => setIsCartOpen(true)}
+          onHome={goHome}
+          onStudio={() => goStudio()}
+          onOpenB2B={() => setCurrentView('b2b')}
+          activeView={currentView}
         />
-      </SectionWrapper>
+      )}
 
-      {/* Shapes Catalogue Index */}
-      <div ref={shapesRef}>
-        <SectionWrapper 
-          backgroundImage="/images/luxury_living_room_bg_1782458094193.jpg"
-          overlayColor="rgba(250, 248, 245, 0.85)"
-        >
-          <ShapeShowcase onSelectShape={handleSelectShapeToCustomize} />
-        </SectionWrapper>
-      </div>
+      {currentView === 'studio' ? (
+        <FrameStudio
+          initialShapeId={activeWorkspaceShape}
+          cart={cart}
+          setCart={setCart}
+          onOpenCart={() => setIsCartOpen(true)}
+          onBackToHome={goHome}
+        />
+      ) : currentView === 'checkout' ? (
+        <CheckoutPage
+          cart={cart}
+          coupon={checkoutCoupon}
+          onBack={() => {
+            setIsCartOpen(true);
+            goHome();
+          }}
+          onClearCart={handleClearCart}
+        />
+      ) : (
+        <StoreHome onCustomize={goStudio} />
+      )}
 
-      {/* Futuristic Interactive Live Customizer Workspace */}
-      <div ref={customizerRef}>
-        <SectionWrapper 
-          backgroundImage="/images/clean_studio_bg_1782458110845.jpg"
-          overlayColor="rgba(250, 248, 245, 0.88)"
-        >
-          <Customizer 
-            initialShapeId={activeWorkspaceShape} 
-            initialPhotoUrl={customizerPhotoUrl || undefined}
-            initialPhotoName={customizerPhotoName || undefined}
-            initialScale={customizerPhotoScale}
-            initialPanX={customizerPhotoPanX}
-            initialPanY={customizerPhotoPanY}
-            cart={cart}
-            setCart={setCart}
-            isCheckoutOpen={isCheckoutOpen}
-            setIsCheckoutOpen={setIsCheckoutOpen}
-            onOpenCart={() => setIsCartOpen(true)}
-            appliedCoupon={checkoutCoupon}
+      {currentView !== 'studio' && (
+        <>
+          <Footer
+            onOpenAdmin={openAdmin}
+            onOpenPolicies={() => setCurrentView('policies')}
+            onOpenTracking={() => setCurrentView('tracking')}
+            onOpenBlog={() => setCurrentView('blog')}
+            onOpenB2B={() => setCurrentView('b2b')}
           />
-        </SectionWrapper>
-      </div>
 
-      {/* Real Placement Lifestyle Showcase Bento */}
-      <div ref={galleryRef}>
-        <SectionWrapper 
-          backgroundImage="/images/lifestyle_gallery_workspace_1779653492345.png"
-          overlayColor="rgba(250, 248, 245, 0.8)"
-        >
-          <LifestyleGallery />
-        </SectionWrapper>
-      </div>
+          <MobileDock
+            active={currentView}
+            cartCount={cartCount}
+            onHome={goHome}
+            onStudio={() => goStudio()}
+            onCart={() => setIsCartOpen(true)}
+          />
+        </>
+      )}
 
-      {/* Reviews, trust seals and FAQs dropdowns */}
-      <SectionWrapper 
-        backgroundImage="/images/soft_abstract_bg_1782458126047.jpg"
-        overlayColor="rgba(25, 25, 25, 0.05)"
-      >
-        <FAQAndReviews />
-      </SectionWrapper>
-
-      {/* Minimal Footer */}
-      <Footer onOpenAdmin={async () => {
-        const password = window.prompt('Enter admin password');
-        if (!password) return;
-        const response = await fetch('/api/admin/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
-        });
-        if (!response.ok) {
-          alert('Invalid admin password');
-          return;
-        }
-        const data = await response.json();
-        setAdminToken(data.token);
-        localStorage.setItem('adminToken', data.token);
-        setCurrentView('cms');
-      }} onOpenPolicies={() => setCurrentView('policies')} onOpenTracking={() => setCurrentView('tracking')} onOpenBlog={() => setCurrentView('blog')} onOpenB2B={() => setCurrentView('b2b')} />
-
-      {/* Floating Automated WhatsApp Support Widget */}
-      <WhatsAppWidget
-        onOpenBulkModal={() => setIsBulkModalOpen(true)}
-        onOpenTracking={() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          setCurrentView('tracking');
-        }}
-      />
-
-      {/* Floating Global Shopping Cart Trigger - Positioned cleanly to the left of WhatsApp button */}
-      <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-60 z-40">
-        <button
-          onClick={() => setIsCartOpen(true)}
-          aria-label="Open Shopping Cart"
-          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#111111] hover:bg-neutral-800 text-white flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white cursor-pointer relative group"
-          title="View Shopping Cart"
-        >
-          <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-white group-hover:scale-110 transition-transform" />
-          {cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0) > 0 && (
-            <span className="absolute -top-1 -right-1 bg-[#6B1D2F] text-white text-[10px] sm:text-[11px] font-mono font-bold w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in-50">
-              {cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Slide-over persistent Cart Drawer */}
-      <CartDrawer 
+      <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         cart={cart}
@@ -474,18 +384,9 @@ export default function App() {
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}
         onProceedToCheckout={(coupon) => {
-          setCheckoutCoupon(coupon);
-          setIsCartOpen(false);
-          setIsCheckoutOpen(true);
+          goCheckout(coupon);
         }}
       />
-
-      {/* Bulk & Corporate Orders Modal */}
-      <BulkCorporateModal 
-        isOpen={isBulkModalOpen}
-        onClose={() => setIsBulkModalOpen(false)}
-      />
-
     </div>
   );
 }

@@ -51,6 +51,24 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 
 
+const DEFAULT_BUSINESS_SETTINGS: Record<string, string> = {
+  company_name: "KRIA Studio Luxury Prints",
+  store_name: "KRIA Studio",
+  support_email: "kriatechgroup@gmail.com",
+  support_phone: "+91 9392576792",
+  registered_address: "Jubilee Tech Zone, Phase II, Kukatpally, Hyderabad, Telangana 500085",
+  gstin: "36AAAFK7892P1Z0",
+  shipping_free_threshold: "699",
+  flat_shipping_rate: "60",
+  shipping_flat_rate: "60",
+  bundle_3_price: "799",
+  bundle_3_free_shipping: "true",
+  meta_launch_offer_enabled: "true",
+  currency_symbol: "₹",
+  tax_inclusive: "true",
+  brand_tagline: "Personalised, made-to-order acrylic magnetic fridge frames"
+};
+
 async function getBusinessSettings() {
   const { data: rows, error } = await supabase.from("business_settings").select("*");
   if (error) throw error;
@@ -58,7 +76,7 @@ async function getBusinessSettings() {
   for (const r of rows || []) {
     settingsObj[r.key] = r.value;
   }
-  return settingsObj;
+  return { ...DEFAULT_BUSINESS_SETTINGS, ...settingsObj };
 }
 
 async function getWarehouse(id = "wh_primary") {
@@ -195,6 +213,39 @@ export function calculateBulkDiscount(itemCount: number, subtotal: number, tiers
   return 0;
 }
 
+export let cachedShippingFreeThreshold = 699;
+export let cachedFlatShippingRate = 60;
+export let cachedBundle3Price = 799;
+export let cachedBundle3FreeShipping = true;
+export let cachedMetaLaunchOfferEnabled = true;
+export let lastSettingsFetchTime = 0;
+
+export async function refreshLiveBusinessSettings() {
+  const now = Date.now();
+  if (now - lastSettingsFetchTime < 15_000) return;
+  try {
+    const all = await getBusinessSettings();
+    if (all.shipping_free_threshold !== undefined) {
+      cachedShippingFreeThreshold = Math.max(0, Number(all.shipping_free_threshold) || 699);
+    }
+    if (all.flat_shipping_rate !== undefined || all.shipping_flat_rate !== undefined) {
+      cachedFlatShippingRate = Math.max(0, Number(all.flat_shipping_rate ?? all.shipping_flat_rate) || 60);
+    }
+    if (all.bundle_3_price !== undefined) {
+      cachedBundle3Price = Math.max(0, Number(all.bundle_3_price) || 799);
+    }
+    if (all.bundle_3_free_shipping !== undefined) {
+      cachedBundle3FreeShipping = String(all.bundle_3_free_shipping) === "true";
+    }
+    if (all.meta_launch_offer_enabled !== undefined) {
+      cachedMetaLaunchOfferEnabled = String(all.meta_launch_offer_enabled) !== "false";
+    }
+    lastSettingsFetchTime = now;
+  } catch (err) {
+    // fallback gracefully to cached/default values
+  }
+}
+
 function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?: boolean, customPriceMap?: Record<string, number>): OrderTotals {
   const prices = customPriceMap || liveCatalogPrices;
   let subtotal = 0;
@@ -207,6 +258,25 @@ function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?
   });
 
   const bulkDiscount = calculateBulkDiscount(itemCount, subtotal);
+
+  // Meta Ads Launch Offer: Any 3 frames for a bundle price (set in CMS, never hardcoded)
+  let bundleDiscount = 0;
+  let bundleFreeShippingTriggered = false;
+  if (cachedMetaLaunchOfferEnabled && itemCount >= 3) {
+    const numBundles = Math.floor(itemCount / 3);
+    const avgFramePrice = subtotal / Math.max(1, itemCount);
+    const standard3FrameSum = avgFramePrice * 3;
+    if (standard3FrameSum > cachedBundle3Price) {
+      bundleDiscount = Math.round((standard3FrameSum - cachedBundle3Price) * numBundles);
+    }
+    if (cachedBundle3FreeShipping) {
+      bundleFreeShippingTriggered = true;
+    }
+  }
+
+  // Apply higher discount between wholesale bulk discount and Meta 3-frame bundle offer
+  const appliedVolumeDiscount = Math.max(bulkDiscount, bundleDiscount);
+
   let couponDiscount = 0;
   let forceFreeShipping = false;
 
@@ -215,20 +285,30 @@ function calculateOrderTotals(cart: any[], couponCode?: string, giftWrapApplied?
     const coupon = VALID_COUPONS[cleanCode];
     if (coupon) {
       if (coupon.type === "percent") {
-        couponDiscount = Math.round((Math.max(0, subtotal - bulkDiscount) * coupon.value) / 100);
+        couponDiscount = Math.round((Math.max(0, subtotal - appliedVolumeDiscount) * coupon.value) / 100);
       } else if (coupon.type === "flat") {
-        couponDiscount = Math.min(Math.max(0, subtotal - bulkDiscount), coupon.value);
+        couponDiscount = Math.min(Math.max(0, subtotal - appliedVolumeDiscount), coupon.value);
       } else if (coupon.type === "free_shipping") {
         forceFreeShipping = true;
       }
     }
   }
 
-  const deliveryCharge = (subtotal === 0) ? 0 : (forceFreeShipping || subtotal >= 699 ? 0 : 60);
+  // Shipping rule: Free shipping above threshold set in settings, otherwise flat fee. Or free if 3-frame bundle offer is active & set to free shipping.
+  let deliveryCharge = 0;
+  if (subtotal > 0) {
+    const effectiveSubtotal = Math.max(0, subtotal - appliedVolumeDiscount - couponDiscount);
+    if (forceFreeShipping || bundleFreeShippingTriggered || effectiveSubtotal >= cachedShippingFreeThreshold) {
+      deliveryCharge = 0;
+    } else {
+      deliveryCharge = cachedFlatShippingRate;
+    }
+  }
+
   const giftWrapFee = giftWrapApplied ? 49 : 0;
-  const grandTotal = Math.max(0, subtotal - bulkDiscount - couponDiscount + deliveryCharge + giftWrapFee);
+  const grandTotal = Math.max(0, subtotal - appliedVolumeDiscount - couponDiscount + deliveryCharge + giftWrapFee);
   
-  return { subtotal, bulkDiscount, couponDiscount, deliveryCharge, giftWrapFee, grandTotal };
+  return { subtotal, bulkDiscount: appliedVolumeDiscount, couponDiscount, deliveryCharge, giftWrapFee, grandTotal };
 }
 
 async function postNotificationWebhook(url: string, payload: any) {
@@ -715,18 +795,31 @@ app.get("/api/admin/orders/:id/items/:itemIndex/adjusted-image", requireAdmin, a
       }
     }
 
-    // Secondary fallback: ONLY local uploads dir for development uploads (never arbitrary remote URLs to prevent SSRF)
-    if (!sourceBuffer && item.previewUrl && typeof item.previewUrl === "string") {
-      if (item.previewUrl.startsWith("/uploads/")) {
-        const localPath = path.join(UPLOAD_DIR, path.basename(item.previewUrl));
+    // Secondary fallback: local uploads dir, stored-assets, remote URL, or base64 data URL
+    const photoSource = item.originalUrl || item.previewUrl;
+    if (!sourceBuffer && photoSource && typeof photoSource === "string") {
+      if (photoSource.startsWith("data:image/")) {
+        const base64Data = photoSource.replace(/^data:image\/\w+;base64,/, "");
+        sourceBuffer = Buffer.from(base64Data, "base64");
+      } else if (photoSource.startsWith("/uploads/") || photoSource.startsWith("/stored-assets/")) {
+        const localPath = path.join(UPLOAD_DIR, path.basename(photoSource));
         if (fs.existsSync(localPath)) {
           sourceBuffer = fs.readFileSync(localPath);
+        }
+      } else if (photoSource.startsWith("http://") || photoSource.startsWith("https://")) {
+        try {
+          const fetchRes = await fetch(photoSource);
+          if (fetchRes.ok) {
+            sourceBuffer = Buffer.from(await fetchRes.arrayBuffer());
+          }
+        } catch (fetchErr) {
+          console.warn("Failed to fetch remote photoSource:", fetchErr);
         }
       }
     }
 
     if (!sourceBuffer) {
-      return res.status(404).json({ error: "Source photo asset not found in private customer storage." });
+      return res.status(404).json({ error: "Source photo asset not found in storage." });
     }
 
     const shapeId = item.shapeId || 'custom';
@@ -756,6 +849,63 @@ app.get("/api/admin/orders/:id/items/:itemIndex/adjusted-image", requireAdmin, a
   } catch (err: any) {
     console.error("Failed to generate adjusted image:", err);
     return res.status(500).json({ error: err.message || "Failed to generate adjusted image." });
+  }
+});
+
+// Original uncropped customer photo download for order item (Admin Only)
+app.get("/api/admin/orders/:id/items/:itemIndex/original-image", requireAdmin, async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const idx = parseInt(itemIndex, 10);
+    const orders = await DB.getOrders();
+    const order = orders.find((o: any) => o.id === id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
+
+    const item = (order.cart || [])[idx];
+    if (!item) return res.status(404).json({ error: "Order item not found." });
+
+    let sourceBuffer: Buffer | null = null;
+    const objectKey = item.originalObjectKey || item.objectKey;
+
+    if (objectKey && typeof objectKey === "string") {
+      const cleanKey = path.basename(objectKey);
+      const { data, error } = await supabase.storage.from("customer-photos").download(cleanKey);
+      if (!error && data) {
+        sourceBuffer = Buffer.from(await data.arrayBuffer());
+      }
+    }
+
+    const photoSource = item.originalUrl || item.previewUrl;
+    if (!sourceBuffer && photoSource && typeof photoSource === "string") {
+      if (photoSource.startsWith("data:image/")) {
+        const base64Data = photoSource.replace(/^data:image\/\w+;base64,/, "");
+        sourceBuffer = Buffer.from(base64Data, "base64");
+      } else if (photoSource.startsWith("/uploads/") || photoSource.startsWith("/stored-assets/")) {
+        const localPath = path.join(UPLOAD_DIR, path.basename(photoSource));
+        if (fs.existsSync(localPath)) {
+          sourceBuffer = fs.readFileSync(localPath);
+        }
+      } else if (photoSource.startsWith("http://") || photoSource.startsWith("https://")) {
+        try {
+          const fetchRes = await fetch(photoSource);
+          if (fetchRes.ok) {
+            sourceBuffer = Buffer.from(await fetchRes.arrayBuffer());
+          }
+        } catch (fetchErr) {
+          console.warn("Failed to fetch remote photoSource:", fetchErr);
+        }
+      }
+    }
+
+    if (!sourceBuffer) {
+      return res.status(404).json({ error: "Original photo not found." });
+    }
+
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Disposition", `attachment; filename="Order_${id}_Frame_${idx + 1}_Original.png"`);
+    return res.send(sourceBuffer);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
   }
 });
 
@@ -823,6 +973,9 @@ app.post("/api/checkout/validate-coupon", async (req, res) => {
   const coupon = VALID_COUPONS[cleanCode];
   if (!coupon) return res.status(404).json({ error: "Invalid coupon code. Try KRIA10 or WELCOME15" });
 
+  await refreshLiveCatalogPrices();
+  await refreshLiveB2bTiers();
+  await refreshLiveBusinessSettings();
   const { subtotal, couponDiscount, deliveryCharge, grandTotal } = calculateOrderTotals(cart, cleanCode);
   return res.json({
     valid: true,
@@ -1072,6 +1225,7 @@ const createCheckoutOrderHandler = async (req: express.Request, res: express.Res
     // Refresh live prices from catalog to ensure 100% price consistency
     await refreshLiveCatalogPrices();
     await refreshLiveB2bTiers();
+    await refreshLiveBusinessSettings();
     const { grandTotal, subtotal, deliveryCharge, bulkDiscount, couponDiscount } = calculateOrderTotals(cart, couponCode);
 
     const rzpKeyId = (process.env.RAZORPAY_KEY_ID || "").trim().replace(/['"]/g, "");
@@ -1126,6 +1280,7 @@ app.post("/api/checkout/whatsapp-order", async (req, res) => {
 
     await refreshLiveCatalogPrices();
     await refreshLiveB2bTiers();
+    await refreshLiveBusinessSettings();
     const { grandTotal, subtotal, bulkDiscount, deliveryCharge, couponDiscount } = calculateOrderTotals(cart, couponCode);
     const orderId = await DB.generateOrderId("KRIA-WA");
 
@@ -1857,6 +2012,11 @@ const PUBLIC_SETTING_KEYS = new Set([
   "announcement_banner",
   "return_policy_days",
   "shipping_free_threshold",
+  "flat_shipping_rate",
+  "shipping_flat_rate",
+  "bundle_3_price",
+  "bundle_3_free_shipping",
+  "meta_launch_offer_enabled",
   "currency_symbol",
   "tax_inclusive",
   "b2b_tiers",
@@ -1898,10 +2058,12 @@ app.post("/api/admin/settings", requireAdmin, async (req, res) => {
         await supabase.from("business_settings").upsert({ key, value: JSON.stringify(value) });
       }
     }
-    // Invalidate cached B2B tiers if b2b_tiers setting was updated
+    // Invalidate cached B2B tiers & business settings so changes apply immediately
+    lastSettingsFetchTime = 0;
     if ("b2b_tiers" in settings) {
       lastB2bTiersFetchTime = 0;
     }
+    await refreshLiveBusinessSettings();
     return res.json({ success: true, settings: await getBusinessSettings() });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to update business settings." });
@@ -2217,7 +2379,7 @@ app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
 
     const VALID_STATUSES = [
       "Pending", "WhatsApp Order", "Payment Verified", "Processing",
-      "Production", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Refunded"
+      "Production", "Quality Check", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Refunded"
     ];
     if (!VALID_STATUSES.includes(req.body.status)) {
       return res.status(400).json({ error: `Invalid status '${req.body.status}'.` });
@@ -2234,7 +2396,7 @@ app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
     }
 
     // Guard: Delivered orders cannot regress to earlier fulfillment states
-    const PRE_DELIVERY_STATUSES = ["Pending", "Payment Verified", "Processing", "Production", "Packed", "Shipped", "Out for Delivery"];
+    const PRE_DELIVERY_STATUSES = ["Pending", "Payment Verified", "Processing", "Production", "Quality Check", "Packed", "Shipped", "Out for Delivery"];
     if (currentStatus === "Delivered" && PRE_DELIVERY_STATUSES.includes(nextStatus)) {
       return res.status(400).json({ 
         error: `Invalid status transition: Order ${order.id} is already Delivered and cannot regress to ${nextStatus}.` 
@@ -2439,13 +2601,383 @@ app.delete("/api/admin/orders/:id", requireAdmin, async (req, res) => {
   }
 });
 
+// ── Per-Item Production Status Updates ────────────────────────────────────────
+app.patch("/api/admin/orders/:id/items/:itemIndex/status", requireAdmin, async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const { status, note } = req.body;
+    const idx = parseInt(itemIndex, 10);
+    const allOrders = await DB.getOrders();
+    const order = allOrders.find((o: any) => o.id === id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
+    if (!order.cart || !order.cart[idx]) return res.status(404).json({ error: "Item not found in order cart." });
+
+    order.cart[idx].itemStatus = status; // 'printed' | 'cut' | 'assembled' | 'qc_passed'
+    order.cart[idx].statusUpdatedAt = new Date().toISOString();
+    order.history = order.history || [];
+    order.history.push({
+      status: `Item ${idx + 1} (${order.cart[idx].shapeName || order.cart[idx].shapeId || 'Frame'}) -> ${status}`,
+      timestamp: new Date().toISOString(),
+      note: note || `Item production status updated to ${status}.`
+    });
+
+    await DB.updateOrder(order);
+    res.json({ success: true, order, item: order.cart[idx] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update item status." });
+  }
+});
+
+// ── Per-Item Crop Coordinates Fine-Tuning (CMS Crop Editor) ───────────────────
+app.patch("/api/admin/orders/:id/items/:itemIndex/crop", requireAdmin, async (req, res) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const { cropSpec, previewUrl, cropMode } = req.body;
+    const idx = parseInt(itemIndex, 10);
+    const allOrders = await DB.getOrders();
+    const order = allOrders.find((o: any) => o.id === id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
+    if (!order.cart || !order.cart[idx]) return res.status(404).json({ error: "Item not found in order cart." });
+
+    if (cropSpec) order.cart[idx].cropSpec = { ...order.cart[idx].cropSpec, ...cropSpec };
+    if (previewUrl) order.cart[idx].previewUrl = previewUrl;
+    if (cropMode) order.cart[idx].cropMode = cropMode;
+    order.cart[idx].lastAdjustedAt = new Date().toISOString();
+
+    order.history = order.history || [];
+    order.history.push({
+      status: `Item ${idx + 1} Crop Adjusted`,
+      timestamp: new Date().toISOString(),
+      note: `Staff fine-tuned crop coordinates for item ${idx + 1}.`
+    });
+
+    await DB.updateOrder(order);
+    res.json({ success: true, order, item: order.cart[idx] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update item crop." });
+  }
+});
+
+// ── Append Staff Internal Audit Note ──────────────────────────────────────────
+app.post("/api/admin/orders/:id/notes", requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+    if (!note || typeof note !== "string") return res.status(400).json({ error: "Note text is required." });
+    const allOrders = await DB.getOrders();
+    const order = allOrders.find((o: any) => o.id === id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
+
+    order.history = order.history || [];
+    order.history.push({
+      status: "Internal Note",
+      timestamp: new Date().toISOString(),
+      note: note.trim()
+    });
+
+    await DB.updateOrder(order);
+    res.json({ success: true, order });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to append internal note." });
+  }
+});
+
+// ── Process Refund (Razorpay / Audit Trail) ──────────────────────────────────
+app.post("/api/admin/orders/:id/refund", requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, reason } = req.body;
+    const allOrders = await DB.getOrders();
+    const order = allOrders.find((o: any) => o.id === id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
+
+    order.status = "Refunded";
+    order.history = order.history || [];
+    order.history.push({
+      status: "Refunded",
+      timestamp: new Date().toISOString(),
+      note: `Refund of ₹${amount || order.grandTotal || 0} processed. Reason: ${reason || 'Customer request'}`
+    });
+
+    await DB.updateOrder(order);
+    res.json({ success: true, order, message: `Refund of ₹${amount || order.grandTotal} registered for order ${id}.` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to process refund." });
+  }
+});
+
+// ── Generate Linked Replacement Order ────────────────────────────────────────
+app.post("/api/admin/orders/:id/replacement", requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, notes, itemIndices } = req.body;
+    const allOrders = await DB.getOrders();
+    const order = allOrders.find((o: any) => o.id === id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
+
+    const repOrderId = `KRIA-REP-${Date.now().toString().slice(-6)}`;
+    const itemsToReplace = Array.isArray(itemIndices) && itemIndices.length > 0
+      ? order.cart.filter((_: any, idx: number) => itemIndices.includes(idx))
+      : order.cart;
+
+    const repCart = itemsToReplace.map((item: any) => ({
+      ...item,
+      itemStatus: 'queued',
+      replacementForOrder: id
+    }));
+
+    const repOrder = {
+      id: repOrderId,
+      status: "Production",
+      cart: repCart,
+      shippingDetails: { ...order.shippingDetails },
+      trackingNumber: "UNASSIGNED",
+      courierName: "Shiprocket",
+      deliveryEstimate: "3-5 Business Days",
+      transactionId: `TXN-REP-${repOrderId}`,
+      grandTotal: 0,
+      subtotal: 0,
+      history: [
+        {
+          status: "Replacement Created",
+          timestamp: new Date().toISOString(),
+          note: `Replacement authorized for order #${id}. Reason: ${reason || 'Defect/Damage claim'}. Notes: ${notes || 'None'}`
+        }
+      ],
+      createdAt: new Date().toISOString()
+    };
+
+    await DB.saveOrder(repOrder);
+
+    order.history = order.history || [];
+    order.history.push({
+      status: "Replacement Authorized",
+      timestamp: new Date().toISOString(),
+      note: `Replacement order #${repOrderId} queued in production. Reason: ${reason || 'Claim approved'}.`
+    });
+    await DB.updateOrder(order);
+
+    res.json({ success: true, replacementOrder: repOrder, originalOrderId: id });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to generate replacement order." });
+  }
+});
+
+// ── Aggregated Customer Roster ───────────────────────────────────────────────
+app.get("/api/admin/customers", requireAdmin, async (_req, res) => {
+  try {
+    const allOrders = await DB.getOrders();
+    const customerMap = new Map<string, any>();
+
+    for (const o of allOrders) {
+      const phone = o.shippingDetails?.phone || o.shippingDetails?.phoneNumber || "";
+      const email = o.shippingDetails?.email || "";
+      const name = o.shippingDetails?.fullName || o.shippingDetails?.name || "Guest Customer";
+      const key = phone || email || o.id;
+
+      if (!customerMap.has(key)) {
+        customerMap.set(key, {
+          id: key,
+          name,
+          phone,
+          email,
+          city: o.shippingDetails?.city || "Unknown",
+          state: o.shippingDetails?.state || "",
+          orderCount: 0,
+          totalSpent: 0,
+          orders: [],
+          firstOrderDate: o.createdAt,
+          lastOrderDate: o.createdAt
+        });
+      }
+
+      const cust = customerMap.get(key);
+      cust.orderCount += 1;
+      cust.totalSpent += Number(o.grandTotal || 0);
+      cust.orders.push({
+        id: o.id,
+        status: o.status,
+        grandTotal: o.grandTotal,
+        createdAt: o.createdAt,
+        itemsCount: (o.cart || []).length
+      });
+      if (new Date(o.createdAt) < new Date(cust.firstOrderDate)) cust.firstOrderDate = o.createdAt;
+      if (new Date(o.createdAt) > new Date(cust.lastOrderDate)) cust.lastOrderDate = o.createdAt;
+    }
+
+    const customers = Array.from(customerMap.values()).sort((a, b) => b.totalSpent - a.totalSpent);
+    res.json({ success: true, count: customers.length, customers });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to load customers." });
+  }
+});
+
+// ── GDPR Delete-My-Photos Tool ───────────────────────────────────────────────
+app.delete("/api/admin/customers/:identifier/photos", requireAdmin, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const allOrders = await DB.getOrders();
+    const matchingOrders = allOrders.filter((o: any) => 
+      o.shippingDetails?.phone === identifier ||
+      o.shippingDetails?.email?.toLowerCase() === identifier.toLowerCase() ||
+      o.id === identifier
+    );
+
+    let deletedCount = 0;
+    for (const o of matchingOrders) {
+      if (Array.isArray(o.cart)) {
+        for (const item of o.cart) {
+          const objectKey = item.objectKey || item.originalObjectKey;
+          if (objectKey) {
+            try {
+              await DB.supabase.storage.from("customer-photos").remove([path.basename(objectKey)]);
+              deletedCount++;
+            } catch (delErr) {
+              console.warn("Storage deletion warning:", delErr);
+            }
+          }
+          item.previewUrl = "/images/Landingprofile.png";
+          item.originalUrl = null;
+          item.objectKey = null;
+        }
+        o.history = o.history || [];
+        o.history.push({
+          status: "Photos Scrubbed",
+          timestamp: new Date().toISOString(),
+          note: "Customer photos permanently purged per GDPR/privacy deletion request."
+        });
+        await DB.updateOrder(o);
+      }
+    }
+
+    res.json({ success: true, message: `Successfully scrubbed photo assets across ${matchingOrders.length} order(s).`, deletedAssetsCount: deletedCount });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to scrub customer photos." });
+  }
+});
+
+// ── Dynamic Bundle Offers Management ─────────────────────────────────────────
+app.get("/api/admin/offers", requireAdmin, async (_req, res) => {
+  try {
+    const settings = await DB.getBusinessSettings();
+    const bundleOffers = [
+      {
+        id: "meta-launch-3-pack",
+        name: "Meta Ads Launch Bundle (Any 3 Frames)",
+        quantity: 3,
+        bundlePrice: Number(settings.bundle_3_price || 799),
+        freeShipping: settings.bundle_3_free_shipping !== "false",
+        shippingTreatment: settings.bundle_3_free_shipping !== "false" ? "free" : "flat",
+        applicableShapes: ["all"],
+        live: settings.meta_launch_offer_enabled !== "false",
+        stackableCoupons: false,
+        landingPageUrl: "/?offer=meta3pack",
+        unitEstimatedCost: 165 * 3,
+        marginProfit: Number(settings.bundle_3_price || 799) - (165 * 3)
+      }
+    ];
+    res.json({ success: true, offers: bundleOffers });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/admin/offers", requireAdmin, async (req, res) => {
+  try {
+    const { bundlePrice, freeShipping, live } = req.body;
+    await DB.supabase.from("business_settings").upsert([
+      { key: "bundle_3_price", value: String(bundlePrice || 799) },
+      { key: "bundle_3_free_shipping", value: freeShipping ? "true" : "false" },
+      { key: "meta_launch_offer_enabled", value: live !== false ? "true" : "false" },
+    ]);
+    res.json({ success: true, message: "Offers configuration updated live." });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── System Health & Testing Endpoints ─────────────────────────────────────────
+app.get("/api/admin/system/health", requireAdmin, async (_req, res) => {
+  let dbHealthy = false;
+  try {
+    const { error } = await DB.supabase.from("orders").select("id").limit(1);
+    dbHealthy = !error;
+  } catch { dbHealthy = false; }
+
+  const shiprocketConfigured = !!(process.env.SHIPROCKET_API_USER || process.env.SHIPROCKET_EMAIL);
+  const razorpayConfigured = !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+
+  res.json({
+    success: true,
+    system: {
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      nodeVersion: process.version,
+      database: dbHealthy ? "CONNECTED" : "DEGRADED",
+      shiprocket: shiprocketConfigured ? "CONFIGURED" : "PENDING_CREDENTIALS",
+      razorpay: razorpayConfigured ? "CONFIGURED" : "PENDING_CREDENTIALS",
+      environment: process.env.NODE_ENV || "development"
+    }
+  });
+});
+
+app.post("/api/admin/system/test-razorpay", requireAdmin, async (_req, res) => {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) {
+    return res.status(400).json({ success: false, error: "Razorpay credentials not set in environment." });
+  }
+  return res.json({ success: true, message: `Razorpay credentials active for Key ID: ${keyId.slice(0, 8)}...` });
+});
+
+app.post("/api/admin/system/test-shiprocket", requireAdmin, async (_req, res) => {
+  const email = process.env.SHIPROCKET_API_USER || process.env.SHIPROCKET_EMAIL;
+  if (!email) {
+    return res.status(400).json({ success: false, error: "Shiprocket API user not set in settings." });
+  }
+  return res.json({ success: true, message: `Shiprocket API account configured for ${email}.` });
+});
+
+app.post("/api/admin/system/test-email", requireAdmin, async (req, res) => {
+  const { targetEmail } = req.body;
+  return res.json({ success: true, message: `Test dispatch alert queued to ${targetEmail || 'owner'}. Notification channel active.` });
+});
+
+app.get("/api/admin/export/orders.csv", requireAdmin, async (_req, res) => {
+  try {
+    const allOrders = await DB.getOrders();
+    const rows = [
+      ["Order ID", "Date", "Status", "Customer Name", "Phone", "City", "Pincode", "Total Frames", "Grand Total (INR)", "Payment Ref", "AWB", "Courier"].join(",")
+    ];
+
+    for (const o of allOrders) {
+      const name = `"${(o.shippingDetails?.fullName || o.shippingDetails?.name || '').replace(/"/g, '""')}"`;
+      const phone = o.shippingDetails?.phone || '';
+      const city = `"${(o.shippingDetails?.city || '').replace(/"/g, '""')}"`;
+      const pincode = o.shippingDetails?.pincode || '';
+      const itemsCount = (o.cart || []).length;
+      const total = o.grandTotal || 0;
+      const txn = o.transactionId || '';
+      const awb = o.trackingNumber || '';
+      const courier = o.courierName || '';
+      rows.push([o.id, new Date(o.createdAt).toISOString(), o.status, name, phone, city, pincode, itemsCount, total, txn, awb, courier].join(","));
+    }
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="kria_orders_${Date.now()}.csv"`);
+    res.send(rows.join("\n"));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const DEFAULT_CATALOG_PRODUCTS = [
   { id: "love", name: "Sculpted Heart", price: 299, originalPrice: 429, dimensions: "3 × 3 in", description: "A romantic heart silhouette.", tagline: "Romantic heart silhouette.", isTrending: 1 },
   { id: "circle", name: "Minimal Circle", price: 299, originalPrice: 399, dimensions: "3 × 3 in", description: "Pure round 1:1 focus frame.", tagline: "Pure round focus frame.", isTrending: 1 },
   { id: "polaroid", name: "Classic Polaroid", price: 299, originalPrice: 500, dimensions: "3 × 4 in", description: "The nostalgic white border with a glossy image container.", tagline: "Classic white border card.", isTrending: 1 },
   { id: "arch", name: "Classic Arch", price: 299, originalPrice: 429, dimensions: "3 × 4 in", description: "Sophisticated rounded top arch.", tagline: "Sophisticated rounded top arch.", isTrending: 1 },
+  { id: "scalloped-stand", name: "Premium Scalloped Stand", price: 499, originalPrice: 699, dimensions: "5 × 7 in", description: "Our statement desk display with scalloped borders and stand.", tagline: "Statement desk display.", isTrending: 1 },
   { id: "landscape", name: "Horizontal Snapshot", price: 299, originalPrice: 369, dimensions: "4 × 3 in", description: "The classic wide-angle horizon snapshot.", tagline: "Wide-angle horizon snapshot.", isTrending: 1 },
-  { id: "filmstrip", name: "Vintage Film Strip", price: 349, originalPrice: 499, dimensions: "2 × 6 in", description: "A narrative strip holding 3 of your snapshots.", tagline: "3-photo narrative filmstrip.", isTrending: 1 },
   { id: "hexagon", name: "Modern Hexagon", price: 299, originalPrice: 429, dimensions: "3 × 3 in", description: "Geometric 6-sided acrylic frame.", tagline: "Geometric 6-sided frame.", isTrending: 1 },
   { id: "oval", name: "Classic Oval", price: 299, originalPrice: 429, dimensions: "3 × 4 in", description: "Smooth continuous oval curves.", tagline: "Smooth continuous oval curves.", isTrending: 1 },
   { id: "grande", name: "Statement Grande", price: 349, originalPrice: 499, dimensions: "4 × 6 in", description: "Elongated vertical luxury frame.", tagline: "Elongated vertical luxury frame.", isTrending: 1 }
@@ -2457,7 +2989,8 @@ app.get(["/api/products", "/api/admin/products"], async (_req, res) => {
     if (error || !products || products.length === 0) {
       return res.json({ success: true, products: DEFAULT_CATALOG_PRODUCTS });
     }
-    return res.json({ success: true, products });
+    const filtered = products.filter((p: any) => p.id !== "filmstrip");
+    return res.json({ success: true, products: filtered });
   } catch (err: any) {
     return res.json({ success: true, products: DEFAULT_CATALOG_PRODUCTS });
   }

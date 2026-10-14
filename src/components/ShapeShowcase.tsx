@@ -43,9 +43,10 @@ export default function ShapeShowcase({ onSelectShape }: ShapeShowcaseProps) {
 
   // Filter shapes by category
   const filteredShapes = visibleCatalogShapes.filter((shape: any) => {
+    if (shape.id === 'filmstrip') return false;
     if (activeCategory === 'popular') return shape.id === 'arch' || shape.id === 'love' || shape.id === 'polaroid';
     if (activeCategory === 'classic') return shape.id === 'landscape' || shape.id === 'oval' || shape.id === 'grande';
-    if (activeCategory === 'specialty') return shape.id === 'filmstrip' || shape.id === 'hexagon' || shape.id === 'scalloped-stand' || shape.id === 'circle';
+    if (activeCategory === 'specialty') return shape.id === 'hexagon' || shape.id === 'scalloped-stand' || shape.id === 'circle';
     return true;
   });
 
