@@ -93,6 +93,186 @@ export function parseSelectedDimensions(sizeStr?: string, shapeId?: string): { w
 }
 
 
+// ── Shape Contour Clipping & Transformed Image Helpers ───────────────────────
+function drawShapeContourPath(ctx: CanvasRenderingContext2D, shapeId: string, W: number, H: number) {
+  ctx.beginPath();
+  if (shapeId === 'love') {
+    const topCurve = H * 0.3;
+    ctx.moveTo(W / 2, H * 0.95);
+    ctx.bezierCurveTo(W * 0.05, H * 0.6, W * 0.05, topCurve, W * 0.28, topCurve * 0.3);
+    ctx.bezierCurveTo(W * 0.42, 0, W / 2, topCurve * 0.6, W / 2, topCurve * 0.8);
+    ctx.bezierCurveTo(W / 2, topCurve * 0.6, W * 0.58, 0, W * 0.72, topCurve * 0.3);
+    ctx.bezierCurveTo(W * 0.95, topCurve, W * 0.95, H * 0.6, W / 2, H * 0.95);
+    ctx.closePath();
+  } else if (shapeId === 'circle' || shapeId === 'circle-bloom') {
+    ctx.arc(W / 2, H / 2, Math.min(W, H) * 0.485, 0, Math.PI * 2);
+    ctx.closePath();
+  } else if (shapeId === 'arch') {
+    const r = W * 0.46;
+    const cx = W / 2;
+    const cy = r + 15;
+    ctx.arc(cx, cy, r, Math.PI, 0, false);
+    ctx.lineTo(cx + r, H - 15);
+    ctx.lineTo(cx - r, H - 15);
+    ctx.closePath();
+  } else if (shapeId === 'polaroid') {
+    if (typeof (ctx as any).roundRect === 'function') {
+      (ctx as any).roundRect(10, 10, W - 20, H - 20, 16);
+    } else {
+      ctx.rect(10, 10, W - 20, H - 20);
+    }
+    ctx.closePath();
+  } else {
+    // Grande / Rectangle
+    if (typeof (ctx as any).roundRect === 'function') {
+      (ctx as any).roundRect(10, 10, W - 20, H - 20, 20);
+    } else {
+      ctx.rect(10, 10, W - 20, H - 20);
+    }
+    ctx.closePath();
+  }
+}
+
+function drawTransformedImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  cx: number,
+  cy: number,
+  boxW: number,
+  boxH: number,
+  scale: number,
+  panX: number,
+  panY: number,
+  rotation: number,
+  cropMode: 'fill' | 'fit'
+) {
+  const imgRatio = (img.width || 1) / (img.height || 1);
+  const boxRatio = boxW / boxH;
+
+  let baseW = boxW;
+  let baseH = boxH;
+
+  if (cropMode === 'fit') {
+    if (imgRatio > boxRatio) {
+      baseW = boxW;
+      baseH = boxW / imgRatio;
+    } else {
+      baseH = boxH;
+      baseW = boxH * imgRatio;
+    }
+  } else {
+    if (imgRatio > boxRatio) {
+      baseH = boxH;
+      baseW = boxH * imgRatio;
+    } else {
+      baseW = boxW;
+      baseH = boxW / imgRatio;
+    }
+  }
+
+  ctx.save();
+  ctx.translate(cx + panX, cy + panY);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.scale(scale, scale);
+  ctx.drawImage(img, -baseW / 2, -baseH / 2, baseW, baseH);
+  ctx.restore();
+}
+
+export function renderExactPrintArtwork(
+  item: any,
+  mode: 'adjusted' | 'original' = 'adjusted',
+  dpi: number = 300
+): Promise<string> {
+  return new Promise((resolve) => {
+    const dims = parseSelectedDimensions(item.selectedSize, item.shapeId);
+    const W = Math.round(dims.widthInches * dpi);
+    const H = Math.round(dims.heightInches * dpi);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      resolve(item.previewUrl || item.originalUrl || '');
+      return;
+    }
+
+    const shapeId = item.shapeId || 'love';
+    const scale = Number(item.cropSpec?.scale ?? item.photoScale ?? 1.0);
+    const panX = Number(item.cropSpec?.panX ?? item.photoPanX ?? 0) * (dpi / 150);
+    const panY = Number(item.cropSpec?.panY ?? item.photoPanY ?? 0) * (dpi / 150);
+    const rotation = Number(item.cropSpec?.rotation ?? item.photoRotation ?? 0);
+    const cropMode = (item.cropSpec?.cropMode || item.cropMode === 'fit') ? 'fit' : 'fill';
+
+    const targetUrl = mode === 'original' 
+      ? (item.originalUrl || item.previewUrl) 
+      : (item.originalUrl || item.previewUrl);
+
+    if (!targetUrl) {
+      resolve('');
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.clearRect(0, 0, W, H);
+
+      if (mode === 'original') {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, W, H);
+        drawTransformedImage(ctx, img, W / 2, H / 2, W, H, 1.0, 0, 0, 0, 'fit');
+      } else {
+        // Mode === 'adjusted'
+        // If previewUrl is already a rendered silhouette dataUrl from CustomizeModal and no separate original, draw directly
+        const hasDirectShapedPreview = item.previewUrl && item.previewUrl.startsWith('data:image/') && (!item.originalUrl || item.originalUrl === item.previewUrl);
+        
+        if (hasDirectShapedPreview) {
+          ctx.drawImage(img, 0, 0, W, H);
+        } else {
+          ctx.save();
+          drawShapeContourPath(ctx, shapeId, W, H);
+          ctx.clip();
+
+          if (shapeId === 'polaroid') {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, W, H);
+
+            const margin = Math.round(W * 0.08);
+            const bottomSpace = Math.round(H * 0.22);
+            const photoW = W - margin * 2;
+            const photoH = H - margin - bottomSpace;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(margin, margin, photoW, photoH);
+            ctx.clip();
+            drawTransformedImage(ctx, img, margin + photoW / 2, margin + photoH / 2, photoW, photoH, scale, panX, panY, rotation, cropMode);
+            ctx.restore();
+
+            ctx.fillStyle = '#262320';
+            ctx.font = `italic ${Math.round(H * 0.045)}px "Playfair Display", Georgia, serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(item.captionText || 'KRIA Memories', W / 2, H - bottomSpace / 2);
+          } else {
+            drawTransformedImage(ctx, img, W / 2, H / 2, W, H, scale, panX, panY, rotation, cropMode);
+          }
+          ctx.restore();
+        }
+      }
+
+      try {
+        resolve(canvas.toDataURL('image/png'));
+      } catch (err) {
+        resolve(targetUrl);
+      }
+    };
+    img.onerror = () => resolve(targetUrl);
+    img.src = targetUrl;
+  });
+}
+
 // ── Exact Physical Dimension Photo Paper Canvas (No Cutting Lines) ───────────
 function ShapedPhotoCanvasPrint({ 
   item, 
@@ -120,32 +300,31 @@ function ShapedPhotoCanvasPrint({
     canvas.width = W;
     canvas.height = H;
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, W, H);
+    renderExactPrintArtwork(item, photoMode, 150).then((dataUrl) => {
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, W, H);
 
-      // Exact physical scaling matching customer selection size (1 inch = 150 px)
-      const targetW = Math.min(W, Math.round(dims.widthInches * 150));
-      const targetH = Math.min(H, Math.round(dims.heightInches * 150));
+        // Exact physical scaling matching customer selection size (1 inch = 150 px)
+        const targetW = Math.min(W, Math.round(dims.widthInches * 150));
+        const targetH = Math.min(H, Math.round(dims.heightInches * 150));
 
-      const drawX = Math.round((W - targetW) / 2);
-      const drawY = Math.round((H - targetH) / 2);
+        const drawX = Math.round((W - targetW) / 2);
+        const drawY = Math.round((H - targetH) / 2);
 
-      // Draw photo cleanly with zero dashed or cutting lines on top of artwork
-      ctx.drawImage(img, drawX, drawY, targetW, targetH);
+        // Draw exact shaped artwork with zero cutting lines across photo
+        ctx.drawImage(img, drawX, drawY, targetW, targetH);
 
-      // Print order & sizing metadata in margins well outside the artwork area
-      ctx.fillStyle = '#888888';
-      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText(`KRIA STUDIO #${orderId} · FRAME ${itemIdx + 1} (${item.shapeName || item.shapeId}) · EXACT SIZE: ${dims.label}`, 25, 35);
-      ctx.fillText(`4×6 PHOTO SHEET · PHYSICAL: ${dims.widthInches}" × ${dims.heightInches}" · MODE: ${photoMode.toUpperCase()} · ${item.quantity || 1} UNIT(S)`, 25, H - 25);
-    };
-
-    const targetUrl = photoMode === 'original' ? (item.originalUrl || item.previewUrl) : item.previewUrl;
-    img.src = targetUrl;
+        // Print order & sizing metadata in margins well outside the artwork area
+        ctx.fillStyle = '#888888';
+        ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(`KRIA STUDIO #${orderId} · FRAME ${itemIdx + 1} (${item.shapeName || item.shapeId}) · EXACT SIZE: ${dims.label}`, 25, 35);
+        ctx.fillText(`4×6 PHOTO SHEET · PHYSICAL: ${dims.widthInches}" × ${dims.heightInches}" · MODE: ${photoMode.toUpperCase()} · ${item.quantity || 1} UNIT(S)`, 25, H - 25);
+      };
+      img.src = dataUrl;
+    });
   }, [item, orderId, itemIdx, photoMode, dims]);
 
   return (
@@ -155,7 +334,7 @@ function ShapedPhotoCanvasPrint({
         className="w-full max-w-[340px] h-auto shadow-md border border-neutral-200 block print:shadow-none print:border-none print:max-w-none print:w-[4in] print:h-[6in]"
       />
       <span className="text-[10px] text-neutral-500 font-mono mt-2 print:hidden">
-        Exact print output: {dims.label} on 4×6 photo sheet
+        Exact print output: {dims.label} on 4×6 photo sheet (100% scale)
       </span>
     </div>
   );
@@ -590,8 +769,24 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
         return;
       }
     } catch (e) {
-      console.warn("Fallback to preview url", e);
+      console.warn("Backend adjusted image endpoint fallback to client-side 300 DPI generator:", e);
     }
+
+    try {
+      const dataUrl = await renderExactPrintArtwork(item, 'adjusted', 300);
+      if (dataUrl) {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `${orderId}-item-${idx + 1}-${item.shapeId || 'frame'}-300dpi.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+      }
+    } catch (renderErr) {
+      console.warn("Client-side render fallback:", renderErr);
+    }
+
     if (item.previewUrl) {
       const a = document.createElement('a');
       a.href = item.previewUrl;
@@ -728,10 +923,21 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
     }
   };
 
-  const handlePrintSingleItemPhoto = (item: any, orderId = 'KRIA', idx = 0, mode = 'adjusted') => {
-    const photoUrl = mode === 'original' ? (item.originalUrl || item.previewUrl) : item.previewUrl;
-    if (!photoUrl) return;
+  const handlePrintSingleItemPhoto = async (item: any, orderId = 'KRIA', idx = 0, mode = 'adjusted') => {
     const dims = parseSelectedDimensions(item.selectedSize, item.shapeId);
+    let photoDataUrl = '';
+    try {
+      photoDataUrl = await renderExactPrintArtwork(item, mode as 'adjusted' | 'original', 300);
+    } catch (e) {
+      console.warn("Render print artwork error, falling back to url:", e);
+      photoDataUrl = mode === 'original' ? (item.originalUrl || item.previewUrl) : item.previewUrl;
+    }
+
+    if (!photoDataUrl) {
+      alert("No image available to print for this frame.");
+      return;
+    }
+
     try {
       const printWin = window.open('', '_blank');
       if (printWin) {
@@ -744,6 +950,9 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 @page { 
                   size: 4in 6in; 
                   margin: 0; 
+                }
+                @media print {
+                  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
                 * { box-sizing: border-box; }
                 body { 
@@ -761,38 +970,44 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 }
                 .meta-header {
                   position: absolute; 
-                  top: 0.12in; 
+                  top: 0.15in; 
                   left: 0.25in; 
                   right: 0.25in;
                   font-size: 7.5pt; 
                   color: #777; 
                   display: flex; 
                   justify-content: space-between;
+                  border-bottom: 0.5pt solid #EEE;
+                  padding-bottom: 2pt;
                 }
                 .print-frame {
                   width: ${dims.widthInches}in; 
                   height: ${dims.heightInches}in;
+                  max-width: 4in;
+                  max-height: 5.4in;
                   display: flex; 
                   align-items: center; 
                   justify-content: center;
-                  background: white;
+                  background: transparent;
                   overflow: hidden;
                 }
                 img { 
                   width: 100%; 
                   height: 100%; 
-                  object-fit: cover; 
+                  object-fit: contain; 
                   display: block; 
                 }
                 .meta-footer {
                   position: absolute; 
-                  bottom: 0.12in; 
+                  bottom: 0.15in; 
                   left: 0.25in; 
                   right: 0.25in;
                   font-size: 7.5pt; 
                   color: #777; 
                   display: flex; 
                   justify-content: space-between;
+                  border-top: 0.5pt solid #EEE;
+                  padding-top: 2pt;
                 }
               </style>
             </head>
@@ -802,11 +1017,11 @@ export default function AdminDashboard({ onBackToHome, adminToken }: AdminDashbo
                 <span>EXACT SIZE: ${dims.label} (100% SCALE)</span>
               </div>
               <div class="print-frame">
-                <img src="${photoUrl}" onload="window.print(); window.close();" />
+                <img src="${photoDataUrl}" onload="setTimeout(function(){ window.print(); }, 250);" />
               </div>
               <div class="meta-footer">
-                <span>Direct 300 DPI Output · Acrylic Ready</span>
-                <span>MODE: ${mode.toUpperCase()}</span>
+                <span>Direct 300 DPI Output · Acrylic Ready · NO CUTTING GUIDES</span>
+                <span>MODE: ${mode.toUpperCase()} · ${dims.widthInches}" × ${dims.heightInches}"</span>
               </div>
             </body>
           </html>

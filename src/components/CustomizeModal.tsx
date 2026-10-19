@@ -1,8 +1,161 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  X, Camera, RotateCw, RotateCcw, CheckCircle2, Grid, Sparkles, Plus, Minus
+  X, Camera, RotateCw, RotateCcw, CheckCircle2, Grid, Sparkles, Plus, Minus, AlertCircle
 } from 'lucide-react';
 import { CartItem, MagnetShape, MagnetShapeId } from '../types';
+
+function drawImageTransformed(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  cx: number,
+  cy: number,
+  boxW: number,
+  boxH: number,
+  scale: number,
+  panX: number,
+  panY: number,
+  rotation: number,
+  cropMode: 'fill' | 'fit'
+) {
+  const imgRatio = (img.width || 1) / (img.height || 1);
+  const boxRatio = boxW / boxH;
+
+  let baseW = boxW;
+  let baseH = boxH;
+
+  if (cropMode === 'fit') {
+    if (imgRatio > boxRatio) {
+      baseW = boxW;
+      baseH = boxW / imgRatio;
+    } else {
+      baseH = boxH;
+      baseW = boxH * imgRatio;
+    }
+  } else {
+    // Fill edge-to-edge
+    if (imgRatio > boxRatio) {
+      baseH = boxH;
+      baseW = boxH * imgRatio;
+    } else {
+      baseW = boxW;
+      baseH = boxW / imgRatio;
+    }
+  }
+
+  ctx.save();
+  ctx.translate(cx + panX, cy + panY);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.scale(scale, scale);
+  ctx.drawImage(img, -baseW / 2, -baseH / 2, baseW, baseH);
+  ctx.restore();
+}
+
+function renderShapedArtwork(
+  shapeId: string,
+  imgSource: string,
+  scale: number,
+  panX: number,
+  panY: number,
+  rotation: number,
+  cropMode: 'fill' | 'fit',
+  caption?: string
+): Promise<string> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const W = 600;
+    const H = shapeId === 'grande' ? 900 : shapeId === 'polaroid' ? 750 : 600;
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      resolve(imgSource);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.save();
+      ctx.beginPath();
+      if (shapeId === 'love') {
+        const topCurve = H * 0.3;
+        ctx.moveTo(W / 2, H * 0.95);
+        ctx.bezierCurveTo(W * 0.05, H * 0.6, W * 0.05, topCurve, W * 0.28, topCurve * 0.3);
+        ctx.bezierCurveTo(W * 0.42, 0, W / 2, topCurve * 0.6, W / 2, topCurve * 0.8);
+        ctx.bezierCurveTo(W / 2, topCurve * 0.6, W * 0.58, 0, W * 0.72, topCurve * 0.3);
+        ctx.bezierCurveTo(W * 0.95, topCurve, W * 0.95, H * 0.6, W / 2, H * 0.95);
+        ctx.closePath();
+      } else if (shapeId === 'circle' || shapeId === 'circle-bloom') {
+        ctx.arc(W / 2, H / 2, Math.min(W, H) * 0.48, 0, Math.PI * 2);
+        ctx.closePath();
+      } else if (shapeId === 'arch') {
+        const r = W * 0.46;
+        const cx = W / 2;
+        const cy = r + 15;
+        ctx.arc(cx, cy, r, Math.PI, 0, false);
+        ctx.lineTo(cx + r, H - 15);
+        ctx.lineTo(cx - r, H - 15);
+        ctx.closePath();
+      } else if (shapeId === 'polaroid') {
+        // Polaroid card outer rounded box
+        if (typeof (ctx as any).roundRect === 'function') {
+          (ctx as any).roundRect(10, 10, W - 20, H - 20, 14);
+        } else {
+          ctx.rect(10, 10, W - 20, H - 20);
+        }
+        ctx.closePath();
+      } else {
+        // Grande / Rectangle rounded box
+        if (typeof (ctx as any).roundRect === 'function') {
+          (ctx as any).roundRect(10, 10, W - 20, H - 20, 18);
+        } else {
+          ctx.rect(10, 10, W - 20, H - 20);
+        }
+        ctx.closePath();
+      }
+      ctx.clip();
+
+      if (shapeId === 'polaroid') {
+        // White polaroid container
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, W, H);
+
+        const photoMargin = 28;
+        const photoBottom = H - 85;
+        const photoW = W - photoMargin * 2;
+        const photoH = photoBottom - photoMargin;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(photoMargin, photoMargin, photoW, photoH);
+        ctx.clip();
+
+        drawImageTransformed(ctx, img, photoMargin + photoW / 2, photoMargin + photoH / 2, photoW, photoH, scale, panX, panY, rotation, cropMode);
+        ctx.restore();
+
+        // Caption text
+        ctx.fillStyle = '#262320';
+        ctx.font = 'italic 19px "Playfair Display", Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(caption || 'KRIA Memories', W / 2, H - 42);
+      } else {
+        drawImageTransformed(ctx, img, W / 2, H / 2, W, H, scale, panX, panY, rotation, cropMode);
+      }
+
+      ctx.restore();
+      try {
+        resolve(canvas.toDataURL('image/png'));
+      } catch (err) {
+        resolve(imgSource);
+      }
+    };
+    img.onerror = () => resolve(imgSource);
+    img.src = imgSource;
+  });
+}
 
 interface CustomizeModalProps {
   isOpen: boolean;
@@ -33,6 +186,8 @@ export default function CustomizeModal({
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const [startPan, setStartPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isAdded, setIsAdded] = useState<boolean>(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [isPhotoMissingShake, setIsPhotoMissingShake] = useState<boolean>(false);
 
   // Available sizes
   const sizes = shape.sizes && shape.sizes.length > 0 
@@ -55,6 +210,8 @@ export default function CustomizeModal({
   // Reset or initialize when modal opens with a new shape
   useEffect(() => {
     if (isOpen) {
+      setPhotoError(null);
+      setIsPhotoMissingShake(false);
       if (initialSize && sizes.some(s => s.size === initialSize)) {
         setSelectedSize(initialSize);
       } else if (!sizes.some(s => s.size === selectedSize)) {
@@ -75,6 +232,8 @@ export default function CustomizeModal({
       return;
     }
 
+    setPhotoError(null);
+    setIsPhotoMissingShake(false);
     setPhotoName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -161,12 +320,33 @@ export default function CustomizeModal({
 
   const frameConfig = getShapeFrameStyle();
 
-  // Add to Bag action
-  const handleAddToBag = () => {
+  // Add to Bag action with zero-photo guard and high-res shaped artwork generation
+  const handleAddToBag = async () => {
     if (!photoUrl) {
-      // Trigger file selector if customer hasn't selected photo
+      setPhotoError('Please select and upload your photo before adding to bag.');
+      setIsPhotoMissingShake(true);
+      setTimeout(() => setIsPhotoMissingShake(false), 1000);
       fileInputRef.current?.click();
       return;
+    }
+
+    setPhotoError(null);
+
+    // Generate accurate shaped artwork canvas
+    let renderedPreview = photoUrl;
+    try {
+      renderedPreview = await renderShapedArtwork(
+        shape.id,
+        photoUrl,
+        photoScale,
+        photoPanX,
+        photoPanY,
+        photoRotation,
+        cropMode,
+        'KRIA Memories'
+      );
+    } catch (e) {
+      console.warn('Canvas render fallback:', e);
     }
 
     const item: CartItem = {
@@ -174,14 +354,25 @@ export default function CustomizeModal({
       shapeId: shape.id,
       shapeName: `${shape.name} (${activeSizeOption.size})`,
       quantity: 1,
-      previewUrl: photoUrl,
+      previewUrl: renderedPreview,
       originalUrl: originalPhotoUrl || photoUrl,
       photoName: photoName || `${shape.name} Photo`,
       captionText: frameConfig.isPolaroid ? 'KRIA Memories' : '',
       photoScale,
       photoPanX,
       photoPanY,
+      photoRotation,
       cropMode,
+      cropSpec: {
+        version: 'v1',
+        scale: photoScale,
+        panX: photoPanX,
+        panY: photoPanY,
+        rotation: photoRotation,
+        cropMode,
+        aspectRatio: shape.id === 'grande' ? 0.667 : shape.id === 'polaroid' ? 0.75 : 1.0,
+        shapeId: shape.id
+      },
       price: currentPrice,
       selectedSize: activeSizeOption.size,
       isReturnGift: false
@@ -266,7 +457,9 @@ export default function CustomizeModal({
                 }`}
                 onClick={() => { if (!photoUrl) fileInputRef.current?.click(); }}
               >
-                <div className={`${frameConfig.frameClass} bg-[#D9D3C7]`}>
+                <div className={`${frameConfig.frameClass} bg-[#D9D3C7] transition-all duration-300 ${
+                  isPhotoMissingShake ? 'ring-4 ring-amber-400 scale-[1.02] shadow-xl' : ''
+                }`}>
                   {!photoUrl ? (
                     /* Awaiting Photo / Empty Upload State (Matching Screenshot 1) */
                     <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-[#C4C8A8]/60 to-[#B48C68]/60 hover:opacity-95 transition-opacity group">
@@ -428,34 +621,30 @@ export default function CustomizeModal({
               </p>
             </div>
 
-            {/* 3. ADJUST CROP / ROTATE / RESET BUTTONS */}
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setShowCropGuides(!showCropGuides)}
-                className={`py-2 px-2 rounded-full border text-xs font-medium transition cursor-pointer text-center ${
-                  showCropGuides
-                    ? 'bg-neutral-900 text-white border-neutral-900'
-                    : 'bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-50'
-                }`}
-              >
-                Adjust crop
-              </button>
-
-              <button
-                type="button"
-                disabled={!photoUrl}
-                onClick={handleRotate}
-                className="py-2 px-2 rounded-full border border-neutral-300 bg-white text-neutral-700 text-xs font-medium hover:bg-neutral-50 transition cursor-pointer disabled:opacity-40"
-              >
+            {/* 3. ROTATE SLIDER (Replaces Adjust Crop) */}
+            <div className="flex items-center gap-3 pt-1">
+              <span className="text-xs font-medium text-neutral-700 w-12">
                 Rotate
-              </button>
-
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={360}
+                step={1}
+                value={photoRotation}
+                disabled={!photoUrl}
+                onChange={(e) => setPhotoRotation(Number(e.target.value))}
+                className="flex-1 accent-[#262320] cursor-pointer disabled:opacity-40 h-1.5 bg-neutral-200 rounded-lg appearance-none"
+              />
+              <span className="text-xs font-mono text-neutral-600 min-w-8 text-right">
+                {photoRotation}°
+              </span>
               <button
                 type="button"
                 disabled={!photoUrl}
                 onClick={handleReset}
-                className="py-2 px-2 rounded-full border border-neutral-300 bg-white text-neutral-700 text-xs font-medium hover:bg-neutral-50 transition cursor-pointer disabled:opacity-40"
+                title="Reset rotation and adjustments"
+                className="px-2.5 py-1 rounded-full border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 text-[10px] font-mono transition cursor-pointer disabled:opacity-40 shrink-0"
               >
                 Reset
               </button>
@@ -518,6 +707,14 @@ export default function CustomizeModal({
                 })}
               </div>
             </div>
+
+            {/* Photo Required Error Alert */}
+            {photoError && (
+              <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl flex items-center gap-2 text-xs text-amber-900 font-medium">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                <span>{photoError}</span>
+              </div>
+            )}
 
             {/* 6. ADD TO BAG BUTTON */}
             <div className="pt-2">

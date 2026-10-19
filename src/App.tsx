@@ -112,16 +112,21 @@ export default function App() {
 
   useEffect(() => {
     try {
-      // Strip out huge base64 data URLs (> 50KB) before saving to localStorage to prevent QuotaExceededError
-      const safeCart = cart.map((item: CartItem) => {
-        if (item.previewUrl && item.previewUrl.startsWith('data:image/') && item.previewUrl.length > 50000) {
-          return { ...item, previewUrl: '/images/Landingprofile.png' };
-        }
-        return item;
-      });
-      localStorage.setItem('kria_studio_cart', JSON.stringify(safeCart));
+      localStorage.setItem('kria_studio_cart', JSON.stringify(cart));
     } catch (e) {
-      console.warn('Could not save cart to localStorage', e);
+      console.warn('Storage quota warning, saving compact cart representation:', e);
+      try {
+        // Only if browser quota is strictly exceeded, omit large raw original data URLs while preserving previewUrl
+        const compactCart = cart.map((item: CartItem) => {
+          if (item.originalUrl && item.originalUrl.startsWith('data:image/') && item.originalUrl.length > 300000) {
+            return { ...item, originalUrl: item.previewUrl };
+          }
+          return item;
+        });
+        localStorage.setItem('kria_studio_cart', JSON.stringify(compactCart));
+      } catch (inner) {
+        console.warn('Could not save cart to localStorage:', inner);
+      }
     }
   }, [cart]);
 

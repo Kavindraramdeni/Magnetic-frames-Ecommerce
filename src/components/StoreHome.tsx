@@ -111,7 +111,7 @@ export default function StoreHome({
           <div className="relative z-10 p-6 sm:p-12 space-y-4 max-w-2xl">
             <p className="text-[10px] tracking-[0.28em] uppercase text-[#E8DCCF] font-semibold flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-[#C4A574]" />
-              Handmade 3mm Acrylic · Hyderabad, India
+              Handmade 3mm Acrylic · Made in India
             </p>
             <h1 className="font-serif text-[2.35rem] sm:text-5xl lg:text-6xl leading-[1.05] font-light">
               Your photo.
@@ -185,8 +185,8 @@ export default function StoreHome({
           </button>
         </div>
 
-        {/* The 4 Frame Products Grid · 2x2 Layout */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+        {/* The 4 Frame Products Grid · 4*1 on Desktop (lg:grid-cols-4), 2x2 on Mobile */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
           {customizableFrames.map((shape) => (
             <div
               key={shape.id}
@@ -284,8 +284,8 @@ export default function StoreHome({
             </div>
           </div>
 
-          {/* The 4 Return Gift Products Grid · 2x2 Layout */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-6">
+          {/* The 4 Return Gift Products Grid · 4*1 on Desktop (lg:grid-cols-4), 2x2 on Mobile */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
             {RETURN_GIFTS.map((gift, index) => {
               const isCustomizer = index === 0;
 
@@ -379,16 +379,13 @@ export default function StoreHome({
         </div>
       </section>
 
-      {/* ── 5. SECTION 3: VISUAL GALLERY (3 COLUMNS) ────────────────────── */}
+      {/* ── 5. SECTION 3: VISUAL GALLERY (3 COLUMNS / 1 COL ON MOBILE) ─── */}
       <section id="gallery-section" className="mx-auto max-w-6xl px-4 mt-16 scroll-mt-20">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-3">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] tracking-[0.24em] uppercase text-[#A38A6E] font-bold">
                 3. Gallery Showcase
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-neutral-900 text-white text-[9px] font-mono">
-                3 Displays
               </span>
             </div>
             <h2 className="font-serif text-2xl sm:text-4xl font-light text-neutral-950 mt-1">
@@ -411,7 +408,7 @@ export default function StoreHome({
           )}
         </div>
 
-        {/* 3 Columns Gallery Grid */}
+        {/* 3 Images Gallery Grid · 1 Column on Mobile, 3 Columns on Tablet/Desktop */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
@@ -419,7 +416,6 @@ export default function StoreHome({
               title: 'Curated Fridge Wall',
               subtitle: 'Sculpted Hearts and Circles on brushed steel refrigerator',
               tag: 'Fridge Wall',
-              city: 'Hyderabad',
               shape: 'Heart & Circle (3 × 3")',
               imageUrl: '/images/hero_magnet_aesthetic_1779653460595.png',
               quote: 'Our fridge used to be messy with bills. Now it looks like a luxury art gallery.'
@@ -429,7 +425,6 @@ export default function StoreHome({
               title: 'Luxury Wedding Return Favors',
               subtitle: 'Curated keepsakes gifted to 250+ wedding reception guests',
               tag: 'Wedding Favor',
-              city: 'Chennai',
               shape: 'Polaroid (3 × 4")',
               imageUrl: '/images/return_gift_wedding_favor.svg',
               quote: 'Guests still text us pictures of the frame on their fridge months after the wedding!'
@@ -439,7 +434,6 @@ export default function StoreHome({
               title: 'Creative Studio Magnetic Board',
               subtitle: 'Statement Grande vertical focal piece on metallic shelving',
               tag: 'Workspace Atelier',
-              city: 'Bengaluru',
               shape: 'Statement Grande (4 × 6")',
               imageUrl: '/images/lifestyle_gallery_workspace_1779653492345.png',
               quote: 'Holds firmly on metallic shelving without slipping even when doors swing.'
@@ -462,11 +456,6 @@ export default function StoreHome({
                 <div className="absolute top-3 left-3">
                   <span className="rounded-full bg-black/60 backdrop-blur-md px-2.5 py-1 text-[10px] font-semibold text-white tracking-wide uppercase">
                     {item.tag}
-                  </span>
-                </div>
-                <div className="absolute bottom-3 right-3">
-                  <span className="rounded-full bg-white/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-mono font-medium text-neutral-900 shadow-xs">
-                    {item.city}
                   </span>
                 </div>
               </div>
@@ -539,7 +528,7 @@ export default function StoreHome({
                   <div className="text-[10px] text-neutral-400 uppercase tracking-wider">Frames Handcrafted</div>
                 </div>
                 <div>
-                  <div className="font-serif text-2xl sm:text-3xl font-light text-[#E8DCCF]">Hyderabad</div>
+                  <div className="font-serif text-2xl sm:text-3xl font-light text-[#E8DCCF]">Studio Atelier</div>
                   <div className="text-[10px] text-neutral-400 uppercase tracking-wider">Made in India</div>
                 </div>
                 <div>
@@ -582,7 +571,7 @@ export default function StoreHome({
               “Looked like a high-end art gallery piece. Our wedding guests loved the magnetic keepsakes!”
             </p>
             <p className="text-xs text-neutral-500">
-              Pooja &amp; Rohit · Bangalore · 200 Wedding Return Favors
+              Pooja &amp; Rohit · 200 Wedding Return Favors
             </p>
           </div>
 
@@ -618,7 +607,7 @@ export default function StoreHome({
           },
           {
             q: 'How does shipping and delivery work across India?',
-            a: 'Every custom frame is handcrafted within 24–48 hours in our Hyderabad studio and shipped via express courier partners. Free express shipping is automatically applied on orders above ₹699.'
+            a: 'Every custom frame is handcrafted within 24–48 hours in our studio and shipped via express courier partners. Free express shipping is automatically applied on orders above ₹699.'
           }
         ].map((faq, i) => (
           <button

@@ -75,6 +75,7 @@ export interface CropSpecification {
   aspectRatio: number; // Target frame aspect ratio (width / height)
   shapeId: MagnetShapeId;
   cropMode?: 'fill' | 'fit'; // 'fill' = auto-crop edge-to-edge, 'fit' = full photo without cutoffs
+  rotation?: number;   // Rotation in degrees (0 to 360)
 }
 
 export interface CartItem {
@@ -89,6 +90,7 @@ export interface CartItem {
   photoScale: number;
   photoPanX: number;
   photoPanY: number;
+  photoRotation?: number;
   cropMode?: 'fill' | 'fit';
   cropSpec?: CropSpecification;
   customText?: string;

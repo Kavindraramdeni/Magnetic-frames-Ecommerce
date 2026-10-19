@@ -210,11 +210,6 @@ export default function GalleryPage({ onBackToHome, onCustomize, onOpenReturnGif
                       {item.tag}
                     </span>
                   </div>
-                  <div className="absolute bottom-3 right-3">
-                    <span className="rounded-full bg-white/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-mono font-medium text-neutral-900 shadow-xs">
-                      {item.city}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Details */}
