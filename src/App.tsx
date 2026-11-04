@@ -203,6 +203,25 @@ export default function App() {
     }
   }, []);
 
+  // Synchronize browser history and Chrome Back/Forward buttons across views
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const viewParam = searchParams.get('view') as any;
+        if (viewParam) {
+          setCurrentView(viewParam);
+        } else if (!searchParams.has('product')) {
+          setCurrentView('home');
+        }
+      } catch (err) {
+        console.warn('App popstate error:', err);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const [activeWorkspaceShape, setActiveWorkspaceShape] = useState<MagnetShapeId>('love');
   const [activeWorkspaceSize, setActiveWorkspaceSize] = useState<string | undefined>(undefined);
   const cartCount = cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0);
@@ -319,6 +338,11 @@ export default function App() {
       <KriaTechPortfolioPage
         onBackToStore={() => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('view', 'store');
+            window.history.pushState({ view: 'store' }, '', url.toString());
+          } catch {}
           setCurrentView('store');
         }}
       />

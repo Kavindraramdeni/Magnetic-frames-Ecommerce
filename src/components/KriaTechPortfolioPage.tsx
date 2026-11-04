@@ -178,6 +178,71 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     return () => clearInterval(timer);
   }, []);
 
+  // Open product with browser history pushState so Chrome back button works naturally
+  const handleOpenProduct = (shapeId: string) => {
+    setSelectedProductId(shapeId);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('product', shapeId);
+      window.history.pushState({ page: 'product', product: shapeId }, '', url.toString());
+    } catch (e) {
+      console.warn('history.pushState error:', e);
+    }
+  };
+
+  // Close product and return to home view (respects browser history)
+  const handleCloseProduct = (targetHash?: string) => {
+    try {
+      if (window.history.state?.page === 'product') {
+        window.history.back();
+      } else {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('product');
+        if (targetHash) {
+          url.hash = targetHash;
+        }
+        window.history.replaceState({ page: 'home' }, '', url.toString());
+        setSelectedProductId(null);
+      }
+    } catch {
+      setSelectedProductId(null);
+    }
+  };
+
+  // Synchronize browser history and Chrome Back/Forward buttons
+  useEffect(() => {
+    const parseUrl = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const prodParam = params.get('product');
+        if (prodParam && PRODUCTS.some((p) => p.id === prodParam)) {
+          setSelectedProductId(prodParam);
+        } else {
+          setSelectedProductId(null);
+        }
+      } catch (err) {
+        console.warn('Error reading URL params:', err);
+      }
+    };
+
+    // Check initial URL on mount
+    parseUrl();
+
+    // Ensure root entry exists in history so Chrome back button stays within the app
+    if (!window.history.state) {
+      try {
+        window.history.replaceState({ page: 'home' }, '', window.location.href);
+      } catch (e) {}
+    }
+
+    const onPopState = () => {
+      parseUrl();
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   // Reset size index when product changes
   useEffect(() => {
     setActiveSizeIndex(0);
@@ -216,7 +281,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
   };
 
   const handleOpenConfigurator = (shapeId: string = 'rectangle') => {
-    setSelectedProductId(shapeId);
+    handleOpenProduct(shapeId);
   };
 
   const nextSlide = () => {
@@ -251,7 +316,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
           {/* Brand Identity */}
           <button 
             type="button"
-            onClick={() => setSelectedProductId(null)}
+            onClick={() => handleCloseProduct()}
             className="flex items-center gap-3 group cursor-pointer text-left"
           >
             <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#FAF3EA] via-[#F2E5D4] to-[#DFCEB7] border border-[#D8C2A6]/80 flex items-center justify-center shadow-[0_4px_12px_rgba(180,140,90,0.15)] group-hover:scale-105 transition-transform duration-300">
@@ -271,21 +336,21 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
           <nav className="hidden md:flex items-center gap-8 text-[11px] font-semibold tracking-[0.14em] uppercase text-[#6E6359]">
             <a 
               href="#products" 
-              onClick={() => setSelectedProductId(null)}
+              onClick={() => handleCloseProduct('#products')}
               className="hover:text-[#1E1B18] transition-colors py-1 cursor-pointer"
             >
               Products
             </a>
             <a 
               href="#starter-kit" 
-              onClick={() => setSelectedProductId(null)}
+              onClick={() => handleCloseProduct('#starter-kit')}
               className="hover:text-[#1E1B18] transition-colors py-1 cursor-pointer"
             >
               Starter Kit (12 for ₹999)
             </a>
             <a 
               href="#subscription" 
-              onClick={() => setSelectedProductId(null)}
+              onClick={() => handleCloseProduct('#subscription')}
               className="hover:text-[#1E1B18] transition-colors py-1 cursor-pointer"
             >
               Subscription
@@ -338,7 +403,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
           {/* Breadcrumb / Back button */}
           <button
             type="button"
-            onClick={() => setSelectedProductId(null)}
+            onClick={() => handleCloseProduct()}
             className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#8C6436] hover:text-[#1E1B18] mb-8 py-1.5 px-3 rounded-full bg-white/70 border border-[#E8DACB] shadow-xs cursor-pointer transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -648,7 +713,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
               {PRODUCTS.map((prod) => (
                 <div
                   key={prod.id}
-                  onClick={() => setSelectedProductId(prod.id)}
+                  onClick={() => handleOpenProduct(prod.id)}
                   className="group rounded-3xl bg-white/75 backdrop-blur-xl border border-white hover:border-[#D9C4AC] p-6 shadow-[0_12px_35px_rgba(180,140,80,0.06)] hover:shadow-[0_22px_55px_rgba(180,140,80,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
                 >
                   <div>
@@ -939,17 +1004,17 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
               </p>
               <ul className="text-xs text-[#635546] space-y-1.5">
                 <li>
-                  <a href="#products" onClick={() => setSelectedProductId(null)} className="hover:text-[#8C6436] transition-colors">
+                  <a href="#products" onClick={() => handleCloseProduct('#products')} className="hover:text-[#8C6436] transition-colors">
                     Products
                   </a>
                 </li>
                 <li>
-                  <a href="#starter-kit" onClick={() => setSelectedProductId(null)} className="hover:text-[#8C6436] transition-colors">
+                  <a href="#starter-kit" onClick={() => handleCloseProduct('#starter-kit')} className="hover:text-[#8C6436] transition-colors">
                     Starter Kit (12 for ₹999)
                   </a>
                 </li>
                 <li>
-                  <a href="#subscription" onClick={() => setSelectedProductId(null)} className="hover:text-[#8C6436] transition-colors">
+                  <a href="#subscription" onClick={() => handleCloseProduct('#subscription')} className="hover:text-[#8C6436] transition-colors">
                     Subscription
                   </a>
                 </li>
