@@ -233,7 +233,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Undulating scalloped edge cloud silhouette',
     category: 'Fridge Magnet',
     badge: 'Artisanal Scallop',
-    image: '/images/memories_captured_acrylic_frames.png',
+    image: '/images/cloud_scalloped_2.5x3.5_official.jpg',
     aspectRatio: 'aspect-[2.5/3.5]',
     roundedClass: 'rounded-3xl border-dashed',
     isBonus: false
@@ -241,12 +241,12 @@ const STARTER_KIT_ITEMS = [
   {
     code: 'K6-L',
     name: 'Wide Cloud Panorama',
-    size: '4.0 × 3.0 in',
+    size: '3.0 × 4.0 in',
     subtitle: 'Horizontal scalloped cloud for landscapes',
     category: 'Fridge Magnet',
     badge: 'Landscape Cloud',
-    image: '/images/acrylic_photo_magnet_wedding.png',
-    aspectRatio: 'aspect-[4/3]',
+    image: '/images/cloud_scalloped_3x4_official.jpg',
+    aspectRatio: 'aspect-[3/4]',
     roundedClass: 'rounded-3xl border-dashed',
     isBonus: false
   },
@@ -257,7 +257,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Vertical 3-photo story timeline bookmark',
     category: 'Fridge Magnet',
     badge: '3-Photo Strip',
-    image: '/images/family_moments_sleek_frame.png',
+    image: '/images/filmstrip_3photo_official.jpg',
     aspectRatio: 'aspect-[2.25/6]',
     roundedClass: 'rounded-xl',
     isBonus: false,
@@ -1052,38 +1052,8 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                   <img
                     src={slide.image}
                     alt={slide.title}
-                    className="w-full h-full object-cover filter brightness-[0.88]"
+                    className="w-full h-full object-cover"
                   />
-                  {/* Subtle Gradient Veil for Readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-
-                  {/* Caption & Quick CTA Overlay */}
-                  <div className="absolute bottom-6 sm:bottom-12 left-6 sm:left-14 right-6 sm:right-14 text-white space-y-2.5">
-                    <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-mono uppercase tracking-[0.2em] text-[#E8DCCF] border border-white/30">
-                      {slide.badge}
-                    </span>
-                    <h2 className="font-serif text-2xl sm:text-4xl md:text-5xl font-light tracking-tight text-white max-w-2xl">
-                      {slide.title}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-neutral-300 font-light max-w-xl hidden sm:block">
-                      {slide.subtitle}
-                    </p>
-                    <div className="pt-2 flex items-center gap-3">
-                      <a
-                        href="#products"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-[#1E1B18] text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#FAF4ED] transition-colors cursor-pointer"
-                      >
-                        <span>Choose Shape</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </a>
-                      <a
-                        href="#starter-kit"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/20 backdrop-blur-md border border-white/40 text-white text-xs font-bold uppercase tracking-wider hover:bg-white/30 transition-colors cursor-pointer"
-                      >
-                        <span>Starter Kit (12 for ₹999)</span>
-                      </a>
-                    </div>
-                  </div>
                 </div>
               ))}
 
