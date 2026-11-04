@@ -227,8 +227,6 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             >
               The 4 Shapes
             </button>
-            <a href="#wholesale" className="hover:text-[#1E1B18] transition-colors py-1">Wholesale & Gifts</a>
-            <a href="#faqs" className="hover:text-[#1E1B18] transition-colors py-1">Specifications</a>
           </nav>
 
           {/* Quick Action Hotline Pill: Configures or sends exact specs */}
