@@ -210,7 +210,6 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-7 text-[11px] font-semibold tracking-[0.14em] uppercase text-[#6E6359]">
             <a href="#shapes" className="hover:text-[#1E1B18] transition-colors py-1">The 4 Shapes</a>
-            <a href="#craft" className="hover:text-[#1E1B18] transition-colors py-1">Craftsmanship</a>
             <a href="#wholesale" className="hover:text-[#1E1B18] transition-colors py-1">Wholesale & Gifts</a>
             <a href="#faqs" className="hover:text-[#1E1B18] transition-colors py-1">Specifications</a>
           </nav>
@@ -514,84 +513,6 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* ─── CRAFTSMANSHIP & SPECIFICATIONS (WHY KRIA TECH) ────── */}
-      <section id="craft" className="relative z-10 py-20 sm:py-28 bg-gradient-to-b from-[#F5EDE2]/70 via-[#FAF4EB]/60 to-[#FDFBF7]/80 border-y border-[#E9DAC8]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-2">
-              Industrial Perfection
-            </p>
-            <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18]">
-              The Anatomy Of A Flawless Frame
-            </h2>
-            <p className="mt-4 text-sm sm:text-base text-[#6E6153] leading-relaxed">
-              Why our frames feel distinctively weighty, glass-clear, and indestructible compared to online plastic alternatives.
-            </p>
-          </div>
-
-          {/* 3 Pillars Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            {/* Pillar 1 */}
-            <div className="rounded-3xl bg-white/80 backdrop-blur-xl border border-white p-8 shadow-[0_15px_35px_rgba(180,140,80,0.06)] space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-[#F6EDE2] border border-[#E8DAC9] flex items-center justify-center text-[#8C6436]">
-                <Layers className="h-6 w-6" />
-              </div>
-              <h3 className="font-serif text-2xl font-medium text-[#1E1B18]">
-                Optical Cast Monolithic Sheet
-              </h3>
-              <p className="text-sm text-[#66584B] leading-relaxed">
-                We reject cheaper extruded acrylic that warps under temperature and yellows over time. Our cast formulation guarantees uniform 3.0mm density, edge-to-edge optical clarity, and diamond-cut light transmission.
-              </p>
-              <ul className="text-xs font-mono text-[#8C7561] space-y-1.5 pt-2">
-                <li>• 93% Transmittance (Clearer than glass)</li>
-                <li>• Zero yellowing or hazing guarantee</li>
-                <li>• Shatterproof & child-safe bevels</li>
-              </ul>
-            </div>
-
-            {/* Pillar 2 */}
-            <div className="rounded-3xl bg-white/80 backdrop-blur-xl border border-white p-8 shadow-[0_15px_35px_rgba(180,140,80,0.06)] space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-[#F6EDE2] border border-[#E8DAC9] flex items-center justify-center text-[#8C6436]">
-                <Sparkles className="h-6 w-6" />
-              </div>
-              <h3 className="font-serif text-2xl font-medium text-[#1E1B18]">
-                Sub-Surface 300 DPI UV Pigment
-              </h3>
-              <p className="text-sm text-[#66584B] leading-relaxed">
-                The image is printed directly behind the front acrylic shield using high-intensity UV-cured micro-droplet inks, backed by a pure white reflective basecoat. Protected forever from moisture, kitchen vapors, and sunlight.
-              </p>
-              <ul className="text-xs font-mono text-[#8C7561] space-y-1.5 pt-2">
-                <li>• 300 DPI photographic resolution</li>
-                <li>• True skin tones & deep shadow black</li>
-                <li>• Wipable with damp cloth safely</li>
-              </ul>
-            </div>
-
-            {/* Pillar 3 */}
-            <div className="rounded-3xl bg-white/80 backdrop-blur-xl border border-white p-8 shadow-[0_15px_35px_rgba(180,140,80,0.06)] space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-[#F6EDE2] border border-[#E8DAC9] flex items-center justify-center text-[#8C6436]">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <h3 className="font-serif text-2xl font-medium text-[#1E1B18]">
-                Rare-Earth Neodymium Grip
-              </h3>
-              <p className="text-sm text-[#66584B] leading-relaxed">
-                Cheap ferrite magnets peel off or slip down metal doors. We use countersunk NdFeB (Neodymium Grade N35) discs that snap into place with a satisfying, authoritative grip without scratching metal paintwork.
-              </p>
-              <ul className="text-xs font-mono text-[#8C7561] space-y-1.5 pt-2">
-                <li>• Heavy shear resistance prevents slipping</li>
-                <li>• Smooth nickel coating avoids surface rust</li>
-                <li>• Works on fridges, steel boards, lockers</li>
-              </ul>
-            </div>
-
-          </div>
-
         </div>
       </section>
 
