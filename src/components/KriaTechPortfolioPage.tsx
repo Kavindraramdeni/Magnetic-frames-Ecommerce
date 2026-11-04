@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   MessageCircle, Star, ChevronDown, ArrowRight, ShieldCheck,
   Package, Award, Heart, Sparkles, CheckCircle2, Phone,
-  MapPin, Clock, Users, Layers, Factory, ArrowUpRight,
-  Maximize2, Send, HelpCircle, Eye
+  MapPin, Clock, Users, Factory, ArrowUpRight,
+  ArrowLeft, ZoomIn, Check
 } from 'lucide-react';
 
 const WA_NUMBER = '919392576792';
@@ -12,20 +12,21 @@ function waLink(msg: string) {
   return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
 
+interface ProductSize {
+  label: string;
+  dimensions: string;
+  basePrice: number;
+  originalPrice: number;
+}
+
 interface Product {
   id: string;
   name: string;
   tagline: string;
+  subtitle: string;
   image: string;
   category: string;
-  sizes: { label: string; dimensions: string; thickness: string }[];
-  idealFor: string[];
-  specs: {
-    material: string;
-    finish: string;
-    magnet: string;
-    cut: string;
-  };
+  sizes: ProductSize[];
   accentColor: string;
   bgGlow: string;
 }
@@ -35,20 +36,14 @@ const PRODUCTS: Product[] = [
     id: 'heart',
     name: 'Sculpted Heart',
     tagline: 'Romance & Everlasting Keepsakes',
-    image: '/images/shape_heart_magnet_1780939430998.png',
+    subtitle: 'Personalised magnetic acrylic photo frame',
+    image: '/images/shape_heart_wedding_couple.png',
     category: 'Celebration & Gifting',
     sizes: [
-      { label: 'Compact', dimensions: '2 × 2 inches', thickness: '3.0 mm' },
-      { label: 'Classic', dimensions: '3 × 3 inches', thickness: '3.0 mm' },
-      { label: 'Grand', dimensions: '4 × 4 inches', thickness: '3.0 mm' }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299 },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349 },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399 }
     ],
-    idealFor: ['Wedding return favors', 'Anniversary souvenirs', 'Valentine memories', 'Couple portraits'],
-    specs: {
-      material: '3mm Cast Monolithic Acrylic',
-      finish: '300 DPI Sub-Surface UV Pigment',
-      magnet: 'Flush Neodymium N35 Core',
-      cut: 'Diamond-Laser Polished Edge'
-    },
     accentColor: '#B76E79',
     bgGlow: 'from-rose-100/60 via-pink-50/40 to-transparent'
   },
@@ -56,20 +51,14 @@ const PRODUCTS: Product[] = [
     id: 'circle',
     name: 'Minimal Circle',
     tagline: 'Infinite Symmetry & Contemporary Zen',
-    image: '/images/shape_circle_magnet_1780939399489.png',
+    subtitle: 'Personalised magnetic acrylic photo frame',
+    image: '/images/shape_circle_family_dog.jpg',
     category: 'Modern Living',
     sizes: [
-      { label: 'Compact', dimensions: '2 × 2 inches', thickness: '3.0 mm' },
-      { label: 'Classic', dimensions: '3 × 3 inches', thickness: '3.0 mm' },
-      { label: 'Grand', dimensions: '4 × 4 inches', thickness: '3.0 mm' }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299 },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349 },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399 }
     ],
-    idealFor: ['Newborn milestones', 'Pet portraits', 'Modern refrigerator clusters', 'Minimalist home decor'],
-    specs: {
-      material: '3mm Cast Monolithic Acrylic',
-      finish: '300 DPI Sub-Surface UV Pigment',
-      magnet: 'Flush Neodymium N35 Core',
-      cut: 'True 360° Circular CNC Contour'
-    },
     accentColor: '#4A6B82',
     bgGlow: 'from-sky-100/60 via-amber-50/40 to-transparent'
   },
@@ -77,19 +66,13 @@ const PRODUCTS: Product[] = [
     id: 'polaroid',
     name: 'Classic Polaroid',
     tagline: 'Nostalgic Film Aesthetic with Modern Durability',
+    subtitle: 'Personalised magnetic acrylic photo frame with caption',
     image: '/images/shape_polaroid_magnet_1780939416510.png',
     category: 'Storyteller Series',
     sizes: [
-      { label: 'Standard Film', dimensions: '2 × 3 inches', thickness: '3.0 mm' },
-      { label: 'Studio Showcase', dimensions: '3 × 4 inches', thickness: '3.0 mm' }
+      { label: '2 × 3"', dimensions: '2 × 3 inch', basePrice: 229, originalPrice: 329 },
+      { label: '3 × 4"', dimensions: '3 × 4 inch', basePrice: 279, originalPrice: 379 }
     ],
-    idealFor: ['Travel diaries', 'Festival souvenirs', 'Cafe moodboards', 'Friendship collages'],
-    specs: {
-      material: '3mm Cast Monolithic Acrylic',
-      finish: '300 DPI Sub-Surface UV Pigment',
-      magnet: 'Dual-Balanced Neodymium Bar',
-      cut: 'Beveled Orthogonal Corners'
-    },
     accentColor: '#A3704C',
     bgGlow: 'from-amber-100/60 via-stone-50/40 to-transparent'
   },
@@ -97,55 +80,46 @@ const PRODUCTS: Product[] = [
     id: 'grande',
     name: 'Statement Grande',
     tagline: 'Full-Frame Architectural Panorama',
+    subtitle: 'Personalised monolithic acrylic photo magnet',
     image: '/images/scenic_landscape_sample_1782458156606.jpg',
     category: 'Executive & Landscape',
     sizes: [
-      { label: 'Masterpiece', dimensions: '4 × 6 inches', thickness: '3.0 mm' }
+      { label: '4 × 6"', dimensions: '4 × 6 inch', basePrice: 349, originalPrice: 499 }
     ],
-    idealFor: ['Corporate accolades', 'High-end wedding memories', 'Architectural photography', 'Executive suite gifts'],
-    specs: {
-      material: '3mm Cast Monolithic Acrylic',
-      finish: '300 DPI Sub-Surface UV Pigment',
-      magnet: 'Triple Quad-Corner Neodymium Grip',
-      cut: 'Architectural Chamfer Edge'
-    },
     accentColor: '#365349',
     bgGlow: 'from-emerald-100/60 via-sand-50/40 to-transparent'
   }
 ];
 
-const WHOLESALE_TIERS = [
-  { qty: '50 Pcs', tier: 'Boutique Batch', benefit: 'Custom Packaging Included', estimate: 'Fast 48h dispatch' },
-  { qty: '100 Pcs', tier: 'Wedding Return Special', benefit: 'Free Guest Personalization', estimate: 'Our #1 popular tier' },
-  { qty: '250 Pcs', tier: 'Event & Gala Tier', benefit: 'Direct Factory Rate Discount', estimate: 'Priority laser queue' },
-  { qty: '500 Pcs', tier: 'Corporate Enterprise', benefit: 'Branded Presentation Boxes', estimate: 'Sample proof first' },
-  { qty: '1000+ Pcs', tier: 'National OEM / White-Label', benefit: 'Wholesale Tier-1 Contract', estimate: 'Custom shapes allowed' }
+const QUANTITY_TIERS = [
+  { label: '50 Pcs', count: 50, discountPct: 30 },
+  { label: '100 pcs', count: 100, discountPct: 35 },
+  { label: '250 pcs', count: 250, discountPct: 40 },
+  { label: '500 pcs', count: 500, discountPct: 45 },
+  { label: '1000 pcs', count: 1000, discountPct: 50 },
+  { label: 'Custom', count: 0, discountPct: 30 }
 ];
 
 const FAQS = [
   {
-    q: 'Why cast acrylic instead of normal plastic or photo frames?',
-    a: 'Normal frames rely on bulky wood, tin, or extruded polystyrene that yellow, warp, and scratch easily. KRIA Tech uses 100% cell-cast monolithic acrylic. It provides 93% light transmittance (clearer than regular glass), will never turn yellow, and is shatterproof even if dropped.'
+    q: 'Why cast acrylic over regular plastic or photo frames?',
+    a: 'We use 100% cell-cast monolithic acrylic with 93% optical light transmittance. It never yellows, does not warp, and is completely shatterproof.'
   },
   {
-    q: 'How does the image stay protected and vibrant?',
-    a: 'Our images are not stickers or paper inserts pasted onto plastic. We UV-print pigment ink directly onto the sub-surface of the 3mm acrylic at 300 DPI, followed by a light-blocking opaque white barrier coat. The print is sealed from moisture, sunlight UV fading, and greasy fingerprints.'
+    q: 'How is my photo printed onto the frame?',
+    a: 'Printed at 300 DPI directly onto the sub-surface of 3mm acrylic with UV-cured pigment ink and a pure white light-blocking backcoat. Resistant to moisture, sun UV, and fingerprints.'
   },
   {
-    q: 'Will the magnet slide or scratch my refrigerator or surface?',
-    a: 'No. We use genuine nickel-plated NdFeB (neodymium) rare-earth magnets countersunk flush into the back. They deliver remarkable magnetic sheer resistance so the frame stays firmly seated without sliding down or scratching enamel.'
+    q: 'Will the neodymium magnet slide or scratch metal surfaces?',
+    a: 'No. Grade N35 rare-earth neodymium magnets are countersunk flush into the back for strong shear resistance that will not slip down or scratch enamel.'
   },
   {
-    q: 'Can I order just 1 or 2 pieces, or is it strictly bulk?',
-    a: 'You can order single pieces or thousands! For single bespoke frames, simply message us on WhatsApp with your favorite photo. For weddings and corporate orders of 50+ pieces, we offer special volume pricing and custom branded boxes.'
+    q: 'Can I order single pieces or just bulk batches?',
+    a: 'Both! You can order single bespoke frames or bulk batches of 50 to 5,000+ pieces for weddings and corporate gifting with factory-direct volume pricing.'
   },
   {
-    q: 'How does the ordering process work without an online cart?',
-    a: 'Direct and hassle-free: Tap the "Chat on WhatsApp" button, upload your photo, and tell us your shape and size. Our design technicians verify the crop, confirm clarity, share a digital preview, and ship directly from our Hyderabad manufacturing unit.'
-  },
-  {
-    q: 'What is the turnaround and delivery timeline across India?',
-    a: 'Orders are produced and inspected within 24–48 hours at our Hyderabad facility. We partner with express air couriers (Blue Dart / DTDC / Delhivery) delivering across pan-India metros within 2 to 4 business days with full tracking.'
+    q: 'How fast is dispatch and shipping across India?',
+    a: 'Produced within 24–48 hours at our Hyderabad facility, then shipped via express air couriers (Blue Dart / DTDC / Delhivery) delivering in 2–4 business days with tracking.'
   }
 ];
 
@@ -154,13 +128,36 @@ interface Props {
 }
 
 export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
-  const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(0);
-  const [wholesaleQty, setWholesaleQty] = useState<string>('100 Pcs');
-  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [activeSizeIndex, setActiveSizeIndex] = useState<number>(0);
+  const [selectedQtyLabel, setSelectedQtyLabel] = useState<string>('50 Pcs');
+  const [customQtyValue, setCustomQtyValue] = useState<number>(75);
+  const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
 
+  const activeProduct = selectedProductId ? PRODUCTS.find((p) => p.id === selectedProductId) || null : null;
+
+  // Reset size index when product changes
+  useEffect(() => {
+    setActiveSizeIndex(0);
+    setSelectedQtyLabel('50 Pcs');
+  }, [selectedProductId]);
+
+  // Sync scroll on view change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [selectedProductId]);
+
+  // Calculation for Product Detail Page
+  const currentSize = activeProduct ? activeProduct.sizes[activeSizeIndex] || activeProduct.sizes[0] : null;
+  const currentTier = QUANTITY_TIERS.find((t) => t.label === selectedQtyLabel) || QUANTITY_TIERS[0];
+  const actualQty = currentTier.label === 'Custom' ? Math.max(1, customQtyValue) : currentTier.count;
+  const discountRate = actualQty >= 1000 ? 0.50 : actualQty >= 500 ? 0.45 : actualQty >= 250 ? 0.40 : actualQty >= 100 ? 0.35 : actualQty >= 50 ? 0.30 : 0.15;
+  const unitOriginalPrice = currentSize ? currentSize.basePrice : 199;
+  const unitDiscountedPrice = Math.round(unitOriginalPrice * (1 - discountRate));
+  const discountPercentage = Math.round(discountRate * 100);
+  const totalPrice = unitDiscountedPrice * actualQty;
+  const originalTotalPrice = unitOriginalPrice * actualQty;
+  const factorySavings = originalTotalPrice - totalPrice;
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-[#1E1B18] font-sans antialiased overflow-x-hidden selection:bg-[#EBDDC7] selection:text-[#1E1B18]">
@@ -170,7 +167,6 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
         <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#F5E6D3]/70 to-[#ECD5BB]/40 blur-3xl opacity-70" />
         <div className="absolute top-[35%] -left-48 w-[550px] h-[550px] rounded-full bg-gradient-to-tr from-[#EAD9C6]/60 via-[#F7ECE1]/40 to-transparent blur-3xl opacity-60" />
         <div className="absolute bottom-20 right-[10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tl from-[#F2E4D5]/60 to-[#FFF7EE]/30 blur-3xl opacity-60" />
-        {/* Subtle Luxury Linen Pattern */}
         <div 
           className="absolute inset-0 opacity-[0.035]" 
           style={{ 
@@ -181,11 +177,15 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
       </div>
 
       {/* ─── DEDICATED GLASSMORPHIC HEADER ──────────────────────── */}
-      <header className="sticky top-0 z-50 w-full px-4 sm:px-8 py-3.5 backdrop-blur-2xl bg-[#FDFBF7]/80 border-b border-[#EADCCB]/60 shadow-[0_4px_24px_rgba(180,150,110,0.06)] transition-all">
+      <header className="sticky top-0 z-50 w-full px-4 sm:px-8 py-3.5 backdrop-blur-2xl bg-[#FDFBF7]/85 border-b border-[#EADCCB]/60 shadow-[0_4px_24px_rgba(180,150,110,0.06)] transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
           {/* Brand Identity */}
-          <a href="#hero" className="flex items-center gap-3 group cursor-pointer">
+          <button 
+            type="button"
+            onClick={() => setSelectedProductId(null)}
+            className="flex items-center gap-3 group cursor-pointer text-left"
+          >
             <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#FAF3EA] via-[#F2E5D4] to-[#DFCEB7] border border-[#D8C2A6]/80 flex items-center justify-center shadow-[0_4px_12px_rgba(180,140,90,0.15)] group-hover:scale-105 transition-transform duration-300">
               <Sparkles className="h-4.5 w-4.5 text-[#8C6436]" />
             </div>
@@ -197,11 +197,17 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
                 Cast Acrylic Atelier · Hyderabad
               </span>
             </div>
-          </a>
+          </button>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-7 text-[11px] font-semibold tracking-[0.14em] uppercase text-[#6E6359]">
-            <a href="#shapes" className="hover:text-[#1E1B18] transition-colors py-1">The 4 Shapes</a>
+            <button 
+              type="button" 
+              onClick={() => setSelectedProductId(null)} 
+              className="hover:text-[#1E1B18] transition-colors py-1 cursor-pointer"
+            >
+              The 4 Shapes
+            </button>
             <a href="#wholesale" className="hover:text-[#1E1B18] transition-colors py-1">Wholesale & Gifts</a>
             <a href="#faqs" className="hover:text-[#1E1B18] transition-colors py-1">Specifications</a>
           </nav>
@@ -221,6 +227,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
 
             {onBackToStore && (
               <button
+                type="button"
                 onClick={onBackToStore}
                 className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-mono tracking-widest uppercase text-[#857566] hover:text-[#1E1B18] border border-[#E0D0BE]/70 rounded-full bg-white/50 hover:bg-white/90 transition-all cursor-pointer"
                 title="Switch to Storefront view"
@@ -233,397 +240,479 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
         </div>
       </header>
 
-      {/* ─── HERO SECTION: LIGHT LUXURY GLASSMORPHISM ───────────── */}
-      <section id="hero" className="relative z-10 pt-14 pb-20 sm:pt-20 sm:pb-28 max-w-7xl mx-auto px-4 sm:px-8">
-        
-        {/* Top Announcement Pill */}
-        <div className="flex justify-center mb-7">
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-[#E2D2BE] shadow-[0_4px_16px_rgba(180,140,80,0.08)]">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className="text-[11px] font-medium tracking-wide text-[#7C6348]">
-              Factory-Direct Manufacturing · High-Precision 3mm Cast Acrylic
-            </span>
-          </div>
-        </div>
+      {/* ══════════════════════════════════════════════════════════
+          VIEW 1: DEDICATED SEPARATE PRODUCT DETAIL PAGE
+      ══════════════════════════════════════════════════════════ */}
+      {activeProduct && currentSize ? (
+        <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-16">
+          {/* Breadcrumb / Back button */}
+          <button
+            type="button"
+            onClick={() => setSelectedProductId(null)}
+            className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#8C6436] hover:text-[#1E1B18] mb-8 py-1.5 px-3 rounded-full bg-white/70 border border-[#E8DACB] shadow-xs cursor-pointer transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to All 4 Shapes</span>
+          </button>
 
-        {/* Main Headline */}
-        <div className="text-center max-w-4xl mx-auto mb-14">
-          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-light text-[#1E1B18] tracking-tight leading-[1.12]">
-            Transform Every Cherished Memory Into A{' '}
-            <span className="font-medium italic bg-gradient-to-r from-[#976C3E] via-[#B8874E] to-[#7A542D] bg-clip-text text-transparent underline decoration-[#DBC5A6]/60 decoration-wavy decoration-1 underline-offset-8">
-              Diamond-Cut Acrylic
-            </span>{' '}
-            Magnet.
-          </h1>
-          <p className="mt-7 text-base sm:text-xl text-[#63574A] font-light leading-relaxed max-w-2xl mx-auto">
-            Not plastic, not laminated paper. Genuine 3mm cast acrylic laser-contoured with mirror-beveled edges, 300 DPI sub-surface UV pigment printing, and rare-earth neodymium magnetic core.
-          </p>
-
-          {/* Primary Action Buttons */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href={waLink("Hi KRIA Tech! I would like to make custom acrylic photo magnets. Please share the details.")}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#1E1B18] to-[#36302B] text-[#FBF8F4] text-xs font-bold uppercase tracking-[0.16em] shadow-[0_12px_30px_rgba(30,27,24,0.22)] hover:shadow-[0_16px_36px_rgba(30,27,24,0.3)] hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
-            >
-              <MessageCircle className="h-4.5 w-4.5 text-[#25D366]" />
-              <span>Direct WhatsApp Order</span>
-              <ArrowRight className="h-3.5 w-3.5 opacity-70" />
-            </a>
-
-            <a
-              href="#wholesale"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-white/80 hover:bg-white backdrop-blur-md border border-[#DFCDBB] text-[#55493C] hover:text-[#1E1B18] text-xs font-bold uppercase tracking-[0.16em] shadow-[0_4px_16px_rgba(180,140,80,0.06)] hover:shadow-[0_8px_24px_rgba(180,140,80,0.12)] transition-all cursor-pointer"
-            >
-              <Factory className="h-4 w-4 text-[#A78255]" />
-              <span>Wholesale & Bulk (50+ Pcs)</span>
-            </a>
-          </div>
-
-          {/* Factory Trust Badges */}
-          <div className="mt-12 pt-8 border-t border-[#EADECE]/80 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-mono text-[#7D7063]">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-[#A78255]" />
-              <span>100% Cast Monolithic Acrylic</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#A78255]" />
-              <span>300 DPI Fade-Proof Pigment</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-[#A78255]" />
-              <span>Hyderabad Factory Direct</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── THE 4 SHAPES COMPREHENSIVE COLLECTION ─────────────── */}
-      <section id="shapes" className="relative z-10 py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-2">
-            Signature Acrylic Shapes
-          </p>
-          <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18]">
-            Four Iconic Forms. Infinite Stories.
-          </h2>
-          <p className="mt-4 text-sm sm:text-base text-[#6E6153] leading-relaxed">
-            Every frame is laser-calibrated and polished by our technicians in Hyderabad. Select any shape below to chat directly with our team.
-          </p>
-        </div>
-
-        {/* 4 Cards Grid with Glassmorphic styling */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {PRODUCTS.map((prod) => (
-            <div
-              key={prod.id}
-              onMouseEnter={() => setHoveredProduct(prod.id)}
-              onMouseLeave={() => setHoveredProduct(null)}
-              className="group rounded-3xl bg-white/70 backdrop-blur-xl border border-white hover:border-[#D9C4AC] p-6 shadow-[0_12px_35px_rgba(180,140,80,0.06)] hover:shadow-[0_20px_50px_rgba(180,140,80,0.14)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
-            >
-              <div>
-                {/* Visual Area */}
-                <div className={`relative h-56 rounded-2xl bg-gradient-to-b ${prod.bgGlow} border border-[#F0E4D5] flex items-center justify-center p-6 overflow-hidden mb-6`}>
-                  <img
-                    src={prod.image}
-                    alt={prod.name}
-                    className="w-full h-full object-contain filter drop-shadow-[0_10px_18px_rgba(90,60,30,0.18)] group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 right-3">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB]">
-                      3mm Cast
-                    </span>
-                  </div>
-                </div>
-
-                {/* Title & Tagline */}
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#9C8773] font-semibold">
-                  {prod.category}
-                </span>
-                <h3 className="font-serif text-2xl font-medium text-[#1E1B18] mt-1 group-hover:text-[#8C6436] transition-colors">
-                  {prod.name}
-                </h3>
-                <p className="mt-1 text-xs text-[#8C7A68] font-mono">
-                  {prod.tagline}
-                </p>
-
-                {/* Available Formats */}
-                <div className="mt-4 pt-4 border-t border-[#EFE5D9]">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#9A8775] mb-2 font-bold">
-                    Formats
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {prod.sizes.map((s, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[10px] font-mono px-2 py-1 rounded-md bg-[#FAF4ED] text-[#695B4E] border border-[#EAE0D3]"
-                      >
-                        {s.dimensions}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Button */}
-              <div className="mt-6 pt-4 border-t border-[#EFE5D9]">
-                <a
-                  href={waLink(`Hi KRIA Tech! I am interested in ordering the ${prod.name} acrylic frame. Please share customization options.`)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#1E1B18] hover:bg-[#8C6436] text-[#FDFBF7] text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  <MessageCircle className="h-3.5 w-3.5 text-[#25D366]" />
-                  <span>Inquire Shape</span>
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── WHOLESALE, B2B & WEDDING RETURN GIFTS ───────────────── */}
-      <section id="wholesale" className="relative z-10 py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-8">
-        <div className="rounded-[2.5rem] bg-gradient-to-br from-white/95 via-[#FDFBF7]/90 to-[#F6EEE3]/90 backdrop-blur-2xl border border-white p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.1)]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          {/* Two-Column Product Configuration Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
             
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-xs tracking-wider uppercase font-semibold">
-                <Factory className="h-3.5 w-3.5" />
-                Factory Direct Bulk Gifting
+            {/* ── LEFT COLUMN: PREVIEW IMAGE ───────────────────── */}
+            <div className="lg:col-span-6 lg:sticky lg:top-24">
+              <div className="relative rounded-3xl bg-white/90 backdrop-blur-2xl border border-white p-6 sm:p-10 shadow-[0_20px_50px_rgba(180,140,80,0.12)] overflow-hidden group">
+                
+                {/* Subtle crystal reflection border */}
+                <div className="absolute inset-0 border border-[#EADCCE]/70 rounded-3xl pointer-events-none" />
+                
+                {/* Image Frame Container */}
+                <div className="relative aspect-square w-full max-w-md mx-auto flex items-center justify-center p-4 rounded-2xl bg-gradient-to-b from-[#FAF5EE] to-[#F1E5D5]/60 overflow-hidden">
+                  <img
+                    src={activeProduct.image}
+                    alt={activeProduct.name}
+                    className="w-full h-full object-contain filter drop-shadow-[0_20px_35px_rgba(80,50,20,0.28)] transition-transform duration-700 group-hover:scale-105"
+                  />
+                  
+                  {/* Acrylic Spec Floating Pill */}
+                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono font-bold uppercase tracking-wider text-[#7C6348] shadow-xs">
+                    3mm Optical Cast Glass
+                  </div>
+
+                  <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono text-[#5A4D3F] shadow-xs flex items-center gap-1.5">
+                    <ZoomIn className="h-3 w-3 text-[#A78255]" />
+                    <span>Selected: {currentSize.dimensions}</span>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-center text-xs text-[#8C7A68] font-mono">
+                  ✦ Hand-beveled optical perimeter with flush neodymium magnet
+                </p>
+              </div>
+            </div>
+
+            {/* ── RIGHT COLUMN: CONFIGURATOR & PRICING ──────────── */}
+            <div className="lg:col-span-6 space-y-7">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold">
+                  {activeProduct.category}
+                </p>
+                <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-light text-[#1E1B18] mt-1">
+                  {activeProduct.name}
+                </h1>
+                <p className="text-sm text-[#736353] mt-2 font-mono">
+                  {activeProduct.subtitle} · {currentSize.dimensions}
+                </p>
               </div>
 
-              <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
-                Weddings, Corporate Milestones & Brand Merchandise.
-              </h2>
-
-              <p className="text-sm sm:text-base text-[#615446] leading-relaxed">
-                Looking for 50 to 5,000 personalized keepsakes for your guests or employees? We offer factory-direct tiered pricing, custom logo engraving, individual guest photo personalization, and premium velvet/gold gift packaging.
-              </p>
-
-              {/* Wholesale Quantity Picker Chips */}
-              <div>
-                <p className="text-xs font-mono uppercase tracking-widest text-[#887867] mb-3 font-bold">
-                  Select Order Volume Tier:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {WHOLESALE_TIERS.map((t) => (
+              {/* 1. Available Sizes: Choose dimension */}
+              <div className="p-5 rounded-2xl bg-white/80 backdrop-blur-md border border-[#EADECE]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono uppercase tracking-widest text-[#7C6348] font-bold">
+                    Available Sizes
+                  </span>
+                  <span className="text-xs text-[#9B8977] font-mono">
+                    Choose dimension
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {activeProduct.sizes.map((sz, idx) => (
                     <button
-                      key={t.qty}
-                      onClick={() => setWholesaleQty(t.qty)}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-mono transition-all cursor-pointer ${
-                        wholesaleQty === t.qty
-                          ? 'bg-[#1E1B18] text-white shadow-md scale-105'
-                          : 'bg-white/80 text-[#6B5E50] border border-[#E2D2C2] hover:bg-white'
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveSizeIndex(idx)}
+                      className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                        activeSizeIndex === idx
+                          ? 'bg-[#1E1B18] text-white border-[#1E1B18] shadow-md scale-[1.02]'
+                          : 'bg-white text-[#52463A] border-[#E2D2C2] hover:bg-[#FAF4ED]'
                       }`}
                     >
-                      {t.qty}
+                      <span className="font-serif text-lg font-medium">{sz.label}</span>
+                      <span className={`text-[10px] font-mono mt-0.5 ${activeSizeIndex === idx ? 'text-neutral-300' : 'text-[#8A7969]'}`}>
+                        Base ₹{sz.basePrice}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Selected Tier Feature Card */}
-              {(() => {
-                const tier = WHOLESALE_TIERS.find((t) => t.qty === wholesaleQty) || WHOLESALE_TIERS[1];
-                return (
-                  <div className="p-4 rounded-2xl bg-white/90 border border-[#E5D7C7] flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-bold text-[#1E1B18]">{tier.tier}</p>
-                      <p className="text-xs text-[#7A6B5C] mt-0.5">{tier.benefit} · {tier.estimate}</p>
-                    </div>
-                    <a
-                      href={waLink(`Hi KRIA Tech! I would like a wholesale quote for ${tier.qty} (${tier.tier}). Please share catalog and volume pricing.`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider shrink-0 cursor-pointer"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      <span>Quote {tier.qty}</span>
-                    </a>
-                  </div>
-                );
-              })()}
-
-              <div className="flex flex-wrap gap-6 text-xs text-[#756758] pt-2">
-                <span className="flex items-center gap-1.5">✓ Free sample proof for 100+ pcs</span>
-                <span className="flex items-center gap-1.5">✓ Custom luxury box packaging</span>
-                <span className="flex items-center gap-1.5">✓ Pan-India doorstep delivery</span>
-              </div>
-            </div>
-
-            {/* Right Card: Hyderabad Factory Showcase */}
-            <div className="lg:col-span-5 rounded-3xl bg-gradient-to-tr from-[#FAF4EB] to-[#F1E5D5] border border-white p-7 shadow-inner space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-[#8C6436] shadow-xs">
-                  <MapPin className="h-5 w-5" />
-                </div>
-                <div>
-                  <h4 className="font-serif text-lg font-medium text-[#1E1B18]">Hyderabad Manufacturing Unit</h4>
-                  <p className="text-[11px] font-mono text-[#8C7A68]">Telangana, India</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs text-[#5D5042] leading-relaxed">
-                <p>
-                  Every KRIA Tech frame is manufactured on state-of-the-art CNC laser beds and UV flatbed print lines. No overseas delay, no trading markups.
-                </p>
-                <div className="p-3.5 rounded-xl bg-white/70 border border-[#E9DAC8] space-y-1 font-mono text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-[#8C7A68]">Daily Output:</span>
-                    <span className="font-bold text-[#1E1B18]">1,500+ Units</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#8C7A68]">Quality Tolerance:</span>
-                    <span className="font-bold text-[#1E1B18]">±0.05 mm</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#8C7A68]">Direct Operations Phone:</span>
-                    <span className="font-bold text-[#1E1B18]">+91 93925 76792</span>
-                  </div>
-                </div>
-              </div>
-
-              <a
-                href={waLink("Hello Operations Team at KRIA Tech Hyderabad, I would like to discuss a custom bulk OEM acrylic order.")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-[#1E1B18] hover:bg-[#8C6436] text-[#FDFBF7] text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
-              >
-                <MessageCircle className="h-4 w-4 text-[#25D366]" />
-                <span>Chat with Operations Team</span>
-              </a>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ─── FREQUENTLY ASKED QUESTIONS (ACCORDION) ─────────────── */}
-      <section id="faqs" className="relative z-10 py-20 sm:py-28 max-w-4xl mx-auto px-4 sm:px-8">
-        <div className="text-center mb-14">
-          <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-2">
-            Clear Answers
-          </p>
-          <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18]">
-            Frequently Asked Questions
-          </h2>
-          <p className="mt-3 text-sm text-[#736556]">
-            Everything you need to know about material quality, photography guidelines, and delivery.
-          </p>
-        </div>
-
-        <div className="space-y-3.5">
-          {FAQS.map((faq, idx) => {
-            const isOpen = activeFaqIndex === idx;
-            return (
-              <div
-                key={idx}
-                className="rounded-2xl bg-white/80 backdrop-blur-md border border-[#E9DCCE] overflow-hidden transition-all duration-200"
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveFaqIndex(isOpen ? null : idx)}
-                  className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 cursor-pointer"
-                >
-                  <span className="font-serif text-base sm:text-lg text-[#1E1B18] font-normal">
-                    {faq.q}
+              {/* 2. Batch Quantity */}
+              <div className="p-5 rounded-2xl bg-white/80 backdrop-blur-md border border-[#EADECE]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono uppercase tracking-widest text-[#7C6348] font-bold">
+                    Batch Quantity
                   </span>
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 bg-[#FAF4ED] text-[#8C6436]' : 'text-[#8A7969]'}`}>
-                    <ChevronDown className="h-4 w-4" />
-                  </div>
-                </button>
+                  <span className="text-xs font-mono text-emerald-700 font-semibold">
+                    Volume Tier Discount
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {QUANTITY_TIERS.map((t) => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      onClick={() => setSelectedQtyLabel(t.label)}
+                      className={`py-2.5 px-2 rounded-xl text-xs font-mono border text-center transition-all cursor-pointer ${
+                        selectedQtyLabel === t.label
+                          ? 'bg-[#1E1B18] text-white border-[#1E1B18] shadow-xs'
+                          : 'bg-white text-[#635547] border-[#E4D5C5] hover:bg-[#FAF4ED]'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
 
-                {isOpen && (
-                  <div className="px-5 pb-6 sm:px-6 text-sm text-[#615345] leading-relaxed border-t border-[#F2E7DC] pt-4">
-                    {faq.a}
+                {/* Custom Quantity Stepper if Custom is chosen */}
+                {selectedQtyLabel === 'Custom' && (
+                  <div className="mt-4 pt-3 border-t border-[#EFE5D9] flex items-center gap-3">
+                    <span className="text-xs font-mono text-[#6E6153]">Enter exact pieces:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10000}
+                      value={customQtyValue}
+                      onChange={(e) => setCustomQtyValue(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-28 px-3 py-1.5 rounded-lg border border-[#D8C7B5] bg-white font-mono text-sm text-[#1E1B18] outline-none focus:ring-2 focus:ring-[#C4A574]"
+                    />
+                    <span className="text-xs font-mono text-[#8C7A68]">frames</span>
                   </div>
                 )}
               </div>
-            );
-          })}
-        </div>
 
-        {/* WhatsApp Help Banner */}
-        <div className="mt-12 p-6 rounded-3xl bg-gradient-to-r from-[#FAF2E6] to-[#F3E6D5] border border-[#E4D4C3] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div>
-            <p className="font-serif text-lg font-medium text-[#1E1B18]">Have a custom shape or special dimension in mind?</p>
-            <p className="text-xs text-[#7A6A5A] mt-0.5">Our design engineers can laser cut custom profiles for your project.</p>
-          </div>
-          <a
-            href={waLink("Hi KRIA Tech! I have a question about custom sizes or artwork requirements.")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs font-bold uppercase tracking-wider shrink-0 transition-colors cursor-pointer"
-          >
-            <MessageCircle className="h-4 w-4 text-[#25D366]" />
-            <span>Ask A Question</span>
-          </a>
-        </div>
-      </section>
+              {/* 3. Live Pricing Calculation Box (As requested) */}
+              <div className="p-6 rounded-3xl bg-gradient-to-br from-[#FAF3EA] via-white to-[#F5ECE1] border border-[#E4D4C3] shadow-[0_10px_30px_rgba(180,140,80,0.08)] space-y-4">
+                <div className="flex items-baseline justify-between gap-4 flex-wrap">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-serif text-4xl sm:text-5xl font-medium text-[#1E1B18]">
+                      ₹{unitDiscountedPrice}
+                    </span>
+                    <span className="text-base text-[#918171] line-through font-mono">
+                      ₹{unitOriginalPrice}/ pc
+                    </span>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-mono font-bold tracking-wider">
+                    {discountPercentage}% OFF
+                  </span>
+                </div>
 
-      {/* ─── LUXURY BOTTOM CALL TO ACTION ───────────────────────── */}
-      <section className="relative z-10 py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-8">
-        <div className="rounded-[2.5rem] bg-gradient-to-br from-[#1E1B18] via-[#2D2723] to-[#1E1B18] text-[#FDFBF7] p-10 sm:p-20 text-center relative overflow-hidden shadow-[0_30px_70px_rgba(30,27,24,0.3)]">
-          {/* Subtle Ambient Gold Aura */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#C4A574]/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="pt-3 border-t border-[#EAE0D3] space-y-2 font-mono text-xs">
+                  <div className="flex justify-between items-center text-[#5A4D3E]">
+                    <span>Total ({actualQty} pcs):</span>
+                    <strong className="text-base text-[#1E1B18] font-serif">₹{totalPrice.toLocaleString('en-IN')}</strong>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-800 bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200">
+                    <span className="font-semibold">Factory Direct Savings:</span>
+                    <strong className="font-bold">₹{factorySavings.toLocaleString('en-IN')}</strong>
+                  </div>
+                </div>
 
-          <div className="relative max-w-2xl mx-auto space-y-6">
-            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#C4A574] font-semibold">
-              Begin With Your Favorite Photo
-            </span>
+                {/* 4. Get WhatsApp Quote Button */}
+                <div className="pt-2">
+                  <a
+                    href={waLink(`Hi KRIA Tech! I would like to get a quote for the "${activeProduct.name}" in ${currentSize.label} (${currentSize.dimensions}). Batch Quantity: ${actualQty} pcs (Estimated Total: ₹${totalPrice.toLocaleString('en-IN')}). Please share order details.`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-sm font-bold uppercase tracking-[0.14em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] hover:shadow-[0_12px_32px_rgba(37,211,102,0.48)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                    <span>Get WhatsApp Quote</span>
+                  </a>
+                </div>
+              </div>
 
-            <h2 className="font-serif text-3xl sm:text-5xl font-light tracking-tight leading-tight">
-              Ready To See Your Memory In 3mm Optical Acrylic?
-            </h2>
+              {/* Guarantees & Features */}
+              <div className="space-y-2.5 pt-1 text-xs text-[#635547]">
+                <div className="flex items-center gap-2.5">
+                  <Check className="h-4 w-4 text-[#8C6436] shrink-0" />
+                  <span>Your photo is printed and assembled by hand in Hyderabad, made to order</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Check className="h-4 w-4 text-[#8C6436] shrink-0" />
+                  <span>Clear 3mm cast acrylic with flush neodymium magnetic closure</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Check className="h-4 w-4 text-[#8C6436] shrink-0" />
+                  <span>Ships in 2–3 days with express pan-India tracking</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Check className="h-4 w-4 text-[#8C6436] shrink-0" />
+                  <span>Prepaid custom orders · 100% replacement guarantee if damaged in transit</span>
+                </div>
+              </div>
 
-            <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-light">
-              Send us your picture over WhatsApp. We will generate a digital sample mockup, recommend the best shape, and craft it at our Hyderabad factory within 24 hours.
-            </p>
-
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href={waLink("Hello KRIA Tech, I would like to preview my photo on your acrylic frames!")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
-              >
-                <MessageCircle className="h-4.5 w-4.5" />
-                <span>Chat On WhatsApp Now</span>
-              </a>
-
-              <a
-                href={waLink("Hello KRIA Tech, I am looking for corporate/wedding bulk packages (50+ pieces).")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border border-white/20 hover:border-[#C4A574] text-neutral-200 hover:text-white text-xs font-bold uppercase tracking-[0.16em] transition-all cursor-pointer"
-              >
-                <span>Bulk Inquiry (+91 93925 76792)</span>
-              </a>
             </div>
+
           </div>
-        </div>
-      </section>
+        </main>
+      ) : (
+        /* ══════════════════════════════════════════════════════════
+            VIEW 2: MAIN EXCLUSIVE LANDING PAGE
+        ══════════════════════════════════════════════════════════ */
+        <main className="relative z-10">
+          
+          {/* ─── HERO SECTION: PURE & EXCLUSIVE (NO CLUTTER) ───────── */}
+          <section
+            id="hero"
+            className="relative pt-24 pb-24 sm:pt-32 sm:pb-32 px-4 sm:px-8 border-b border-[#EADECE]/60 overflow-hidden"
+          >
+            {/* Subtle Architectural Studio Background Image with warm glass overlay */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none mix-blend-multiply"
+              style={{ backgroundImage: `url('/images/clean_studio_bg_1782458110845.jpg')` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#FDFBF7]/95 via-[#FAF7F2]/90 to-[#FDFBF7] pointer-events-none" />
+
+            <div className="relative max-w-4xl mx-auto text-center space-y-8">
+              
+              {/* Headline - Exactly as requested */}
+              <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-light text-[#1E1B18] tracking-tight leading-[1.12]">
+                Transform Every Cherished Memory Into A{' '}
+                <span className="font-medium italic bg-gradient-to-r from-[#976C3E] via-[#B8874E] to-[#7A542D] bg-clip-text text-transparent">
+                  Diamond-Cut Acrylic
+                </span>{' '}
+                Magnet.
+              </h1>
+
+              {/* Subtitle - Exactly as requested */}
+              <p className="text-base sm:text-xl text-[#63574A] font-light leading-relaxed max-w-3xl mx-auto">
+                Not plastic, not laminated paper. Genuine 3mm cast acrylic laser-contoured with mirror-beveled edges, 300 DPI sub-surface UV pigment printing, and rare-earth neodymium magnetic core.
+              </p>
+
+              {/* CTA - Exactly as requested */}
+              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a
+                  href={waLink("Hi KRIA Tech! I would like to place a Direct WhatsApp Order for custom acrylic photo magnets.")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-9 py-4 rounded-2xl bg-gradient-to-r from-[#1E1B18] to-[#36302B] text-[#FBF8F4] text-xs font-bold uppercase tracking-[0.18em] shadow-[0_12px_30px_rgba(30,27,24,0.22)] hover:shadow-[0_16px_36px_rgba(30,27,24,0.3)] hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
+                >
+                  <MessageCircle className="h-4.5 w-4.5 text-[#25D366]" />
+                  <span>Direct WhatsApp Order</span>
+                  <ArrowRight className="h-3.5 w-3.5 opacity-70" />
+                </a>
+
+                <a
+                  href="#shapes"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/80 hover:bg-white border border-[#DFCDBB] text-[#55493C] text-xs font-bold uppercase tracking-[0.16em] transition-all cursor-pointer"
+                >
+                  <span>Explore 4 Shapes</span>
+                </a>
+              </div>
+
+            </div>
+          </section>
+
+          {/* ─── THE 4 SHAPES COMPREHENSIVE COLLECTION ─────────────── */}
+          <section id="shapes" className="py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-2">
+                Signature Acrylic Shapes
+              </p>
+              <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18]">
+                Four Iconic Forms. Infinite Stories.
+              </h2>
+              <p className="mt-4 text-sm sm:text-base text-[#6E6153] leading-relaxed">
+                Click any product below to view available dimensions, batch wholesale pricing, and instant WhatsApp quotes.
+              </p>
+            </div>
+
+            {/* 4 Cards Grid with Glassmorphic styling */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {PRODUCTS.map((prod) => (
+                <div
+                  key={prod.id}
+                  onClick={() => setSelectedProductId(prod.id)}
+                  className="group rounded-3xl bg-white/75 backdrop-blur-xl border border-white hover:border-[#D9C4AC] p-6 shadow-[0_12px_35px_rgba(180,140,80,0.06)] hover:shadow-[0_22px_55px_rgba(180,140,80,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                >
+                  <div>
+                    {/* Visual Area */}
+                    <div className={`relative h-60 rounded-2xl bg-gradient-to-b ${prod.bgGlow} border border-[#F0E4D5] flex items-center justify-center p-6 overflow-hidden mb-5`}>
+                      <img
+                        src={prod.image}
+                        alt={prod.name}
+                        className="w-full h-full object-contain filter drop-shadow-[0_12px_22px_rgba(90,60,30,0.22)] group-hover:scale-108 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 right-3">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB]">
+                          3mm Cast
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Title & Tagline */}
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#9C8773] font-semibold">
+                      {prod.category}
+                    </span>
+                    <h3 className="font-serif text-2xl font-medium text-[#1E1B18] mt-1 group-hover:text-[#8C6436] transition-colors">
+                      {prod.name}
+                    </h3>
+                    <p className="mt-1 text-xs text-[#8C7A68] font-mono">
+                      {prod.tagline}
+                    </p>
+
+                    {/* Formats preview */}
+                    <div className="mt-4 pt-3.5 border-t border-[#EFE5D9]">
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-[#9A8775] mb-2 font-bold">
+                        Available Sizes
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {prod.sizes.map((s, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[10px] font-mono px-2 py-1 rounded-md bg-[#FAF4ED] text-[#695B4E] border border-[#EAE0D3]"
+                          >
+                            {s.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Open Separate Product Page CTA */}
+                  <div className="mt-6 pt-4 border-t border-[#EFE5D9]">
+                    <div className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#1E1B18] group-hover:bg-[#8C6436] text-[#FDFBF7] text-xs font-bold uppercase tracking-wider transition-colors">
+                      <span>View Sizes & Pricing</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ─── WHOLESALE, B2B & WEDDING RETURN GIFTS ───────────────── */}
+          <section id="wholesale" className="py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="rounded-[2.5rem] bg-gradient-to-br from-white/95 via-[#FDFBF7]/90 to-[#F6EEE3]/90 backdrop-blur-2xl border border-white p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.1)]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-xs tracking-wider uppercase font-semibold">
+                    <Factory className="h-3.5 w-3.5" />
+                    Factory Direct Bulk Gifting
+                  </div>
+
+                  <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
+                    Weddings, Corporate Milestones & Brand Merchandise.
+                  </h2>
+
+                  <p className="text-sm sm:text-base text-[#615446] leading-relaxed">
+                    Need 50 to 5,000 personalized keepsakes? We offer factory-direct tiered pricing, custom logo engraving, individual guest photo personalization, and premium velvet/gold gift packaging direct from Hyderabad.
+                  </p>
+
+                  <div className="flex flex-wrap gap-4 text-xs font-mono text-[#7A6A5A]">
+                    <span className="p-2.5 rounded-xl bg-white border border-[#E8DACB]">✓ Tiered wholesale rates</span>
+                    <span className="p-2.5 rounded-xl bg-white border border-[#E8DACB]">✓ Custom box packaging</span>
+                    <span className="p-2.5 rounded-xl bg-white border border-[#E8DACB]">✓ Pan-India courier</span>
+                  </div>
+
+                  <div className="pt-2">
+                    <a
+                      href={waLink("Hello KRIA Tech! I would like to inquire about wedding return gifts or bulk corporate order.")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      <span>Get Bulk Wholesale Quote</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Right Card: Hyderabad Factory Showcase */}
+                <div className="lg:col-span-5 rounded-3xl bg-gradient-to-tr from-[#FAF4EB] to-[#F1E5D5] border border-white p-7 shadow-inner space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-[#8C6436] shadow-xs">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-serif text-lg font-medium text-[#1E1B18]">Hyderabad Manufacturing Unit</h4>
+                      <p className="text-[11px] font-mono text-[#8C7A68]">Telangana, India</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[#5D5042] leading-relaxed">
+                    Every KRIA Tech frame is manufactured on state-of-the-art CNC laser beds and UV flatbed print lines. No overseas delay, no trading markups.
+                  </p>
+
+                  <div className="p-3.5 rounded-xl bg-white/70 border border-[#E9DAC8] space-y-1 font-mono text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-[#8C7A68]">Turnaround:</span>
+                      <span className="font-bold text-[#1E1B18]">24–48 Hours</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#8C7A68]">Direct Hotline:</span>
+                      <span className="font-bold text-[#1E1B18]">+91 93925 76792</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+
+          {/* ─── FREQUENTLY ASKED QUESTIONS (COMPACT & SMALLER) ───── */}
+          <section id="faqs" className="py-14 sm:py-20 max-w-3xl mx-auto px-4 sm:px-8">
+            <div className="text-center mb-8">
+              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold">
+                Clear Answers
+              </p>
+              <h2 className="font-serif text-2xl sm:text-3xl font-light text-[#1E1B18] mt-1">
+                Frequently Asked Questions
+              </h2>
+            </div>
+
+            <div className="space-y-2.5">
+              {FAQS.map((faq, idx) => {
+                const isOpen = activeFaqIndex === idx;
+                return (
+                  <div
+                    key={idx}
+                    className="rounded-xl bg-white/75 backdrop-blur-md border border-[#E9DCCE] overflow-hidden transition-all duration-150"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setActiveFaqIndex(isOpen ? null : idx)}
+                      className="w-full py-3.5 px-4 text-left flex items-center justify-between gap-3 cursor-pointer"
+                    >
+                      <span className="font-serif text-sm text-[#1E1B18] font-normal">
+                        {faq.q}
+                      </span>
+                      <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 transition-transform duration-150 ${isOpen ? 'rotate-180 text-[#8C6436]' : 'text-[#8A7969]'}`}>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </div>
+                    </button>
+
+                    {isOpen && (
+                      <div className="px-4 pb-4 text-xs text-[#615345] leading-relaxed border-t border-[#F2E7DC] pt-2.5">
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+        </main>
+      )}
 
       {/* ─── DEDICATED LIGHT LUXURY FOOTER ──────────────────────── */}
-      <footer className="relative z-10 border-t border-[#EADECE] bg-[#FAF5EE] py-14">
+      <footer className="relative z-10 border-t border-[#EADECE] bg-[#FAF5EE] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start justify-between">
             
             {/* Col 1: Brand Info */}
-            <div className="md:col-span-5 space-y-4">
+            <div className="md:col-span-5 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-white border border-[#E0D0BF] flex items-center justify-center shadow-xs">
-                  <Sparkles className="h-4 w-4 text-[#8C6436]" />
+                <div className="h-8 w-8 rounded-xl bg-white border border-[#E0D0BF] flex items-center justify-center shadow-xs">
+                  <Sparkles className="h-3.5 w-3.5 text-[#8C6436]" />
                 </div>
-                <span className="font-serif text-2xl font-semibold tracking-tight text-[#1E1B18]">
+                <span className="font-serif text-xl font-semibold tracking-tight text-[#1E1B18]">
                   KRIA<span className="text-[#A78255] font-light">Tech</span>
                 </span>
               </div>
               <p className="text-xs text-[#6E6152] leading-relaxed max-w-sm">
-                Specialized manufacturers of diamond-cut 3mm monolithic cast acrylic photo magnets. Crafted with UV-cured sub-surface pigment and flush rare-earth neodymium magnetic cores. Factory-direct in Hyderabad, Telangana.
+                Diamond-cut 3mm monolithic cast acrylic photo magnets. Crafted with UV-cured sub-surface pigment and rare-earth neodymium magnetic cores. Factory-direct in Hyderabad.
               </p>
               <div className="flex items-center gap-2 text-xs font-mono text-[#8C7762]">
                 <MapPin className="h-3.5 w-3.5 text-[#8C6436]" />
@@ -632,25 +721,29 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
             </div>
 
             {/* Col 2: Shapes List */}
-            <div className="md:col-span-3 space-y-3">
-              <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#8C6436] font-bold">
+            <div className="md:col-span-3 space-y-2">
+              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#8C6436] font-bold">
                 Signature Collection
               </p>
-              <ul className="text-xs text-[#635546] space-y-2">
-                <li>• Sculpted Heart (2×2", 3×3", 4×4")</li>
-                <li>• Minimal Circle (2×2", 3×3", 4×4")</li>
-                <li>• Classic Polaroid (2×3", 3×4")</li>
-                <li>• Statement Grande (4×6")</li>
+              <ul className="text-xs text-[#635546] space-y-1.5">
+                {PRODUCTS.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProductId(p.id)}
+                      className="hover:text-[#8C6436] transition-colors cursor-pointer"
+                    >
+                      {p.name}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Col 3: Direct Contact */}
-            <div className="md:col-span-4 space-y-3">
-              <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#8C6436] font-bold">
-                Direct WhatsApp Concierge
-              </p>
-              <p className="text-xs text-[#635546]">
-                Available Monday – Saturday, 9:00 AM – 8:00 PM IST
+            <div className="md:col-span-4 space-y-2.5">
+              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#8C6436] font-bold">
+                WhatsApp Concierge
               </p>
               <a
                 href={waLink("Hello KRIA Tech team, I have an inquiry.")}
@@ -668,15 +761,14 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
 
           </div>
 
-          {/* Copyright bar */}
-          <div className="mt-12 pt-6 border-t border-[#E8DACB] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono text-[#8F7E6E]">
+          <div className="mt-10 pt-5 border-t border-[#E8DACB] flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] font-mono text-[#8F7E6E]">
             <p>© {new Date().getFullYear()} KRIA Tech. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <span>3mm Optical Acrylic</span>
+            <div className="flex items-center gap-3">
+              <span>3mm Cast Acrylic</span>
               <span>•</span>
               <span>300 DPI UV Pigment</span>
               <span>•</span>
-              <span>Neodymium N35 Core</span>
+              <span>Neodymium Grip</span>
             </div>
           </div>
         </div>
@@ -685,7 +777,11 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
       {/* ─── FLOATING WHATSAPP BUTTON (DESKTOP & MOBILE) ────────── */}
       <div className="fixed bottom-6 right-6 z-50">
         <a
-          href={waLink("Hi KRIA Tech! I am on your website and would like to talk about custom acrylic frames.")}
+          href={waLink(
+            activeProduct && currentSize
+              ? `Hi KRIA Tech! I am viewing ${activeProduct.name} (${currentSize.label}) and would like to order.`
+              : "Hi KRIA Tech! I am on your website and would like to talk about custom acrylic frames."
+          )}
           target="_blank"
           rel="noopener noreferrer"
           className="group flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:shadow-[0_12px_40px_rgba(37,211,102,0.55)] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
