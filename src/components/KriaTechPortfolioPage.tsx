@@ -17,6 +17,7 @@ interface ProductSize {
   dimensions: string;
   basePrice: number;
   originalPrice: number;
+  previewImage?: string;
 }
 
 interface Product {
@@ -38,12 +39,12 @@ const PRODUCTS: Product[] = [
     name: 'Classic Rectangle',
     tagline: 'Architectural & Landscape Panorama',
     subtitle: 'Personalised acrylic magnetic rectangle frame',
-    image: '/images/scenic_landscape_sample_1782458156606.jpg',
+    image: '/images/shape_rectangle_wedding_portrait.png',
     category: 'Landscape & Panorama',
     sizes: [
-      { label: '2 × 3"', dimensions: '2 × 3 inch', basePrice: 229, originalPrice: 329 },
-      { label: '3 × 4"', dimensions: '3 × 4 inch', basePrice: 279, originalPrice: 379 },
-      { label: '4 × 6"', dimensions: '4 × 6 inch', basePrice: 349, originalPrice: 499 }
+      { label: '2 × 3"', dimensions: '2 × 3 inch', basePrice: 229, originalPrice: 329, previewImage: '/images/dimension_preview_3.5x2.5.png' },
+      { label: '3 × 4"', dimensions: '3 × 4 inch', basePrice: 279, originalPrice: 379, previewImage: '/images/dimension_preview_3x4.png' },
+      { label: '4 × 6"', dimensions: '4 × 6 inch', basePrice: 349, originalPrice: 499, previewImage: '/images/dimension_preview_6x4.png' }
     ],
     accentColor: '#365349',
     bgGlow: 'from-emerald-100/60 via-sand-50/40 to-transparent'
@@ -53,12 +54,12 @@ const PRODUCTS: Product[] = [
     name: 'Minimal Square',
     tagline: 'Geometric Balance & Modern Grids',
     subtitle: 'Personalised acrylic magnetic square frame',
-    image: '/images/couple_portrait_sample_1782458143228.jpg',
+    image: '/images/shape_square_romantic_embrace.png',
     category: 'Grid & Modern Living',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299 },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349 },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399 }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_square.jpg' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/dimension_preview_square.jpg' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/dimension_preview_square.jpg' }
     ],
     accentColor: '#A3704C',
     bgGlow: 'from-amber-100/60 via-stone-50/40 to-transparent'
@@ -68,12 +69,12 @@ const PRODUCTS: Product[] = [
     name: 'Minimal Circle',
     tagline: 'Infinite Symmetry & Contemporary Zen',
     subtitle: 'Personalised acrylic magnetic circle frame',
-    image: '/images/shape_circle_family_dog.jpg',
+    image: '/images/shape_circle_family_furry_friend.png',
     category: 'Modern Living',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299 },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349 },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399 }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/shape_circle_family_furry_friend.png' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/shape_circle_family_furry_friend.png' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/shape_circle_family_furry_friend.png' }
     ],
     accentColor: '#4A6B82',
     bgGlow: 'from-sky-100/60 via-amber-50/40 to-transparent'
@@ -83,12 +84,12 @@ const PRODUCTS: Product[] = [
     name: 'Sculpted Heart',
     tagline: 'Romance & Everlasting Keepsakes',
     subtitle: 'Personalised acrylic magnetic heart frame',
-    image: '/images/shape_heart_wedding_couple.png',
+    image: '/images/shape_heart_romantic_wedding.png',
     category: 'Celebration & Gifting',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299 },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349 },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399 }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/shape_heart_romantic_wedding.png' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/shape_heart_romantic_wedding.png' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/shape_heart_romantic_wedding.png' }
     ],
     accentColor: '#B76E79',
     bgGlow: 'from-rose-100/60 via-pink-50/40 to-transparent'
@@ -107,28 +108,34 @@ const QUANTITY_TIERS = [
 // Sliding images for Hero Carousel
 const HERO_SLIDES = [
   {
-    image: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg',
+    image: '/images/hero_1.jpg',
     title: 'Diamond-Cut Acrylic Frame Magnets',
     subtitle: 'Laser-contoured 3mm monolithic cast acrylic handcrafted in Hyderabad',
     badge: 'Real Lifestyle Gallery'
   },
   {
-    image: '/images/acrylic_magnets_hero_1782423101134.jpg',
+    image: '/images/hero_2.jpg',
     title: 'Sub-Surface 300 DPI UV Pigment',
     subtitle: 'Fade-proof photographic clarity backed by rare-earth neodymium magnetic cores',
     badge: 'Optical Clarity'
   },
   {
-    image: '/images/lifestyle_gallery_workspace_1779653492345.png',
+    image: '/images/hero_3.jpg',
     title: 'Starter Kit · 12 Frames for ₹999',
-    subtitle: 'Includes 2 of each shape: Rectangle, Square, Circle & Heart',
+    subtitle: 'Includes 10 custom acrylic frames + 2 FREE bonus keychains with free delivery',
     badge: 'Special Value Offer'
   },
   {
-    image: '/images/scalloped_stand_product_preview_1782458429878.jpg',
-    title: 'Pre-Finished Mirror Bevels',
+    image: '/images/hero_4.jpg',
+    title: 'Precision Hand-Polished Mirror Bevels',
     subtitle: 'Zero fading, zero yellowing, and 100% moisture-sealed protection',
     badge: 'Factory Direct'
+  },
+  {
+    image: '/images/hero_5.jpg',
+    title: 'Curated Keepsakes For Every Living Space',
+    subtitle: 'Architectural minimalism engineered for refrigerators, study desks & metallic surfaces',
+    badge: 'Monolithic Cast Glass'
   }
 ];
 
@@ -164,7 +171,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Balanced square ratio for candid memories',
     category: 'Fridge Magnet',
     badge: 'Square',
-    image: '/images/couple_portrait_sample_1782458143228.jpg',
+    image: '/images/shape_square_romantic_embrace.png',
     aspectRatio: 'aspect-square',
     roundedClass: 'rounded-2xl',
     isBonus: false
@@ -177,7 +184,7 @@ const STARTER_KIT_ITEMS = [
     category: 'Fridge Magnet',
     badge: 'Most Selling',
     badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
-    image: '/images/scalloped_stand_product_preview_1782458429878.jpg',
+    image: '/images/shape_rectangle_wedding_portrait.png',
     aspectRatio: 'aspect-[2.5/3.5]',
     roundedClass: 'rounded-2xl',
     isBonus: false
@@ -189,7 +196,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Substantial portrait frame for fridge & desk',
     category: 'Fridge Magnet',
     badge: 'Medium',
-    image: '/images/architectural_detail_sample_1782458171090.jpg',
+    image: '/images/joyful_toddler_acrylic_frame.png',
     aspectRatio: 'aspect-[3/4]',
     roundedClass: 'rounded-2xl',
     isBonus: false
@@ -201,7 +208,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Laser-contoured heart perimeter for couples',
     category: 'Fridge Magnet',
     badge: 'Heart',
-    image: '/images/shape_heart_wedding_couple.png',
+    image: '/images/shape_heart_romantic_wedding.png',
     aspectRatio: 'aspect-square',
     roundedClass: 'rounded-[2rem]',
     isBonus: false,
@@ -214,7 +221,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Radial symmetry with hand-buffed perimeter',
     category: 'Fridge Magnet',
     badge: 'Circle',
-    image: '/images/shape_circle_family_dog.jpg',
+    image: '/images/shape_circle_family_furry_friend.png',
     aspectRatio: 'aspect-square',
     roundedClass: 'rounded-full',
     isBonus: false
@@ -226,7 +233,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Undulating scalloped edge cloud silhouette',
     category: 'Fridge Magnet',
     badge: 'Artisanal Scallop',
-    image: '/images/shape_cloud_magnet_1780939383548.png',
+    image: '/images/memories_captured_acrylic_frames.png',
     aspectRatio: 'aspect-[2.5/3.5]',
     roundedClass: 'rounded-3xl border-dashed',
     isBonus: false
@@ -238,7 +245,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Horizontal scalloped cloud for landscapes',
     category: 'Fridge Magnet',
     badge: 'Landscape Cloud',
-    image: '/images/shape_cloud_magnet_1780939383548.png',
+    image: '/images/acrylic_photo_magnet_wedding.png',
     aspectRatio: 'aspect-[4/3]',
     roundedClass: 'rounded-3xl border-dashed',
     isBonus: false
@@ -250,7 +257,7 @@ const STARTER_KIT_ITEMS = [
     subtitle: 'Vertical 3-photo story timeline bookmark',
     category: 'Fridge Magnet',
     badge: '3-Photo Strip',
-    image: '/images/shape_filmstrip_magnet_1780939443747.png',
+    image: '/images/family_moments_sleek_frame.png',
     aspectRatio: 'aspect-[2.25/6]',
     roundedClass: 'rounded-xl',
     isBonus: false,
@@ -264,7 +271,7 @@ const STARTER_KIT_ITEMS = [
     category: 'Fridge Magnet',
     badge: 'Most Selling',
     badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
-    image: '/images/scenic_landscape_sample_1782458156606.jpg',
+    image: '/images/dimension_preview_6x4.png',
     aspectRatio: 'aspect-[6/4]',
     roundedClass: 'rounded-2xl',
     isBonus: false
@@ -277,7 +284,7 @@ const STARTER_KIT_ITEMS = [
     category: 'Adhesive Frame',
     badge: 'No Magnet (Adhesive)',
     badgeColor: 'bg-blue-50 text-blue-900 border-blue-200',
-    image: '/images/couple_portrait_sample_1782458143228.jpg',
+    image: '/images/dimension_preview_3.5x2.5.png',
     aspectRatio: 'aspect-[2.5/3.5]',
     roundedClass: 'rounded-2xl',
     isBonus: false
@@ -290,7 +297,7 @@ const STARTER_KIT_ITEMS = [
     category: 'Bonus Gift',
     badge: 'FREE OFFER GIFT',
     badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
-    image: '/images/shape_circle_family_dog.jpg',
+    image: '/images/keychain_backpack_lifestyle.png',
     aspectRatio: 'aspect-square',
     roundedClass: 'rounded-full',
     isBonus: true,
@@ -304,7 +311,7 @@ const STARTER_KIT_ITEMS = [
     category: 'Bonus Gift',
     badge: 'FREE OFFER GIFT',
     badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
-    image: '/images/scalloped_stand_product_preview_1782458429878.jpg',
+    image: '/images/keychain_casual_lifestyle.png',
     aspectRatio: 'aspect-[1.4/2]',
     roundedClass: 'rounded-xl',
     isBonus: true,
@@ -533,8 +540,8 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             onClick={() => handleCloseProduct()}
             className="flex items-center gap-3 group cursor-pointer text-left"
           >
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#FAF3EA] via-[#F2E5D4] to-[#DFCEB7] border border-[#D8C2A6]/80 flex items-center justify-center shadow-[0_4px_12px_rgba(180,140,90,0.15)] group-hover:scale-105 transition-transform duration-300">
-              <Sparkles className="h-4.5 w-4.5 text-[#8C6436]" />
+            <div className="h-10 w-10 rounded-2xl bg-white border border-[#D8C2A6]/80 flex items-center justify-center p-1 shadow-[0_4px_12px_rgba(180,140,90,0.15)] group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+              <img src="/images/kria_logo_official.png" alt="KRIA Logo" className="h-full w-full object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="font-serif text-xl sm:text-2xl font-semibold tracking-tight text-[#1E1B18] leading-none group-hover:text-[#8C6436] transition-colors">
@@ -656,7 +663,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                       }
                     >
                       <img
-                        src={activeProduct.image}
+                        src={currentSize?.previewImage || activeProduct.image}
                         alt={activeProduct.name}
                         style={{
                           transformOrigin: `${zoomCoords.x}% ${zoomCoords.y}%`,
@@ -675,10 +682,10 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                       <img
                         src={
                           activeGalleryTab === 'how_to_use'
-                            ? '/images/banner_easy_4step_installation.png'
+                            ? '/images/guide_easy_photo_frame_setup.png'
                             : activeGalleryTab === 'on_fridge'
-                            ? '/images/banner_perfect_for_magnetic_surfaces.png'
-                            : '/images/banner_premium_design_made_to_last.png'
+                            ? '/images/fridge_memories_wedding_moments.png'
+                            : '/images/premium_magnetic_photo_frame_design.png'
                         }
                         alt={activeGalleryTab}
                         style={{
@@ -710,10 +717,10 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                 {/* 4 Interactive Thumbnails Gallery Row */}
                 <div className="grid grid-cols-4 gap-2.5 sm:gap-3 mt-4">
                   {[
-                    { id: 'frame' as const, label: 'Frame Photo', image: activeProduct.image, isShape: true },
-                    { id: 'how_to_use' as const, label: 'How to Use', image: '/images/banner_easy_4step_installation.png', isShape: false },
-                    { id: 'on_fridge' as const, label: 'On Fridge', image: '/images/banner_perfect_for_magnetic_surfaces.png', isShape: false },
-                    { id: 'gift_box' as const, label: 'Gift Box', image: '/images/banner_premium_design_made_to_last.png', isShape: false }
+                    { id: 'frame' as const, label: 'Frame Photo', image: currentSize?.previewImage || activeProduct.image, isShape: true },
+                    { id: 'how_to_use' as const, label: 'How to Use', image: '/images/guide_easy_photo_frame_setup.png', isShape: false },
+                    { id: 'on_fridge' as const, label: 'On Fridge', image: '/images/fridge_memories_wedding_moments.png', isShape: false },
+                    { id: 'gift_box' as const, label: 'Gift Box', image: '/images/premium_magnetic_photo_frame_design.png', isShape: false }
                   ].map((thumb) => {
                     const isActive = activeGalleryTab === thumb.id;
                     return (
@@ -1266,7 +1273,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                 >
                   <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-[#FAF4ED]">
                     <img 
-                      src="/images/lifestyle_gallery_workspace_1779653492345.png" 
+                      src="/images/studio_acrylic_display_1.png" 
                       alt="Complete 12-Piece Box Set Preview"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
