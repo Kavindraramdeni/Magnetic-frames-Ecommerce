@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Building2, ShieldCheck, FileText, Sparkles, MessageCircle, 
-  ShoppingBag, Check, Plus, Minus, ArrowLeft, Send, CheckCircle2,
+  ShoppingBag, Plus, Minus, ArrowLeft, Send, CheckCircle2,
   PackageCheck, HelpCircle, Truck, Clock
 } from 'lucide-react';
 import { CartItem, MagnetShapeId } from '../types';
@@ -119,8 +119,6 @@ export default function WholesaleInquiriesPage({
     grande: { sizeIndex: 0, qtyMode: 50, customQty: 50 }
   });
 
-  const [addedFeedback, setAddedFeedback] = useState<{ [shapeId: string]: boolean }>({});
-
   // Direct Inquiry Form State
   const [formCompany, setFormCompany] = useState('');
   const [formContact, setFormContact] = useState('');
@@ -181,35 +179,6 @@ export default function WholesaleInquiriesPage({
       `Please share your official GST invoice estimate, digital proof mockups, and estimated delivery timeline.`;
 
     window.open(`https://wa.me/919392576792?text=${encodeURIComponent(message)}`, '_blank');
-  };
-
-  const handleAddToCart = (shape: WholesaleShape) => {
-    if (!onAddToCart) return;
-    const st = shapeStates[shape.id] || { sizeIndex: 0, qtyMode: 50, customQty: 50 };
-    const selectedSize = shape.sizes[st.sizeIndex];
-    const qty = getEffectiveQty(shape.id);
-    const { unitPrice } = calculateWholesalePrice(selectedSize.retailPrice, qty);
-
-    const cartItem: CartItem = {
-      id: `wholesale-${shape.id}-${selectedSize.label.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now()}`,
-      shapeId: (['love', 'circle', 'polaroid', 'grande'].includes(shape.id) ? shape.id : 'custom') as MagnetShapeId,
-      shapeName: `Wholesale ${shape.name} (${selectedSize.label})`,
-      customText: `Wholesale Batch: ${qty} pcs · ₹${unitPrice}/pc`,
-      quantity: qty,
-      price: unitPrice,
-      previewUrl: shape.image,
-      photoName: `${shape.name} (${selectedSize.label}) Wholesale`,
-      captionText: `Factory Direct Batch · ${qty} Pcs`,
-      photoScale: 1.0,
-      photoPanX: 0,
-      photoPanY: 0
-    };
-
-    onAddToCart(cartItem);
-    setAddedFeedback(prev => ({ ...prev, [shape.id]: true }));
-    setTimeout(() => {
-      setAddedFeedback(prev => ({ ...prev, [shape.id]: false }));
-    }, 2500);
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -344,7 +313,6 @@ export default function WholesaleInquiriesPage({
             const selectedSize = shape.sizes[st.sizeIndex];
             const qty = getEffectiveQty(shape.id);
             const { unitPrice, total, discountPercent, savings } = calculateWholesalePrice(selectedSize.retailPrice, qty);
-            const isAdded = addedFeedback[shape.id];
 
             return (
               <div
@@ -513,8 +481,8 @@ export default function WholesaleInquiriesPage({
                   </div>
                 </div>
 
-                {/* 4. Action Buttons */}
-                <div className="space-y-2 pt-4">
+                {/* 4. Action Button */}
+                <div className="pt-4">
                   {/* WhatsApp Quote Button */}
                   <button
                     type="button"
@@ -524,31 +492,6 @@ export default function WholesaleInquiriesPage({
                     <MessageCircle className="h-4 w-4 fill-white text-emerald-600" />
                     <span>Get WhatsApp Quote</span>
                   </button>
-
-                  {/* Add to Bag Button */}
-                  {onAddToCart && (
-                    <button
-                      type="button"
-                      onClick={() => handleAddToCart(shape)}
-                      className={`w-full py-2 rounded-xl font-mono text-xs uppercase font-bold tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 border ${
-                        isAdded
-                          ? 'bg-neutral-900 text-white border-neutral-900'
-                          : 'bg-white hover:bg-neutral-100 text-neutral-800 border-neutral-300'
-                      }`}
-                    >
-                      {isAdded ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
-                          <span>Batch Added to Bag!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-3.5 w-3.5" />
-                          <span>Add Batch to Bag</span>
-                        </>
-                      )}
-                    </button>
-                  )}
                 </div>
 
               </div>
