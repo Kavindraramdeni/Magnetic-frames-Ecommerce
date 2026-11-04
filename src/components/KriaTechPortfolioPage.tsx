@@ -19,7 +19,6 @@ interface Product {
   image: string;
   category: string;
   sizes: { label: string; dimensions: string; thickness: string }[];
-  description: string;
   idealFor: string[];
   specs: {
     material: string;
@@ -43,7 +42,6 @@ const PRODUCTS: Product[] = [
       { label: 'Classic', dimensions: '3 × 3 inches', thickness: '3.0 mm' },
       { label: 'Grand', dimensions: '4 × 4 inches', thickness: '3.0 mm' }
     ],
-    description: 'Precision laser-sculpted curvature with hand-buffed perimeter bevels. Engineered to celebrate romantic milestones, weddings, anniversaries, and family portraits with poetic clarity.',
     idealFor: ['Wedding return favors', 'Anniversary souvenirs', 'Valentine memories', 'Couple portraits'],
     specs: {
       material: '3mm Cast Monolithic Acrylic',
@@ -65,7 +63,6 @@ const PRODUCTS: Product[] = [
       { label: 'Classic', dimensions: '3 × 3 inches', thickness: '3.0 mm' },
       { label: 'Grand', dimensions: '4 × 4 inches', thickness: '3.0 mm' }
     ],
-    description: 'A pure geometric silhouette that floats weightlessly on any metal surface. Clean radial edges soften modern interiors and present candid smiles, pets, and baby portraits with timeless poise.',
     idealFor: ['Newborn milestones', 'Pet portraits', 'Modern refrigerator clusters', 'Minimalist home decor'],
     specs: {
       material: '3mm Cast Monolithic Acrylic',
@@ -86,7 +83,6 @@ const PRODUCTS: Product[] = [
       { label: 'Standard Film', dimensions: '2 × 3 inches', thickness: '3.0 mm' },
       { label: 'Studio Showcase', dimensions: '3 × 4 inches', thickness: '3.0 mm' }
     ],
-    description: 'The golden age of instant film reimagined in unscratchable 3mm optical acrylic. Features the iconic lower caption margin where you can immortalize dates, coordinates, or handwritten notes.',
     idealFor: ['Travel diaries', 'Festival souvenirs', 'Cafe moodboards', 'Friendship collages'],
     specs: {
       material: '3mm Cast Monolithic Acrylic',
@@ -106,7 +102,6 @@ const PRODUCTS: Product[] = [
     sizes: [
       { label: 'Masterpiece', dimensions: '4 × 6 inches', thickness: '3.0 mm' }
     ],
-    description: 'Designed for sprawling landscapes, corporate architecture, and large family reunions. Substantial weight, crystal optical depth, and uncompromising clarity that transforms steel doors into gallery walls.',
     idealFor: ['Corporate accolades', 'High-end wedding memories', 'Architectural photography', 'Executive suite gifts'],
     specs: {
       material: '3mm Cast Monolithic Acrylic',
@@ -159,12 +154,9 @@ interface Props {
 }
 
 export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
-  const [selectedShapeId, setSelectedShapeId] = useState<string>('heart');
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(0);
   const [wholesaleQty, setWholesaleQty] = useState<string>('100 Pcs');
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
-
-  const selectedProduct = PRODUCTS.find((p) => p.id === selectedShapeId) || PRODUCTS[0];
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -305,131 +297,6 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
             </div>
           </div>
         </div>
-
-        {/* ── HERO INTERACTIVE SHOWCASE CARD (GLASSMORPHIC) ───── */}
-        <div className="relative rounded-[2.5rem] bg-gradient-to-b from-white/90 via-white/70 to-white/50 backdrop-blur-2xl border border-white p-6 sm:p-12 shadow-[0_25px_70px_rgba(180,140,80,0.1)]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            {/* Left: Product Visual with Glass Frame Reflection */}
-            <div className="lg:col-span-5 flex flex-col items-center justify-center">
-              <div className="relative group w-full max-w-sm aspect-square flex items-center justify-center p-8 rounded-3xl bg-gradient-to-tr from-[#F8F2E9] to-[#EFE2D1] border border-white shadow-[inset_0_2px_12px_rgba(255,255,255,0.8),0_15px_35px_rgba(160,120,70,0.12)] overflow-hidden">
-                {/* Light Refraction Flare */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
-                
-                <img
-                  src={selectedProduct.image}
-                  alt={selectedProduct.name}
-                  className="w-full h-full object-contain filter drop-shadow-[0_20px_25px_rgba(90,60,30,0.25)] group-hover:scale-105 transition-transform duration-500"
-                />
-
-                <div className="absolute bottom-4 left-4 right-4 px-3.5 py-2 rounded-xl bg-white/80 backdrop-blur-md border border-white/90 flex items-center justify-between text-[11px] text-[#5A4D3F]">
-                  <span className="font-mono font-medium">{selectedProduct.category}</span>
-                  <span className="font-bold text-[#8C6436]">3mm Cast Glass</span>
-                </div>
-              </div>
-
-              {/* Thumbnail Selector Pills */}
-              <div className="flex items-center gap-3 mt-6">
-                {PRODUCTS.map((prod) => (
-                  <button
-                    key={prod.id}
-                    onClick={() => setSelectedShapeId(prod.id)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
-                      selectedShapeId === prod.id
-                        ? 'bg-[#1E1B18] text-[#FBF8F4] shadow-md scale-105'
-                        : 'bg-white/80 text-[#6B5E50] hover:bg-white hover:text-[#1E1B18] border border-[#E5D7C7]'
-                    }`}
-                  >
-                    {prod.name.split(' ')[1] || prod.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Technical Specs & WhatsApp Dispatcher */}
-            <div className="lg:col-span-7 space-y-6">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#F2E5D4] text-[#8C6436] font-mono text-[10px] tracking-widest uppercase font-bold mb-2">
-                  Featured Signature Frame
-                </div>
-                <h3 className="font-serif text-3xl sm:text-4xl font-normal text-[#1E1B18]">
-                  {selectedProduct.name}
-                </h3>
-                <p className="text-xs font-mono uppercase tracking-widest text-[#9C8773] mt-1">
-                  {selectedProduct.tagline}
-                </p>
-                <p className="mt-4 text-sm sm:text-base text-[#615447] leading-relaxed">
-                  {selectedProduct.description}
-                </p>
-              </div>
-
-              {/* Sizes Available */}
-              <div>
-                <p className="text-[11px] font-mono uppercase tracking-widest text-[#887869] mb-2.5 font-bold">
-                  Available Formats & Sizes
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {selectedProduct.sizes.map((sz, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-2xl bg-white/70 backdrop-blur-md border border-[#E9DCCE] shadow-xs flex flex-col justify-between"
-                    >
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#A08873]">{sz.label}</span>
-                      <span className="font-serif text-lg font-medium text-[#1E1B18] mt-1">{sz.dimensions}</span>
-                      <span className="text-[10px] text-[#7A6B5C] font-mono mt-0.5">Thickness: {sz.thickness}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Spec Checkmarks */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="flex items-center gap-2 text-xs text-[#52463A]">
-                  <CheckCircle2 className="h-4 w-4 text-[#8C6436] shrink-0" />
-                  <span>Optical 3mm cast sheet</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-[#52463A]">
-                  <CheckCircle2 className="h-4 w-4 text-[#8C6436] shrink-0" />
-                  <span>Sub-surface UV seal</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-[#52463A]">
-                  <CheckCircle2 className="h-4 w-4 text-[#8C6436] shrink-0" />
-                  <span>Neodymium magnetic pull</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-[#52463A]">
-                  <CheckCircle2 className="h-4 w-4 text-[#8C6436] shrink-0" />
-                  <span>24h dispatch from factory</span>
-                </div>
-              </div>
-
-              {/* CTA Row */}
-              <div className="pt-2 flex flex-col sm:flex-row gap-3">
-                <a
-                  href={waLink(`Hi KRIA Tech! I would like to order the "${selectedProduct.name}" acrylic frame. Please guide me on submitting my photo.`)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span>Order {selectedProduct.name} On WhatsApp</span>
-                </a>
-
-                <a
-                  href={waLink(`Hi KRIA Tech! I am looking for a bulk / wholesale quote for 50+ pieces of the "${selectedProduct.name}".`)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white hover:bg-[#FAF4ED] border border-[#DFCDBB] text-[#55493C] text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  <span>Bulk Quote</span>
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </a>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
       </section>
 
       {/* ─── THE 4 SHAPES COMPREHENSIVE COLLECTION ─────────────── */}
@@ -477,8 +344,8 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
                 <h3 className="font-serif text-2xl font-medium text-[#1E1B18] mt-1 group-hover:text-[#8C6436] transition-colors">
                   {prod.name}
                 </h3>
-                <p className="mt-2.5 text-xs text-[#635649] leading-relaxed">
-                  {prod.description}
+                <p className="mt-1 text-xs text-[#8C7A68] font-mono">
+                  {prod.tagline}
                 </p>
 
                 {/* Available Formats */}
