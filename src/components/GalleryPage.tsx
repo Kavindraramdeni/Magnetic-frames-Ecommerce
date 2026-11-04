@@ -133,7 +133,7 @@ export default function GalleryPage({ onBackToHome, onCustomize, onOpenReturnGif
           </button>
 
           <span className="font-serif italic font-medium text-base sm:text-lg text-[#1a1714]">
-            KRIA Studio Gallery
+            krialic Gallery
           </span>
 
           <button

@@ -174,7 +174,7 @@ export default function FrameStudio({
           </button>
 
           <span className="text-xs font-mono uppercase tracking-widest text-[#A38A6E] font-bold hidden sm:inline">
-            KRIA Studio · Personalised Acrylic Frames
+            krialic · Personalised Acrylic Frames
           </span>
 
           <button

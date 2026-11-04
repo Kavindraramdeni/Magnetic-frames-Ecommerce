@@ -39,9 +39,8 @@ export default function Header({
         {/* Logo */}
         <button type="button" onClick={onHome} className="flex items-center gap-2.5 group shrink-0 cursor-pointer">
           <BrandLogo size={32} color="#111111" className="transition-transform duration-300 group-hover:scale-105" />
-          <span className="flex flex-col text-left">
-            <span className="font-serif text-lg leading-none tracking-wide">KRIA</span>
-            <span className="text-[8px] tracking-[0.28em] uppercase text-neutral-400 font-semibold mt-0.5">Studio</span>
+          <span className="font-serif text-xl sm:text-2xl font-medium tracking-tight text-neutral-950 leading-none">
+            krialic
           </span>
         </button>
 
