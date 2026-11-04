@@ -936,30 +936,41 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
               {/* Section Header */}
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-4">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-xs tracking-wider uppercase font-semibold border border-[#E8DACB]">
-                  <Gift className="h-4 w-4 text-[#8C6436]" />
-                  <span>The 10 + 2 Atelier Discovery Box · ₹999 Total</span>
+                  <Package className="h-4 w-4 text-[#8C6436]" />
+                  <span>KRIA Tech Starter Kit · ₹999 Total</span>
                 </div>
 
                 <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
-                  KRIA Tech Starter Kit
+                  Complete 12-Piece Box Set
                 </h2>
 
                 <p className="text-sm sm:text-base text-[#695B4E] leading-relaxed">
-                  Experience every signature form crafted in our Hyderabad atelier. Includes <strong>10 custom acrylic photo frames</strong> for your fridge, walls & desks, plus <strong>2 matching acrylic photo keychains completely FREE</strong>.
+                  All this is included <strong>inside the Complete 12-Piece Box Set</strong>: 10 custom diamond-cut acrylic photo frames for your fridge, walls & desks, plus 2 matching acrylic photo keychains completely FREE.
                 </p>
 
                 {/* Value Highlights Pill Bar */}
                 <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2 font-mono text-xs">
                   <span className="px-4 py-1.5 rounded-full bg-[#1E1B18] text-[#FAF7F2] font-bold tracking-wider shadow-xs">
-                    ₹999 Total · 12 Pieces (Just ₹83/item)
+                    All 12 Items Inside 1 Box · ₹999 Total
                   </span>
                   <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-semibold">
-                    ✓ 2 FREE Bonus Keychains Included
+                    ✓ 10 Custom Frames + 2 FREE Keychains
                   </span>
                   <span className="px-3.5 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 font-semibold">
                     ✓ Free Pan-India Air Delivery
                   </span>
                 </div>
+              </div>
+
+              {/* Box Tray Header */}
+              <div className="flex items-center justify-between border-b border-[#EADBCC] pb-3 mb-6">
+                <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#7C6348] flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-[#8C6436]" />
+                  <span>Inside The Complete 12-Piece Box Set (10 Frames + 2 FREE Keychains)</span>
+                </span>
+                <span className="font-mono text-xs text-[#8C7A68] hidden sm:inline">
+                  3mm Monolithic Cast Glass Acrylic
+                </span>
               </div>
 
               {/* ─── 12-PRODUCT VISUAL ATELIER TRAY (10 FRAMES + 2 FREE KEYCHAINS) ─── */}
