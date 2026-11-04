@@ -15,6 +15,7 @@ import BOGOModal from './components/BOGOModal';
 import ReturnGiftDetailPage from './components/ReturnGiftDetailPage';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import WholesaleInquiriesPage from './components/WholesaleInquiriesPage';
+import KriaTechPortfolioPage from './components/KriaTechPortfolioPage';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem, ReturnGiftProduct } from './types';
 import { calculateBogoDiscount } from './lib/pricing';
@@ -77,7 +78,7 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery' | 'return-gift-detail' | 'wholesale'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery' | 'return-gift-detail' | 'wholesale' | 'portfolio'>('home');
   const [selectedReturnGift, setSelectedReturnGift] = useState<ReturnGiftProduct | null>(null);
   const [isBOGOOpen, setIsBOGOOpen] = useState(false);
   const [adminToken, setAdminToken] = useState<string>(() => {
@@ -268,6 +269,11 @@ export default function App() {
     setCurrentView('wholesale');
   };
 
+  const handleOpenPortfolio = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentView('portfolio');
+  };
+
   const handleOpenReturnGiftDetail = (gift: ReturnGiftProduct) => {
     setSelectedReturnGift(gift);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -302,6 +308,28 @@ export default function App() {
     setCurrentView('admin');
   };
 
+  if (currentView === 'portfolio') {
+    return (
+      <div id="home-root" className="min-h-screen bg-[#FAF8F5] font-sans antialiased overflow-x-hidden">
+        <Header
+          cartItemsCount={cartCount}
+          onOpenCart={() => setIsCartOpen(true)}
+          onHome={handleOpenShop}
+          onStudio={() => goStudio()}
+          onOpenReturnGifts={handleOpenReturnGifts}
+          onOpenGallery={handleOpenGallery}
+          onOpenAboutUs={handleOpenAboutUs}
+          onOpenBOGO={() => setIsBOGOOpen(true)}
+          onOpenB2B={handleOpenWholesale}
+          onOpenWholesale={handleOpenWholesale}
+          onOpenPortfolio={handleOpenPortfolio}
+          activeView="portfolio"
+        />
+        <KriaTechPortfolioPage onBackToStore={goHome} />
+      </div>
+    );
+  }
+
   if (currentView === 'wholesale' || currentView === 'b2b' || currentView === 'style-experience') {
     return (
       <div id="home-root" className="min-h-screen bg-[#FAF8F5] text-[#111111] font-sans antialiased overflow-x-hidden selection:bg-[#E8DCCF] selection:text-neutral-900">
@@ -316,6 +344,7 @@ export default function App() {
           onOpenBOGO={() => setIsBOGOOpen(true)}
           onOpenB2B={handleOpenWholesale}
           onOpenWholesale={handleOpenWholesale}
+          onOpenPortfolio={handleOpenPortfolio}
           activeView="wholesale"
         />
         <WholesaleInquiriesPage
@@ -426,6 +455,7 @@ export default function App() {
           onOpenBOGO={() => setIsBOGOOpen(true)}
           onOpenB2B={handleOpenWholesale}
           onOpenWholesale={handleOpenWholesale}
+          onOpenPortfolio={handleOpenPortfolio}
           activeView={currentView}
         />
       )}

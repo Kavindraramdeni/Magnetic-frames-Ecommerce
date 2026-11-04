@@ -13,6 +13,7 @@ interface HeaderProps {
   onOpenBOGO?: () => void;
   onOpenB2B?: () => void;
   onOpenWholesale?: () => void;
+  onOpenPortfolio?: () => void;
   activeView?: string;
 }
 
@@ -27,6 +28,7 @@ export default function Header({
   onOpenBOGO,
   onOpenB2B,
   onOpenWholesale,
+  onOpenPortfolio,
   activeView = 'home',
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,6 +122,17 @@ export default function Header({
             className="nav-link transition-colors cursor-pointer hover:text-neutral-900"
           >
             About Us
+          </button>
+
+          {/* 8. KRIA Tech Portfolio */}
+          <button
+            type="button"
+            onClick={onOpenPortfolio}
+            className={`nav-link transition-colors cursor-pointer ${
+              activeView === 'portfolio' ? 'text-neutral-900 font-bold' : 'hover:text-neutral-900'
+            }`}
+          >
+            KRIA Tech
           </button>
         </nav>
 
@@ -232,6 +245,15 @@ export default function Header({
           >
             <span>About Us</span>
             <span className="text-[10px] text-neutral-400">3mm Acrylic</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleNav(onOpenPortfolio)}
+            className="w-full text-left py-2.5 px-3 rounded-xl text-xs font-semibold tracking-wider uppercase text-neutral-800 hover:bg-neutral-100 flex items-center justify-between"
+          >
+            <span>KRIA Tech</span>
+            <span className="text-[10px] text-neutral-400">Portfolio</span>
           </button>
         </div>
       )}
