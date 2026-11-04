@@ -237,11 +237,11 @@ export default function App() {
     if (currentView !== 'home') {
       setCurrentView('home');
       setTimeout(() => {
-        const el = document.getElementById('about-us-section');
+        const el = document.getElementById('about-us-section') || document.getElementById('faqs-section');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     } else {
-      const el = document.getElementById('about-us-section');
+      const el = document.getElementById('about-us-section') || document.getElementById('faqs-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   };
