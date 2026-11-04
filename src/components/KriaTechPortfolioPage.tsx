@@ -42,9 +42,9 @@ const PRODUCTS: Product[] = [
     image: '/images/shape_rectangle_wedding_portrait.png',
     category: 'Landscape & Panorama',
     sizes: [
-      { label: '2 × 3"', dimensions: '2 × 3 inch', basePrice: 229, originalPrice: 329, previewImage: '/images/dimension_preview_3.5x2.5.png' },
+      { label: '3.5 × 2.5"', dimensions: '3.5 × 2.5 inch', basePrice: 229, originalPrice: 329, previewImage: '/images/dimension_preview_3.5x2.5.png' },
       { label: '3 × 4"', dimensions: '3 × 4 inch', basePrice: 279, originalPrice: 379, previewImage: '/images/dimension_preview_3x4.png' },
-      { label: '4 × 6"', dimensions: '4 × 6 inch', basePrice: 349, originalPrice: 499, previewImage: '/images/dimension_preview_6x4.png' }
+      { label: '6 × 4"', dimensions: '6 × 4 inch', basePrice: 349, originalPrice: 499, previewImage: '/images/dimension_preview_6x4.png' }
     ],
     accentColor: '#365349',
     bgGlow: 'from-emerald-100/60 via-sand-50/40 to-transparent'
@@ -648,20 +648,9 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                   onMouseLeave={() => setIsHoverZooming(false)}
                   onMouseMove={handlePreviewMouseMove}
                 >
-                  {/* Dynamic Dimension Frame Scaling */}
+                  {/* Stable Frame Display: shows respective size image without changing container dimensions */}
                   {activeGalleryTab === 'frame' ? (
-                    <div 
-                      className="relative transition-all duration-300 ease-out flex items-center justify-center p-2"
-                      style={
-                        currentSize?.label?.includes('2 × 3') ? { width: '60%', height: '84%', maxWidth: '230px', aspectRatio: '2/3' } :
-                        currentSize?.label?.includes('3 × 4') ? { width: '74%', height: '92%', maxWidth: '280px', aspectRatio: '3/4' } :
-                        currentSize?.label?.includes('4 × 6') ? { width: '88%', height: '100%', maxWidth: '330px', aspectRatio: '2/3' } :
-                        currentSize?.label?.includes('2 × 2') ? { width: '58%', height: '58%', maxWidth: '210px', aspectRatio: '1/1' } :
-                        currentSize?.label?.includes('3 × 3') ? { width: '76%', height: '76%', maxWidth: '275px', aspectRatio: '1/1' } :
-                        currentSize?.label?.includes('4 × 4') ? { width: '92%', height: '92%', maxWidth: '330px', aspectRatio: '1/1' } :
-                        { width: '80%', height: '80%', maxWidth: '300px' }
-                      }
-                    >
+                    <div className="relative w-full h-full flex items-center justify-center p-2 overflow-hidden">
                       <img
                         src={currentSize?.previewImage || activeProduct.image}
                         alt={activeProduct.name}
@@ -671,11 +660,6 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                         }}
                         className="w-full h-full object-contain filter drop-shadow-[0_20px_35px_rgba(80,50,20,0.28)] transition-transform duration-150 pointer-events-none select-none"
                       />
-                      
-                      {/* Floating Dimension Tag on the Frame */}
-                      <div className="absolute bottom-1 right-1 px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono font-bold text-[#5A4D3F] shadow-xs">
-                        {currentSize?.label}
-                      </div>
                     </div>
                   ) : (
                     <div className="relative w-full h-full flex items-center justify-center p-2 overflow-hidden">
