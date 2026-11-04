@@ -318,6 +318,7 @@ interface Props {
 
 export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [isStarterKitOpen, setIsStarterKitOpen] = useState<boolean>(false);
   const [activeSizeIndex, setActiveSizeIndex] = useState<number>(0);
   const [selectedQtyLabel, setSelectedQtyLabel] = useState<string>('50 Pcs');
   const [customQtyValue, setCustomQtyValue] = useState<number>(75);
@@ -337,9 +338,11 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
 
   // Open product with browser history pushState so Chrome back button works naturally
   const handleOpenProduct = (shapeId: string) => {
+    setIsStarterKitOpen(false);
     setSelectedProductId(shapeId);
     try {
       const url = new URL(window.location.href);
+      url.searchParams.delete('kit');
       url.searchParams.set('product', shapeId);
       window.history.pushState({ page: 'product', product: shapeId }, '', url.toString());
     } catch (e) {
@@ -347,22 +350,58 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     }
   };
 
-  // Close product and return to home view (respects browser history)
+  // Open Complete 12-Piece Box Set dedicated page with browser history
+  const handleOpenStarterKit = () => {
+    setSelectedProductId(null);
+    setIsStarterKitOpen(true);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('product');
+      url.searchParams.set('kit', '12-piece');
+      window.history.pushState({ page: 'starter-kit' }, '', url.toString());
+    } catch (e) {
+      console.warn('history.pushState error:', e);
+    }
+  };
+
+  // Close Starter Kit page and return to home view
+  const handleCloseStarterKit = (targetHash?: string) => {
+    try {
+      if (window.history.state?.page === 'starter-kit') {
+        window.history.back();
+      } else {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('kit');
+        if (targetHash) {
+          url.hash = targetHash;
+        }
+        window.history.replaceState({ page: 'home' }, '', url.toString());
+        setIsStarterKitOpen(false);
+      }
+    } catch {
+      setIsStarterKitOpen(false);
+    }
+  };
+
+  // Close product/starter-kit and return to home view (respects browser history)
   const handleCloseProduct = (targetHash?: string) => {
     try {
-      if (window.history.state?.page === 'product') {
+      if (window.history.state?.page === 'product' || window.history.state?.page === 'starter-kit') {
         window.history.back();
       } else {
         const url = new URL(window.location.href);
         url.searchParams.delete('product');
+        url.searchParams.delete('kit');
         if (targetHash) {
           url.hash = targetHash;
         }
         window.history.replaceState({ page: 'home' }, '', url.toString());
         setSelectedProductId(null);
+        setIsStarterKitOpen(false);
       }
     } catch {
       setSelectedProductId(null);
+      setIsStarterKitOpen(false);
     }
   };
 
@@ -372,10 +411,16 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
       try {
         const params = new URLSearchParams(window.location.search);
         const prodParam = params.get('product');
-        if (prodParam && PRODUCTS.some((p) => p.id === prodParam)) {
+        const kitParam = params.get('kit');
+        if (kitParam) {
+          setIsStarterKitOpen(true);
+          setSelectedProductId(null);
+        } else if (prodParam && PRODUCTS.some((p) => p.id === prodParam)) {
           setSelectedProductId(prodParam);
+          setIsStarterKitOpen(false);
         } else {
           setSelectedProductId(null);
+          setIsStarterKitOpen(false);
         }
       } catch (err) {
         console.warn('Error reading URL params:', err);
@@ -409,7 +454,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   // Sync scroll on view change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [selectedProductId]);
+  }, [selectedProductId, isStarterKitOpen]);
 
   // Calculation for Product Detail Page
   const currentSize = activeProduct ? activeProduct.sizes[activeSizeIndex] || activeProduct.sizes[0] : null;
@@ -759,6 +804,179 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
 
           </div>
         </main>
+      ) : isStarterKitOpen ? (
+        /* ══════════════════════════════════════════════════════════
+            VIEW 2: DEDICATED COMPLETE 12-PIECE BOX SET PAGE
+        ══════════════════════════════════════════════════════════ */
+        <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-16">
+          {/* Breadcrumb / Back button */}
+          <button
+            type="button"
+            onClick={() => handleCloseStarterKit()}
+            className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#8C6436] hover:text-[#1E1B18] mb-8 py-1.5 px-3 rounded-full bg-white/70 border border-[#E8DACB] shadow-xs cursor-pointer transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to Home</span>
+          </button>
+
+          <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FCF9F4] via-white to-[#F7EDE1] backdrop-blur-2xl border border-white p-6 sm:p-12 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
+            
+            {/* Header */}
+            <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-xs tracking-wider uppercase font-semibold border border-[#E8DACB]">
+                <Package className="h-4 w-4 text-[#8C6436]" />
+                <span>KRIA Tech Starter Kit · ₹999 Total</span>
+              </div>
+
+              <h1 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
+                Complete 12-Piece Box Set
+              </h1>
+
+              <p className="font-serif italic text-lg sm:text-xl text-[#8C6436]">
+                Ready to bring your 12 memories to life?
+              </p>
+
+              <p className="text-sm sm:text-base text-[#695B4E] leading-relaxed">
+                10 Custom Acrylic Frames + 2 FREE Bonus Keychains for just <strong>₹999</strong> with free doorstep delivery.
+              </p>
+
+              {/* Direct WhatsApp CTA Button in this page */}
+              <div className="pt-2">
+                <a
+                  href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total - 10 Custom Acrylic Frames + 2 FREE Bonus Keychains: K1 Square, K2 Portrait, K3 Medium, K4 Heart, K5 Circle, K6 Cloud, K6-L Wide Cloud, K7 Filmstrip, K9 Grande, K2 Adhesive + K10 & K11 Keychains). I have my photos ready for review.")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span>Order Complete 12-Piece Kit on WhatsApp (₹999)</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Box Tray Header */}
+            <div className="flex items-center justify-between border-b border-[#EADBCC] pb-3 mb-6">
+              <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#7C6348] flex items-center gap-2">
+                <Gift className="h-4 w-4 text-[#8C6436]" />
+                <span>Inside The Complete 12-Piece Box Set (10 Frames + 2 FREE Keychains)</span>
+              </span>
+              <span className="font-mono text-xs text-[#8C7A68] hidden sm:inline">
+                3mm Monolithic Cast Glass Acrylic
+              </span>
+            </div>
+
+            {/* 12-Product Visual Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {STARTER_KIT_ITEMS.map((item) => (
+                <div
+                  key={item.code}
+                  className={`relative rounded-3xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-300 border ${
+                    item.isBonus
+                      ? 'bg-gradient-to-b from-[#FFFDF7] via-amber-50/40 to-white border-[#EAD5B5] shadow-[0_8px_25px_rgba(212,175,55,0.14)] hover:border-[#D4AF37] hover:scale-[1.02]'
+                      : 'bg-white/80 backdrop-blur-md border-[#EFE5D9] hover:border-[#D8C7B5] shadow-[0_8px_25px_rgba(180,140,80,0.06)] hover:shadow-[0_14px_35px_rgba(180,140,80,0.12)] hover:-translate-y-1'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                      <span className="px-2 py-0.5 rounded-md bg-[#FAF3EA] text-[#7A562D] font-mono text-[11px] font-bold border border-[#EADBCC]">
+                        {item.code}
+                      </span>
+                      <span className="font-mono text-[11px] font-semibold text-[#8C7A68]">
+                        {item.size}
+                      </span>
+                    </div>
+
+                    {item.badge && (
+                      <div className="mb-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider border ${
+                            item.badgeColor || 'bg-[#FAF4ED] text-[#7C6348] border-[#EADCCB]'
+                          }`}
+                        >
+                          {item.isBonus && <Key className="h-3 w-3 text-emerald-700" />}
+                          <span>{item.badge}</span>
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="relative my-3 p-3 rounded-2xl bg-gradient-to-b from-[#FAF5EE] to-[#F3E7D7]/50 border border-[#EFE4D6] flex flex-col items-center justify-center min-h-[160px] overflow-hidden group">
+                      {item.isKeychain && (
+                        <div className="flex flex-col items-center mb-1">
+                          <div className="h-4 w-4 rounded-full border-2 border-neutral-400 bg-neutral-100 shadow-inner" />
+                          <div className="w-0.5 h-2 bg-gradient-to-b from-neutral-400 to-neutral-300" />
+                        </div>
+                      )}
+
+                      <div
+                        className={`relative overflow-hidden border border-white/90 shadow-[0_6px_16px_rgba(90,60,30,0.14)] ${item.roundedClass} ${item.aspectRatio} ${
+                          item.isFilmstrip ? 'w-20 max-h-[140px]' : item.isKeychain ? 'w-20' : 'w-28 sm:w-32'
+                        }`}
+                      >
+                        <img
+                          src={item.image}
+                          alt={`${item.name} (${item.size})`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-white/10 pointer-events-none" />
+
+                        {item.isFilmstrip && (
+                          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                            <div className="h-1/3 border-b border-black/30 bg-black/5" />
+                            <div className="h-1/3 border-b border-black/30 bg-black/5" />
+                            <div className="h-1/3 bg-black/5" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="absolute bottom-1.5 right-2 opacity-70">
+                        <span className="text-[8px] font-mono text-[#8C7A68]">3mm Cast</span>
+                      </div>
+                    </div>
+
+                    <h4 className="font-serif text-base font-medium text-[#1E1B18] mt-2 leading-snug">
+                      {item.name}
+                    </h4>
+                    <p className="text-[11px] text-[#7A6A5A] mt-0.5 leading-relaxed">
+                      {item.subtitle}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-[#F0E5D7] flex items-center justify-between text-[10px] font-mono text-[#8C7A68]">
+                    <span>{item.category}</span>
+                    <span className="font-semibold">{item.size}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Summary Bar with WhatsApp button */}
+            <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#FAF2E6] via-white to-[#F5ECE0] border border-[#E8DACB] flex flex-col lg:flex-row items-center justify-between gap-6 shadow-[0_10px_30px_rgba(180,140,80,0.08)]">
+              <div className="space-y-1.5 text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[#8C6436]">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Complete 12-Piece Box Set</span>
+                </div>
+                <h3 className="font-serif text-2xl sm:text-3xl font-light text-[#1E1B18]">
+                  Ready to bring your 12 memories to life?
+                </h3>
+                <p className="text-xs sm:text-sm text-[#6E6153]">
+                  10 Custom Acrylic Frames + 2 FREE Bonus Keychains for just <strong>₹999</strong> with free doorstep delivery.
+                </p>
+              </div>
+
+              <a
+                href={waLink("Hi KRIA Tech! I would like to order the 12-Piece Starter Kit (₹999 Total - 10 Custom Acrylic Frames + 2 FREE Bonus Keychains: K1 Square, K2 Portrait, K3 Medium, K4 Heart, K5 Circle, K6 Cloud, K6-L Wide Cloud, K7 Filmstrip, K9 Grande, K2 Adhesive + K10 & K11 Keychains). I have my photos ready for review.")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full lg:w-auto shrink-0 inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+              >
+                <MessageCircle className="h-5 w-5" />
+                <span>Order 12-Piece Kit on WhatsApp (₹999)</span>
+              </a>
+            </div>
+
+          </div>
+        </main>
       ) : (
         /* ══════════════════════════════════════════════════════════
             VIEW 2: MAIN EXCLUSIVE LANDING PAGE WITH HERO SLIDER
@@ -929,172 +1147,109 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             </div>
           </section>
 
-          {/* ─── DEDICATED STARTER KIT SECTION: 10 FRAMES + 2 FREE KEYCHAINS (₹999) ─── */}
+          {/* ─── DEDICATED STARTER KIT SECTION: 2-COLUMN PREVIEW BLOCK ─── */}
           <section id="starter-kit" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FCF9F4] via-white to-[#F7EDE1] backdrop-blur-2xl border border-white p-6 sm:p-12 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
-              
-              {/* Section Header */}
-              <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-4">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-xs tracking-wider uppercase font-semibold border border-[#E8DACB]">
-                  <Package className="h-4 w-4 text-[#8C6436]" />
-                  <span>KRIA Tech Starter Kit · ₹999 Total</span>
-                </div>
-
-                <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
-                  Complete 12-Piece Box Set
-                </h2>
-
-                <p className="text-sm sm:text-base text-[#695B4E] leading-relaxed">
-                  All this is included <strong>inside the Complete 12-Piece Box Set</strong>: 10 custom diamond-cut acrylic photo frames for your fridge, walls & desks, plus 2 matching acrylic photo keychains completely FREE.
-                </p>
-
-                {/* Value Highlights Pill Bar */}
-                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2 font-mono text-xs">
-                  <span className="px-4 py-1.5 rounded-full bg-[#1E1B18] text-[#FAF7F2] font-bold tracking-wider shadow-xs">
-                    All 12 Items Inside 1 Box · ₹999 Total
-                  </span>
-                  <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-semibold">
-                    ✓ 10 Custom Frames + 2 FREE Keychains
-                  </span>
-                  <span className="px-3.5 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 font-semibold">
-                    ✓ Free Pan-India Air Delivery
-                  </span>
-                </div>
-              </div>
-
-              {/* Box Tray Header */}
-              <div className="flex items-center justify-between border-b border-[#EADBCC] pb-3 mb-6">
-                <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#7C6348] flex items-center gap-2">
-                  <Gift className="h-4 w-4 text-[#8C6436]" />
-                  <span>Inside The Complete 12-Piece Box Set (10 Frames + 2 FREE Keychains)</span>
-                </span>
-                <span className="font-mono text-xs text-[#8C7A68] hidden sm:inline">
-                  3mm Monolithic Cast Glass Acrylic
-                </span>
-              </div>
-
-              {/* ─── 12-PRODUCT VISUAL ATELIER TRAY (10 FRAMES + 2 FREE KEYCHAINS) ─── */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                {STARTER_KIT_ITEMS.map((item) => (
-                  <div
-                    key={item.code}
-                    className={`relative rounded-3xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-300 border ${
-                      item.isBonus
-                        ? 'bg-gradient-to-b from-[#FFFDF7] via-amber-50/40 to-white border-[#EAD5B5] shadow-[0_8px_25px_rgba(212,175,55,0.14)] hover:border-[#D4AF37] hover:scale-[1.02]'
-                        : 'bg-white/80 backdrop-blur-md border-[#EFE5D9] hover:border-[#D8C7B5] shadow-[0_8px_25px_rgba(180,140,80,0.06)] hover:shadow-[0_14px_35px_rgba(180,140,80,0.12)] hover:-translate-y-1'
-                    }`}
-                  >
-                    {/* Top Row: Model Code, Dimensions, & Badge */}
-                    <div>
-                      <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                        <span className="px-2 py-0.5 rounded-md bg-[#FAF3EA] text-[#7A562D] font-mono text-[11px] font-bold border border-[#EADBCC]">
-                          {item.code}
-                        </span>
-                        <span className="font-mono text-[11px] font-semibold text-[#8C7A68]">
-                          {item.size}
-                        </span>
-                      </div>
-
-                      {/* Bonus Gift Banner or Most Selling Badge */}
-                      {item.badge && (
-                        <div className="mb-3">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider border ${
-                              item.badgeColor || 'bg-[#FAF4ED] text-[#7C6348] border-[#EADCCB]'
-                            }`}
-                          >
-                            {item.isBonus && <Key className="h-3 w-3 text-emerald-700" />}
-                            <span>{item.badge}</span>
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Acrylic Frame Mockup Showcase */}
-                      <div className="relative my-3 p-3 rounded-2xl bg-gradient-to-b from-[#FAF5EE] to-[#F3E7D7]/50 border border-[#EFE4D6] flex flex-col items-center justify-center min-h-[160px] overflow-hidden group">
-                        
-                        {/* If Keychain: Render Metallic Ring & Chain above acrylic */}
-                        {item.isKeychain && (
-                          <div className="flex flex-col items-center mb-1">
-                            <div className="h-4 w-4 rounded-full border-2 border-neutral-400 bg-neutral-100 shadow-inner" />
-                            <div className="w-0.5 h-2 bg-gradient-to-b from-neutral-400 to-neutral-300" />
-                          </div>
-                        )}
-
-                        {/* Acrylic Photo Frame Container */}
-                        <div
-                          className={`relative overflow-hidden border border-white/90 shadow-[0_6px_16px_rgba(90,60,30,0.14)] ${item.roundedClass} ${item.aspectRatio} ${
-                            item.isFilmstrip ? 'w-20 max-h-[140px]' : item.isKeychain ? 'w-20' : 'w-28 sm:w-32'
-                          }`}
-                        >
-                          <img
-                            src={item.image}
-                            alt={`${item.name} (${item.size})`}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                          
-                          {/* 3mm Glass Reflection Glare */}
-                          <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-white/10 pointer-events-none" />
-
-                          {/* Filmstrip cell dividers preview if K7 */}
-                          {item.isFilmstrip && (
-                            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                              <div className="h-1/3 border-b border-black/30 bg-black/5" />
-                              <div className="h-1/3 border-b border-black/30 bg-black/5" />
-                              <div className="h-1/3 bg-black/5" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Sub-surface UV Seal Micro-tag */}
-                        <div className="absolute bottom-1.5 right-2 opacity-70">
-                          <span className="text-[8px] font-mono text-[#8C7A68]">3mm Cast</span>
-                        </div>
-                      </div>
-
-                      {/* Product Name & Tagline */}
-                      <h4 className="font-serif text-base font-medium text-[#1E1B18] mt-2 leading-snug">
-                        {item.name}
-                      </h4>
-                      <p className="text-[11px] text-[#7A6A5A] mt-0.5 leading-relaxed">
-                        {item.subtitle}
-                      </p>
+            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FAF3EA] via-white to-[#F4E9DC] backdrop-blur-2xl border border-white p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+                
+                {/* Left Side: Preview Image of Starter Kit (Clickable to open all 12 products) */}
+                <div 
+                  onClick={handleOpenStarterKit}
+                  className="lg:col-span-5 relative rounded-3xl overflow-hidden shadow-[0_20px_45px_rgba(180,140,80,0.15)] border-2 border-white group cursor-pointer"
+                  title="Click to view all 12 products"
+                >
+                  <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-[#FAF4ED]">
+                    <img 
+                      src="/images/lifestyle_gallery_workspace_1779653492345.png" 
+                      alt="Complete 12-Piece Box Set Preview"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                    
+                    <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] font-mono text-[11px] font-bold border border-[#EADBCC] shadow-xs">
+                      12 Pieces Inside
+                    </div>
+                    
+                    <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-emerald-600 text-white font-mono text-[11px] font-bold shadow-md">
+                      ₹999 Total
                     </div>
 
-                    {/* Bottom Material Label */}
-                    <div className="mt-3 pt-2.5 border-t border-[#F0E5D7] flex items-center justify-between text-[10px] font-mono text-[#8C7A68]">
-                      <span>{item.category}</span>
-                      <span className="font-semibold">{item.size}</span>
+                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs font-mono">
+                      <span className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-full">
+                        <ZoomIn className="h-3.5 w-3.5" />
+                        <span>Click to view all 12 products</span>
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
 
-              {/* ─── BOTTOM WHATSAPP CALL TO ACTION SUMMARY BOX ─── */}
-              <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#FAF2E6] via-white to-[#F5ECE0] border border-[#E8DACB] flex flex-col lg:flex-row items-center justify-between gap-6 shadow-[0_10px_30px_rgba(180,140,80,0.08)]">
-                <div className="space-y-1.5 text-center lg:text-left">
-                  <div className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[#8C6436]">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>Complete 12-Piece Box Set</span>
+                {/* Right Side: Copy & Action Buttons */}
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-xs tracking-wider uppercase font-semibold">
+                    <Package className="h-3.5 w-3.5 text-[#8C6436]" />
+                    <span>Special Discovery Offer</span>
                   </div>
-                  <h3 className="font-serif text-2xl sm:text-3xl font-light text-[#1E1B18]">
-                    Ready to bring your 12 memories to life?
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[#6E6153]">
+
+                  <div>
+                    <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
+                      Complete 12-Piece Box Set
+                    </h2>
+                    <p className="font-serif italic text-lg sm:text-2xl text-[#8C6436] mt-1.5 font-medium">
+                      Ready to bring your 12 memories to life?
+                    </p>
+                  </div>
+
+                  <p className="text-sm sm:text-base text-[#615446] leading-relaxed">
                     10 Custom Acrylic Frames + 2 FREE Bonus Keychains for just <strong>₹999</strong> with free doorstep delivery.
                   </p>
+
+                  {/* Highlights Checklist */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs text-[#5D5042] font-mono">
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-[#E8DACB]">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <span>10 Custom Acrylic Frames</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-[#E8DACB]">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <span>2 FREE Bonus Keychains</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-[#E8DACB]">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <span>3mm Monolithic Cast Acrylic</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-[#E8DACB]">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <span>Free Pan-India Air Delivery</span>
+                    </div>
+                  </div>
+
+                  {/* Below Buttons: Button to open all 12 products + Button for WhatsApp order */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
+                    {/* Button 1: Opens all 12 products */}
+                    <button
+                      type="button"
+                      onClick={handleOpenStarterKit}
+                      className="inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-md transition-all cursor-pointer group"
+                    >
+                      <span>View All 12 Products & Shapes</span>
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    {/* Button 2: WhatsApp order */}
+                    <a
+                      href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains). I have my 12 photos ready for review.")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                    >
+                      <MessageCircle className="h-4.5 w-4.5" />
+                      <span>Order on WhatsApp (₹999)</span>
+                    </a>
+                  </div>
+
                 </div>
 
-                <a
-                  href={waLink("Hi KRIA Tech! I would like to order the 12-Piece Starter Kit (₹999 Total - 10 Custom Acrylic Frames + 2 FREE Bonus Keychains: K1 Square, K2 Portrait, K3 Medium, K4 Heart, K5 Circle, K6 Cloud, K6-L Wide Cloud, K7 Filmstrip, K9 Grande, K2 Adhesive + K10 & K11 Keychains). I have my photos ready for review.")}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full lg:w-auto shrink-0 inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  <span>Order 12-Piece Kit on WhatsApp (₹999)</span>
-                </a>
               </div>
-
             </div>
           </section>
 
