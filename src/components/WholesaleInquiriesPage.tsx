@@ -17,7 +17,6 @@ interface WholesaleShape {
   id: string;
   name: string;
   code: string;
-  tag: string;
   image: string;
   description: string;
   sizes: {
@@ -34,7 +33,6 @@ const WHOLESALE_SHAPES: WholesaleShape[] = [
     id: 'love',
     name: 'Sculpted Heart',
     code: 'HRT-ACR',
-    tag: 'Couples & Weddings',
     image: '/images/shape_heart_magnet_1780939430998.png',
     description: 'Sculpted romantic contour, 3mm optical-grade cast acrylic with polished beveled edge & neodymium magnetic backing.',
     sizes: [
@@ -47,7 +45,6 @@ const WHOLESALE_SHAPES: WholesaleShape[] = [
     id: 'circle',
     name: 'Minimal Circle',
     code: 'RND-ACR',
-    tag: 'Logos & Milestones',
     image: '/images/shape_circle_magnet_1780939399489.png',
     description: 'Diamond laser-cut circular silhouette, high-clarity 300 DPI UV pigment print and scratch-resistant gloss finish.',
     sizes: [
@@ -60,7 +57,6 @@ const WHOLESALE_SHAPES: WholesaleShape[] = [
     id: 'polaroid',
     name: 'Classic Polaroid',
     code: 'PLR-ACR',
-    tag: 'Vintage & Keepsakes',
     image: '/images/shape_polaroid_magnet_1780939416510.png',
     description: 'Timeless instant-photo frame with bottom caption margin, cast acrylic sandwich, and dual neodymium magnets.',
     sizes: [
@@ -72,7 +68,6 @@ const WHOLESALE_SHAPES: WholesaleShape[] = [
     id: 'grande',
     name: 'Statement Grande',
     code: 'GRD-ACR',
-    tag: 'Executive & Landscape',
     image: '/images/scenic_landscape_sample_1782458156606.jpg',
     description: 'Oversized 4 × 6 inch centerpiece acrylic photo plaque backed by 4 heavy-duty neodymium magnets.',
     sizes: [
@@ -324,9 +319,6 @@ export default function WholesaleInquiriesPage({
                   <div className="relative aspect-[4/3] bg-[#FAF8F5] rounded-2xl overflow-hidden p-4 flex items-center justify-center border border-neutral-100 group">
                     <span className="absolute top-2.5 left-2.5 font-mono text-[9px] font-bold uppercase bg-neutral-900 text-white px-2 py-0.5 rounded-md">
                       {shape.code}
-                    </span>
-                    <span className="absolute top-2.5 right-2.5 font-mono text-[9px] font-bold uppercase bg-amber-50 text-amber-900 border border-amber-200/80 px-2 py-0.5 rounded-md">
-                      {shape.tag}
                     </span>
 
                     <img
