@@ -57,9 +57,9 @@ const PRODUCTS: Product[] = [
     image: '/images/shape_square_romantic_embrace.png',
     category: 'Grid & Modern Living',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_square.jpg' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/dimension_preview_square.jpg' },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/dimension_preview_square.jpg' }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_square_2x2.jpg' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/dimension_preview_square_3x3.jpg' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/dimension_preview_square_4x4.jpg' }
     ],
     accentColor: '#A3704C',
     bgGlow: 'from-amber-100/60 via-stone-50/40 to-transparent'
@@ -72,9 +72,9 @@ const PRODUCTS: Product[] = [
     image: '/images/shape_circle_family_furry_friend.png',
     category: 'Modern Living',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/shape_circle_family_furry_friend.png' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/shape_circle_family_furry_friend.png' },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/shape_circle_family_furry_friend.png' }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_circle_2x2.png' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/dimension_preview_circle_3x3.png' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/dimension_preview_circle_4x4.png' }
     ],
     accentColor: '#4A6B82',
     bgGlow: 'from-sky-100/60 via-amber-50/40 to-transparent'
@@ -87,9 +87,9 @@ const PRODUCTS: Product[] = [
     image: '/images/shape_heart_romantic_wedding.png',
     category: 'Celebration & Gifting',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/shape_heart_romantic_wedding.png' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/shape_heart_romantic_wedding.png' },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/shape_heart_romantic_wedding.png' }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_heart_2x2.png' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/dimension_preview_heart_3x3.png' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/dimension_preview_heart_4x4.png' }
     ],
     accentColor: '#B76E79',
     bgGlow: 'from-rose-100/60 via-pink-50/40 to-transparent'
