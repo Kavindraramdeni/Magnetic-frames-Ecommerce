@@ -78,7 +78,7 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery' | 'return-gift-detail' | 'wholesale' | 'portfolio'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery' | 'return-gift-detail' | 'wholesale' | 'portfolio' | 'store'>('home');
   const [selectedReturnGift, setSelectedReturnGift] = useState<ReturnGiftProduct | null>(null);
   const [isBOGOOpen, setIsBOGOOpen] = useState(false);
   const [adminToken, setAdminToken] = useState<string>(() => {
@@ -165,6 +165,12 @@ export default function App() {
         } else {
           openAdmin();
         }
+        return;
+      }
+
+      // Deep link to legacy e-com store
+      if (searchParams.get('view') === 'store' || searchParams.has('store')) {
+        setCurrentView('store');
         return;
       }
 
@@ -308,25 +314,14 @@ export default function App() {
     setCurrentView('admin');
   };
 
-  if (currentView === 'portfolio') {
+  if (currentView === 'home' || currentView === 'portfolio') {
     return (
-      <div id="home-root" className="min-h-screen bg-[#FAF8F5] font-sans antialiased overflow-x-hidden">
-        <Header
-          cartItemsCount={cartCount}
-          onOpenCart={() => setIsCartOpen(true)}
-          onHome={handleOpenShop}
-          onStudio={() => goStudio()}
-          onOpenReturnGifts={handleOpenReturnGifts}
-          onOpenGallery={handleOpenGallery}
-          onOpenAboutUs={handleOpenAboutUs}
-          onOpenBOGO={() => setIsBOGOOpen(true)}
-          onOpenB2B={handleOpenWholesale}
-          onOpenWholesale={handleOpenWholesale}
-          onOpenPortfolio={handleOpenPortfolio}
-          activeView="portfolio"
-        />
-        <KriaTechPortfolioPage onBackToStore={goHome} />
-      </div>
+      <KriaTechPortfolioPage
+        onBackToStore={() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setCurrentView('store');
+        }}
+      />
     );
   }
 
