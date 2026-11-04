@@ -3,7 +3,7 @@ import {
   MessageCircle, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck,
   Package, Award, Heart, Sparkles, CheckCircle2, Phone,
   MapPin, Clock, Users, ArrowUpRight,
-  ArrowLeft, ZoomIn, Check, Info, Calendar, Gift
+  ArrowLeft, ZoomIn, Check, Info, Calendar, Gift, Crown, Truck, Coins
 } from 'lucide-react';
 
 const WA_NUMBER = '919392576792';
@@ -724,38 +724,12 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                   </h2>
 
                   <p className="text-sm sm:text-base text-[#615446] leading-relaxed">
-                    Experience every signature form in optical 3mm acrylic. The Starter Kit includes <strong>12 custom magnetic frames (2 of each shape)</strong> so you can create a complete gallery wall on your refrigerator or workspace.
+                    Experience our signature forms in optical 3mm acrylic. The Starter Kit includes 12 custom acrylic frames for ₹999.
                   </p>
-
-                  {/* Grid showing 2 of each shape */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs text-[#5D5042]">
-                    <div className="p-3 rounded-2xl bg-white border border-[#E8DACB] text-center">
-                      <span className="font-serif text-lg font-bold text-[#8C6436] block">2×</span>
-                      <span>Rectangle</span>
-                    </div>
-                    <div className="p-3 rounded-2xl bg-white border border-[#E8DACB] text-center">
-                      <span className="font-serif text-lg font-bold text-[#8C6436] block">2×</span>
-                      <span>Square</span>
-                    </div>
-                    <div className="p-3 rounded-2xl bg-white border border-[#E8DACB] text-center">
-                      <span className="font-serif text-lg font-bold text-[#8C6436] block">2×</span>
-                      <span>Circle</span>
-                    </div>
-                    <div className="p-3 rounded-2xl bg-white border border-[#E8DACB] text-center">
-                      <span className="font-serif text-lg font-bold text-[#8C6436] block">2×</span>
-                      <span>Heart</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-4 text-xs font-mono text-[#7A6A5A]">
-                    <span className="p-2 rounded-xl bg-white/80 border border-[#E8DACB]">✓ ₹999 total (Just ₹83/frame)</span>
-                    <span className="p-2 rounded-xl bg-white/80 border border-[#E8DACB]">✓ Send 12 photos via WhatsApp</span>
-                    <span className="p-2 rounded-xl bg-white/80 border border-[#E8DACB]">✓ Free pan-India air delivery</span>
-                  </div>
 
                   <div className="pt-2">
                     <a
-                      href={waLink("Hi KRIA Tech! I would like to order the Starter Kit (12 Custom Acrylic Magnetic Frames for ₹999 - 2 of each shape: Rectangle, Square, Circle, Heart). I have my 12 photos ready for review.")}
+                      href={waLink("Hi KRIA Tech! I would like to order the Starter Kit (12 Custom Acrylic Magnetic Frames for ₹999). Please guide me on submitting photos.")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
@@ -778,78 +752,110 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                       12 Frames · ₹999
                     </div>
                   </div>
-                  <h4 className="font-serif text-xl text-[#1E1B18] font-medium">Complete Atelier Sampler</h4>
-                  <p className="text-xs text-[#736353] leading-relaxed">
-                    Printed at 300 DPI on 3mm monolithic cast acrylic with laser-cut edges and flush neodymium magnets.
-                  </p>
+                  <h4 className="font-serif text-xl text-[#1E1B18] font-medium">Starter Kit Sampler</h4>
                 </div>
 
               </div>
             </div>
           </section>
 
-          {/* ─── DEDICATED SUBSCRIPTION SECTION ───────────────────── */}
+          {/* ─── DEDICATED KRIA SUBSCRIPTION SECTION (FROM POSTER) ─── */}
           <section id="subscription" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#1E1B18] via-[#2A2420] to-[#1E1B18] text-[#FDFBF7] p-8 sm:p-14 shadow-[0_25px_60px_rgba(30,27,24,0.3)]">
+            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FCFAF6] via-white to-[#F6EDE2] backdrop-blur-2xl border border-[#EADECE] p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
                 
+                {/* Left Description & Benefits */}
                 <div className="lg:col-span-7 space-y-6">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 text-[#C4A574] font-mono text-xs tracking-wider uppercase font-semibold border border-white/15">
-                    <Calendar className="h-3.5 w-3.5 text-[#C4A574]" />
-                    <span>Monthly Keepsake Club</span>
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-xs tracking-wider uppercase font-semibold border border-[#EAD5BA]">
+                    <Crown className="h-3.5 w-3.5 text-[#B8860B]" />
+                    <span>Exclusive Member Privilege</span>
                   </div>
 
-                  <h2 className="font-serif text-3xl sm:text-5xl font-light text-white leading-tight">
-                    Never Let Another Memory Stay Locked in Your Phone.
-                  </h2>
+                  <div>
+                    <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
+                      KRIA Subscription
+                    </h2>
+                    <p className="font-serif italic text-lg sm:text-xl text-[#8C6436] mt-1">
+                      More Savings. Priority Service.
+                    </p>
+                  </div>
 
-                  <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-light">
-                    Subscribe to receive 2 or 4 custom diamond-cut acrylic frame magnets delivered to your door every single month. Simply reply to our monthly WhatsApp reminder with your latest phone photos.
-                  </p>
+                  {/* Gold Badge: ONLY ₹499 · 3 MONTHS VALIDITY */}
+                  <div className="inline-flex items-center gap-4 py-3 px-5 rounded-2xl bg-gradient-to-r from-[#FDEFD8] via-[#FFF9F0] to-[#F7E7CE] border border-[#DEB887] shadow-sm">
+                    <span className="font-serif text-3xl sm:text-4xl font-bold text-[#8C6436]">
+                      ONLY ₹499
+                    </span>
+                    <span className="h-7 w-px bg-[#DEB887]/60" />
+                    <span className="font-mono text-xs uppercase tracking-widest text-[#6B4E2B] font-bold">
+                      3 MONTHS VALIDITY
+                    </span>
+                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
-                      <span className="text-xs font-mono text-[#C4A574] uppercase tracking-wider font-bold">Duo Plan</span>
-                      <div className="font-serif text-2xl text-white">₹299 <span className="text-xs text-neutral-400 font-mono">/ month</span></div>
-                      <p className="text-xs text-neutral-400">2 Custom Frames every month with free doorstep delivery.</p>
+                  {/* 3 Main Value Pillars from Poster */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
+                    {/* Pillar 1 */}
+                    <div className="p-4 rounded-2xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-2">
+                      <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Coins className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="font-serif text-lg font-bold text-[#1E1B18]">₹2 OFF</div>
+                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold mt-0.5">
+                          On Every Frame
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
-                      <span className="text-xs font-mono text-[#C4A574] uppercase tracking-wider font-bold">Family Quad Plan</span>
-                      <div className="font-serif text-2xl text-white">₹549 <span className="text-xs text-neutral-400 font-mono">/ month</span></div>
-                      <p className="text-xs text-neutral-400">4 Custom Frames every month across any shape mix.</p>
+                    {/* Pillar 2 */}
+                    <div className="p-4 rounded-2xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-2">
+                      <div className="h-9 w-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Truck className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="font-serif text-lg font-bold text-[#1E1B18]">1 Day Dispatch</div>
+                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold mt-0.5">
+                          On Ready To Stock Frames
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Pillar 3 */}
+                    <div className="p-4 rounded-2xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-2">
+                      <div className="h-9 w-9 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Crown className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="font-serif text-lg font-bold text-[#1E1B18]">Customer Priority</div>
+                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold mt-0.5">
+                          Faster Support & Exclusive Service
+                        </p>
+                      </div>
                     </div>
                   </div>
 
+                  {/* Join Now WhatsApp CTA */}
                   <div className="pt-2">
                     <a
-                      href={waLink("Hi KRIA Tech! I would like to subscribe to the Monthly Keepsake Club. Please share plan onboarding details.")}
+                      href={waLink("Hi KRIA Tech! I would like to join the KRIA Subscription plan (ONLY ₹499 for 3 MONTHS VALIDITY). Please share activation details for ₹2 OFF on every frame, 1-day dispatch, and priority customer service.")}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                      className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
                     >
                       <MessageCircle className="h-4.5 w-4.5" />
-                      <span>Inquire Subscription On WhatsApp</span>
+                      <span>Join KRIA Subscription (₹499)</span>
                     </a>
                   </div>
                 </div>
 
-                <div className="lg:col-span-5 rounded-3xl bg-white/5 border border-white/10 p-7 space-y-4">
-                  <h4 className="font-serif text-xl text-white">How Subscription Works</h4>
-                  <ul className="text-xs text-neutral-300 space-y-3 font-mono">
-                    <li className="flex items-start gap-2.5">
-                      <span className="h-5 w-5 rounded-full bg-[#C4A574]/20 text-[#C4A574] flex items-center justify-center shrink-0">1</span>
-                      <span>Pick your monthly plan (2 or 4 frames).</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <span className="h-5 w-5 rounded-full bg-[#C4A574]/20 text-[#C4A574] flex items-center justify-center shrink-0">2</span>
-                      <span>On the 1st of every month, share your photos on WhatsApp.</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <span className="h-5 w-5 rounded-full bg-[#C4A574]/20 text-[#C4A574] flex items-center justify-center shrink-0">3</span>
-                      <span>Laser-cut & delivered to your door in 48 hours. Cancel anytime.</span>
-                    </li>
-                  </ul>
+                {/* Right Visual Poster Showcase */}
+                <div className="lg:col-span-5">
+                  <div className="relative rounded-3xl overflow-hidden shadow-[0_20px_45px_rgba(180,140,80,0.18)] border-2 border-[#E7D6C2] bg-white group hover:shadow-[0_25px_55px_rgba(180,140,80,0.25)] transition-all duration-300">
+                    <img 
+                      src="/images/kria_subscription_banner.jpg" 
+                      alt="KRIA Subscription - Only ₹499, 3 Months Validity"
+                      className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-500"
+                    />
+                  </div>
                 </div>
 
               </div>
