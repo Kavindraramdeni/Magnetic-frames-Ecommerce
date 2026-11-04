@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  MessageCircle, Star, ChevronDown, ArrowRight, ShieldCheck,
+  MessageCircle, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck,
   Package, Award, Heart, Sparkles, CheckCircle2, Phone,
-  MapPin, Clock, Users, Factory, ArrowUpRight,
-  ArrowLeft, ZoomIn, Check, Info
+  MapPin, Clock, Users, ArrowUpRight,
+  ArrowLeft, ZoomIn, Check, Info, Calendar, Gift
 } from 'lucide-react';
 
 const WA_NUMBER = '919392576792';
@@ -31,27 +31,43 @@ interface Product {
   bgGlow: string;
 }
 
+// Exactly arranged in order: rectangle, square, circle, heart
 const PRODUCTS: Product[] = [
   {
-    id: 'heart',
-    name: 'Sculpted Heart',
-    tagline: 'Romance & Everlasting Keepsakes',
-    subtitle: 'Personalised magnetic acrylic photo frame',
-    image: '/images/shape_heart_wedding_couple.png',
-    category: 'Celebration & Gifting',
+    id: 'rectangle',
+    name: 'Classic Rectangle',
+    tagline: 'Architectural & Landscape Panorama',
+    subtitle: 'Personalised acrylic magnetic rectangle frame',
+    image: '/images/scenic_landscape_sample_1782458156606.jpg',
+    category: 'Landscape & Panorama',
+    sizes: [
+      { label: '2 × 3"', dimensions: '2 × 3 inch', basePrice: 229, originalPrice: 329 },
+      { label: '3 × 4"', dimensions: '3 × 4 inch', basePrice: 279, originalPrice: 379 },
+      { label: '4 × 6"', dimensions: '4 × 6 inch', basePrice: 349, originalPrice: 499 }
+    ],
+    accentColor: '#365349',
+    bgGlow: 'from-emerald-100/60 via-sand-50/40 to-transparent'
+  },
+  {
+    id: 'square',
+    name: 'Minimal Square',
+    tagline: 'Geometric Balance & Modern Grids',
+    subtitle: 'Personalised acrylic magnetic square frame',
+    image: '/images/couple_portrait_sample_1782458143228.jpg',
+    category: 'Grid & Modern Living',
     sizes: [
       { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299 },
       { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349 },
       { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399 }
     ],
-    accentColor: '#B76E79',
-    bgGlow: 'from-rose-100/60 via-pink-50/40 to-transparent'
+    accentColor: '#A3704C',
+    bgGlow: 'from-amber-100/60 via-stone-50/40 to-transparent'
   },
   {
     id: 'circle',
     name: 'Minimal Circle',
     tagline: 'Infinite Symmetry & Contemporary Zen',
-    subtitle: 'Personalised magnetic acrylic photo frame',
+    subtitle: 'Personalised acrylic magnetic circle frame',
     image: '/images/shape_circle_family_dog.jpg',
     category: 'Modern Living',
     sizes: [
@@ -63,31 +79,19 @@ const PRODUCTS: Product[] = [
     bgGlow: 'from-sky-100/60 via-amber-50/40 to-transparent'
   },
   {
-    id: 'polaroid',
-    name: 'Classic Polaroid',
-    tagline: 'Nostalgic Film Aesthetic with Modern Durability',
-    subtitle: 'Personalised magnetic acrylic photo frame with caption',
-    image: '/images/shape_polaroid_magnet_1780939416510.png',
-    category: 'Storyteller Series',
+    id: 'heart',
+    name: 'Sculpted Heart',
+    tagline: 'Romance & Everlasting Keepsakes',
+    subtitle: 'Personalised acrylic magnetic heart frame',
+    image: '/images/shape_heart_wedding_couple.png',
+    category: 'Celebration & Gifting',
     sizes: [
-      { label: '2 × 3"', dimensions: '2 × 3 inch', basePrice: 229, originalPrice: 329 },
-      { label: '3 × 4"', dimensions: '3 × 4 inch', basePrice: 279, originalPrice: 379 }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299 },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349 },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399 }
     ],
-    accentColor: '#A3704C',
-    bgGlow: 'from-amber-100/60 via-stone-50/40 to-transparent'
-  },
-  {
-    id: 'grande',
-    name: 'Statement Grande',
-    tagline: 'Full-Frame Architectural Panorama',
-    subtitle: 'Personalised monolithic acrylic photo magnet',
-    image: '/images/scenic_landscape_sample_1782458156606.jpg',
-    category: 'Executive & Landscape',
-    sizes: [
-      { label: '4 × 6"', dimensions: '4 × 6 inch', basePrice: 349, originalPrice: 499 }
-    ],
-    accentColor: '#365349',
-    bgGlow: 'from-emerald-100/60 via-sand-50/40 to-transparent'
+    accentColor: '#B76E79',
+    bgGlow: 'from-rose-100/60 via-pink-50/40 to-transparent'
   }
 ];
 
@@ -98,6 +102,34 @@ const QUANTITY_TIERS = [
   { label: '500 pcs', count: 500, discountPct: 45 },
   { label: '1000 pcs', count: 1000, discountPct: 50 },
   { label: 'Custom', count: 0, discountPct: 30 }
+];
+
+// Sliding images for Hero Carousel
+const HERO_SLIDES = [
+  {
+    image: '/images/refrigerator_magnets_lifestyle_1782460255084.jpg',
+    title: 'Diamond-Cut Acrylic Frame Magnets',
+    subtitle: 'Laser-contoured 3mm monolithic cast acrylic handcrafted in Hyderabad',
+    badge: 'Real Lifestyle Gallery'
+  },
+  {
+    image: '/images/acrylic_magnets_hero_1782423101134.jpg',
+    title: 'Sub-Surface 300 DPI UV Pigment',
+    subtitle: 'Fade-proof photographic clarity backed by rare-earth neodymium magnetic cores',
+    badge: 'Optical Clarity'
+  },
+  {
+    image: '/images/lifestyle_gallery_workspace_1779653492345.png',
+    title: 'Starter Kit · 12 Frames for ₹999',
+    subtitle: 'Includes 2 of each shape: Rectangle, Square, Circle & Heart',
+    badge: 'Special Value Offer'
+  },
+  {
+    image: '/images/scalloped_stand_product_preview_1782458429878.jpg',
+    title: 'Pre-Finished Mirror Bevels',
+    subtitle: 'Zero fading, zero yellowing, and 100% moisture-sealed protection',
+    badge: 'Factory Direct'
+  }
 ];
 
 const FAQS = [
@@ -114,8 +146,8 @@ const FAQS = [
     a: 'No. Grade N35 rare-earth neodymium magnets are countersunk flush into the back for strong shear resistance that will not slip down or scratch enamel.'
   },
   {
-    q: 'Can I order single pieces or just bulk batches?',
-    a: 'Both! You can order single bespoke frames or bulk batches of 50 to 5,000+ pieces for weddings and corporate gifting with factory-direct volume pricing.'
+    q: 'What is included in the ₹999 Starter Kit?',
+    a: 'The Starter Kit includes 12 custom acrylic frame magnets: 2 of each shape (2× Rectangle, 2× Square, 2× Circle, 2× Heart, 2× Polaroid, 2× Mini) with free doorstep delivery across India.'
   },
   {
     q: 'How fast is dispatch and shipping across India?',
@@ -133,9 +165,18 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [selectedQtyLabel, setSelectedQtyLabel] = useState<string>('50 Pcs');
   const [customQtyValue, setCustomQtyValue] = useState<number>(75);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
 
   // Active product calculation
   const activeProduct = selectedProductId ? PRODUCTS.find((p) => p.id === selectedProductId) || null : null;
+
+  // Auto-play sliding hero carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
 
   // Reset size index when product changes
   useEffect(() => {
@@ -174,14 +215,22 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
 I have my photo ready for review. Please confirm order placement and dispatch timeline.`;
   };
 
-  const handleOpenConfigurator = (shapeId: string = 'heart') => {
+  const handleOpenConfigurator = (shapeId: string = 'rectangle') => {
     setSelectedProductId(shapeId);
+  };
+
+  const nextSlide = () => {
+    setCurrentSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlideIndex((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
   };
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-[#1E1B18] font-sans antialiased overflow-x-hidden selection:bg-[#EBDDC7] selection:text-[#1E1B18]">
       
-      {/* Ambient Luxury Background Lights (Warm Pearl, Champagne, Ivory) */}
+      {/* Ambient Luxury Background Lights */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#F5E6D3]/70 to-[#ECD5BB]/40 blur-3xl opacity-70" />
         <div className="absolute top-[35%] -left-48 w-[550px] h-[550px] rounded-full bg-gradient-to-tr from-[#EAD9C6]/60 via-[#F7ECE1]/40 to-transparent blur-3xl opacity-60" />
@@ -195,7 +244,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
         />
       </div>
 
-      {/* ─── DEDICATED GLASSMORPHIC HEADER ──────────────────────── */}
+      {/* ─── DEDICATED HEADER: PRODUCTS, STARTER KIT, SUBSCRIPTION ─── */}
       <header className="sticky top-0 z-50 w-full px-4 sm:px-8 py-3.5 backdrop-blur-2xl bg-[#FDFBF7]/85 border-b border-[#EADCCB]/60 shadow-[0_4px_24px_rgba(180,150,110,0.06)] transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
@@ -218,15 +267,29 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             </div>
           </button>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-7 text-[11px] font-semibold tracking-[0.14em] uppercase text-[#6E6359]">
-            <button 
-              type="button" 
-              onClick={() => setSelectedProductId(null)} 
+          {/* Desktop Navigation Links: products, starter kit, subscription */}
+          <nav className="hidden md:flex items-center gap-8 text-[11px] font-semibold tracking-[0.14em] uppercase text-[#6E6359]">
+            <a 
+              href="#products" 
+              onClick={() => setSelectedProductId(null)}
               className="hover:text-[#1E1B18] transition-colors py-1 cursor-pointer"
             >
-              The 4 Shapes
-            </button>
+              Products
+            </a>
+            <a 
+              href="#starter-kit" 
+              onClick={() => setSelectedProductId(null)}
+              className="hover:text-[#1E1B18] transition-colors py-1 cursor-pointer"
+            >
+              Starter Kit (12 for ₹999)
+            </a>
+            <a 
+              href="#subscription" 
+              onClick={() => setSelectedProductId(null)}
+              className="hover:text-[#1E1B18] transition-colors py-1 cursor-pointer"
+            >
+              Subscription
+            </a>
           </nav>
 
           {/* Quick Action Hotline Pill: Configures or sends exact specs */}
@@ -244,7 +307,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             ) : (
               <button
                 type="button"
-                onClick={() => handleOpenConfigurator('heart')}
+                onClick={() => handleOpenConfigurator('rectangle')}
                 className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
               >
                 <MessageCircle className="h-4 w-4" />
@@ -279,7 +342,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#8C6436] hover:text-[#1E1B18] mb-8 py-1.5 px-3 rounded-full bg-white/70 border border-[#E8DACB] shadow-xs cursor-pointer transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to All 4 Shapes</span>
+            <span>Back to All Products</span>
           </button>
 
           {/* Two-Column Product Configuration Layout */}
@@ -406,7 +469,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                 )}
               </div>
 
-              {/* 3. Live Pricing Calculation Box (As requested) */}
+              {/* 3. Live Pricing Calculation Box */}
               <div className="p-6 rounded-3xl bg-gradient-to-br from-[#FAF3EA] via-white to-[#F5ECE1] border border-[#E4D4C3] shadow-[0_10px_30px_rgba(180,140,80,0.08)] space-y-4">
                 <div className="flex items-baseline justify-between gap-4 flex-wrap">
                   <div className="flex items-baseline gap-3">
@@ -449,7 +512,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                 <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
                   <Info className="h-4 w-4 shrink-0 text-amber-700 mt-0.5" />
                   <span>
-                    Your exact selected shape, size ({currentSize.dimensions}), and batch quantity ({actualQty} pcs) will be automatically sent in the message so our team can review your photo immediately!
+                    Your exact selected shape ({activeProduct.name}), size ({currentSize.dimensions}), and batch quantity ({actualQty} pcs) are automatically attached so our team confirms your order immediately.
                   </span>
                 </div>
               </div>
@@ -468,10 +531,6 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                   <Check className="h-4 w-4 text-[#8C6436] shrink-0" />
                   <span>Ships in 2–3 days with express pan-India tracking</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <Check className="h-4 w-4 text-[#8C6436] shrink-0" />
-                  <span>Prepaid custom orders · 100% replacement guarantee if damaged in transit</span>
-                </div>
               </div>
 
             </div>
@@ -480,76 +539,111 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
         </main>
       ) : (
         /* ══════════════════════════════════════════════════════════
-            VIEW 2: MAIN EXCLUSIVE LANDING PAGE
+            VIEW 2: MAIN EXCLUSIVE LANDING PAGE WITH HERO SLIDER
         ══════════════════════════════════════════════════════════ */
         <main className="relative z-10">
           
-          {/* ─── HERO SECTION: PURE & EXCLUSIVE (NO CLUTTER) ───────── */}
-          <section
-            id="hero"
-            className="relative pt-24 pb-24 sm:pt-32 sm:pb-32 px-4 sm:px-8 border-b border-[#EADECE]/60 overflow-hidden"
-          >
-            {/* Subtle Architectural Studio Background Image with warm glass overlay */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none mix-blend-multiply"
-              style={{ backgroundImage: `url('/images/clean_studio_bg_1782458110845.jpg')` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#FDFBF7]/95 via-[#FAF7F2]/90 to-[#FDFBF7] pointer-events-none" />
-
-            <div className="relative max-w-4xl mx-auto text-center space-y-8">
+          {/* ─── SLIDING IMAGES HERO SECTION ──────────────────────── */}
+          <section className="relative px-4 sm:px-8 pt-6 pb-12 max-w-7xl mx-auto">
+            <div className="relative rounded-[2.5rem] overflow-hidden shadow-[0_25px_60px_rgba(180,140,80,0.16)] border border-white/80 bg-[#1E1B18] aspect-[16/9] sm:aspect-[21/9] max-h-[580px]">
               
-              {/* Headline - Exactly as requested */}
-              <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-light text-[#1E1B18] tracking-tight leading-[1.12]">
-                Transform Every Cherished Memory Into A{' '}
-                <span className="font-medium italic bg-gradient-to-r from-[#976C3E] via-[#B8874E] to-[#7A542D] bg-clip-text text-transparent">
-                  Diamond-Cut Acrylic
-                </span>{' '}
-                Magnet.
-              </h1>
-
-              {/* Subtitle - Exactly as requested */}
-              <p className="text-base sm:text-xl text-[#63574A] font-light leading-relaxed max-w-3xl mx-auto">
-                Not plastic, not laminated paper. Genuine 3mm cast acrylic laser-contoured with mirror-beveled edges, 300 DPI sub-surface UV pigment printing, and rare-earth neodymium magnetic core.
-              </p>
-
-              {/* Primary Call to Action: Opens Configurator directly */}
-              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => handleOpenConfigurator('heart')}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-9 py-4 rounded-2xl bg-gradient-to-r from-[#1E1B18] to-[#36302B] text-[#FBF8F4] text-xs font-bold uppercase tracking-[0.18em] shadow-[0_12px_30px_rgba(30,27,24,0.22)] hover:shadow-[0_16px_36px_rgba(30,27,24,0.3)] hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
+              {/* Carousel Slides */}
+              {HERO_SLIDES.map((slide, idx) => (
+                <div
+                  key={idx}
+                  className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                    idx === currentSlideIndex ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                  }`}
                 >
-                  <MessageCircle className="h-4.5 w-4.5 text-[#25D366]" />
-                  <span>Choose Shape & WhatsApp Quote</span>
-                  <ArrowRight className="h-3.5 w-3.5 opacity-70" />
-                </button>
+                  <img
+                    src={slide.image}
+                    alt={slide.title}
+                    className="w-full h-full object-cover filter brightness-[0.88]"
+                  />
+                  {/* Subtle Gradient Veil for Readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
 
-                <a
-                  href="#shapes"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/80 hover:bg-white border border-[#DFCDBB] text-[#55493C] text-xs font-bold uppercase tracking-[0.16em] transition-all cursor-pointer"
-                >
-                  <span>Explore 4 Shapes & Sizes</span>
-                </a>
+                  {/* Caption & Quick CTA Overlay */}
+                  <div className="absolute bottom-6 sm:bottom-12 left-6 sm:left-14 right-6 sm:right-14 text-white space-y-2.5">
+                    <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-mono uppercase tracking-[0.2em] text-[#E8DCCF] border border-white/30">
+                      {slide.badge}
+                    </span>
+                    <h2 className="font-serif text-2xl sm:text-4xl md:text-5xl font-light tracking-tight text-white max-w-2xl">
+                      {slide.title}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-neutral-300 font-light max-w-xl hidden sm:block">
+                      {slide.subtitle}
+                    </p>
+                    <div className="pt-2 flex items-center gap-3">
+                      <a
+                        href="#products"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-[#1E1B18] text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#FAF4ED] transition-colors cursor-pointer"
+                      >
+                        <span>Choose Shape</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </a>
+                      <a
+                        href="#starter-kit"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/20 backdrop-blur-md border border-white/40 text-white text-xs font-bold uppercase tracking-wider hover:bg-white/30 transition-colors cursor-pointer"
+                      >
+                        <span>Starter Kit (12 for ₹999)</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Slider Arrows */}
+              <button
+                type="button"
+                onClick={prevSlide}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white/60 hover:text-black transition-all cursor-pointer"
+                aria-label="Previous Slide"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={nextSlide}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white/60 hover:text-black transition-all cursor-pointer"
+                aria-label="Next Slide"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+
+              {/* Slide Indicators Dots */}
+              <div className="absolute bottom-4 right-6 z-20 flex items-center gap-1.5">
+                {HERO_SLIDES.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setCurrentSlideIndex(idx)}
+                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                      idx === currentSlideIndex ? 'w-6 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
+                    }`}
+                    aria-label={`Slide ${idx + 1}`}
+                  />
+                ))}
               </div>
 
             </div>
           </section>
 
-          {/* ─── THE 4 SHAPES COMPREHENSIVE COLLECTION ─────────────── */}
-          <section id="shapes" className="py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-16">
+          {/* ─── 4 SHAPES SECTION (RECTANGLE, SQUARE, CIRCLE, HEART) ─── */}
+          <section id="products" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-14">
               <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-2">
-                Signature Acrylic Shapes
+                Curated Collection
               </p>
               <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18]">
-                Four Iconic Forms. Infinite Stories.
+                Four Signature Forms
               </h2>
-              <p className="mt-4 text-sm sm:text-base text-[#6E6153] leading-relaxed">
-                Select your shape below to configure dimensions (2×2", 3×3", 4×4") and batch quantity with live pricing before sending on WhatsApp.
+              <p className="mt-3 text-sm sm:text-base text-[#6E6153] leading-relaxed">
+                Click any product below to configure dimensions and batch quantities with live pricing.
               </p>
             </div>
 
-            {/* 4 Cards Grid with Glassmorphic styling */}
+            {/* 4 Cards Grid arranged strictly: Rectangle, Square, Circle, Heart */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {PRODUCTS.map((prod) => (
                 <div
@@ -613,69 +707,149 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             </div>
           </section>
 
-          {/* ─── WHOLESALE, B2B & WEDDING RETURN GIFTS ───────────────── */}
-          <section id="wholesale" className="py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="rounded-[2.5rem] bg-gradient-to-br from-white/95 via-[#FDFBF7]/90 to-[#F6EEE3]/90 backdrop-blur-2xl border border-white p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.1)]">
+          {/* ─── DEDICATED STARTER KIT SECTION: 12 FRAMES FOR ₹999 ─── */}
+          <section id="starter-kit" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FAF3EA] via-white to-[#F4E9DC] backdrop-blur-2xl border border-white p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
                 
+                {/* Left Description */}
                 <div className="lg:col-span-7 space-y-6">
                   <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-xs tracking-wider uppercase font-semibold">
-                    <Factory className="h-3.5 w-3.5" />
-                    Factory Direct Bulk Gifting
+                    <Gift className="h-3.5 w-3.5 text-[#8C6436]" />
+                    <span>Special Discovery Offer</span>
                   </div>
 
                   <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
-                    Weddings, Corporate Milestones & Brand Merchandise.
+                    KRIA Tech Starter Kit · <span className="text-[#8C6436] font-medium">12 Frames for ₹999</span>
                   </h2>
 
                   <p className="text-sm sm:text-base text-[#615446] leading-relaxed">
-                    Need 50 to 5,000 personalized keepsakes? We offer factory-direct tiered pricing, custom logo engraving, individual guest photo personalization, and premium velvet/gold gift packaging direct from Hyderabad.
+                    Experience every signature form in optical 3mm acrylic. The Starter Kit includes <strong>12 custom magnetic frames (2 of each shape)</strong> so you can create a complete gallery wall on your refrigerator or workspace.
                   </p>
 
+                  {/* Grid showing 2 of each shape */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs text-[#5D5042]">
+                    <div className="p-3 rounded-2xl bg-white border border-[#E8DACB] text-center">
+                      <span className="font-serif text-lg font-bold text-[#8C6436] block">2×</span>
+                      <span>Rectangle</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white border border-[#E8DACB] text-center">
+                      <span className="font-serif text-lg font-bold text-[#8C6436] block">2×</span>
+                      <span>Square</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white border border-[#E8DACB] text-center">
+                      <span className="font-serif text-lg font-bold text-[#8C6436] block">2×</span>
+                      <span>Circle</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white border border-[#E8DACB] text-center">
+                      <span className="font-serif text-lg font-bold text-[#8C6436] block">2×</span>
+                      <span>Heart</span>
+                    </div>
+                  </div>
+
                   <div className="flex flex-wrap gap-4 text-xs font-mono text-[#7A6A5A]">
-                    <span className="p-2.5 rounded-xl bg-white border border-[#E8DACB]">✓ Tiered wholesale rates</span>
-                    <span className="p-2.5 rounded-xl bg-white border border-[#E8DACB]">✓ Custom box packaging</span>
-                    <span className="p-2.5 rounded-xl bg-white border border-[#E8DACB]">✓ Pan-India courier</span>
+                    <span className="p-2 rounded-xl bg-white/80 border border-[#E8DACB]">✓ ₹999 total (Just ₹83/frame)</span>
+                    <span className="p-2 rounded-xl bg-white/80 border border-[#E8DACB]">✓ Send 12 photos via WhatsApp</span>
+                    <span className="p-2 rounded-xl bg-white/80 border border-[#E8DACB]">✓ Free pan-India air delivery</span>
                   </div>
 
                   <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenConfigurator('heart')}
-                      className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer"
+                    <a
+                      href={waLink("Hi KRIA Tech! I would like to order the Starter Kit (12 Custom Acrylic Magnetic Frames for ₹999 - 2 of each shape: Rectangle, Square, Circle, Heart). I have my 12 photos ready for review.")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
                     >
-                      <MessageCircle className="h-4 w-4" />
-                      <span>Configure Shape & Quantity (50–1000 Pcs)</span>
-                    </button>
+                      <MessageCircle className="h-4.5 w-4.5" />
+                      <span>Order 12-Frame Starter Kit (₹999)</span>
+                    </a>
                   </div>
                 </div>
 
-                {/* Right Card: Hyderabad Factory Showcase */}
-                <div className="lg:col-span-5 rounded-3xl bg-gradient-to-tr from-[#FAF4EB] to-[#F1E5D5] border border-white p-7 shadow-inner space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-[#8C6436] shadow-xs">
-                      <MapPin className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-serif text-lg font-medium text-[#1E1B18]">Hyderabad Manufacturing Unit</h4>
-                      <p className="text-[11px] font-mono text-[#8C7A68]">Telangana, India</p>
+                {/* Right Visual Card */}
+                <div className="lg:col-span-5 rounded-3xl bg-white/85 border border-white p-7 shadow-xs space-y-4 text-center">
+                  <div className="relative aspect-video rounded-2xl overflow-hidden mb-3 border border-[#EADECE]">
+                    <img 
+                      src="/images/lifestyle_gallery_workspace_1779653492345.png" 
+                      alt="12 Frame Starter Kit Gallery"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/60 text-white font-mono text-[10px] uppercase tracking-wider backdrop-blur-md">
+                      12 Frames · ₹999
                     </div>
                   </div>
+                  <h4 className="font-serif text-xl text-[#1E1B18] font-medium">Complete Atelier Sampler</h4>
+                  <p className="text-xs text-[#736353] leading-relaxed">
+                    Printed at 300 DPI on 3mm monolithic cast acrylic with laser-cut edges and flush neodymium magnets.
+                  </p>
+                </div>
 
-                  <p className="text-xs text-[#5D5042] leading-relaxed">
-                    Every KRIA Tech frame is manufactured on state-of-the-art CNC laser beds and UV flatbed print lines. No overseas delay, no trading markups.
+              </div>
+            </div>
+          </section>
+
+          {/* ─── DEDICATED SUBSCRIPTION SECTION ───────────────────── */}
+          <section id="subscription" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#1E1B18] via-[#2A2420] to-[#1E1B18] text-[#FDFBF7] p-8 sm:p-14 shadow-[0_25px_60px_rgba(30,27,24,0.3)]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 text-[#C4A574] font-mono text-xs tracking-wider uppercase font-semibold border border-white/15">
+                    <Calendar className="h-3.5 w-3.5 text-[#C4A574]" />
+                    <span>Monthly Keepsake Club</span>
+                  </div>
+
+                  <h2 className="font-serif text-3xl sm:text-5xl font-light text-white leading-tight">
+                    Never Let Another Memory Stay Locked in Your Phone.
+                  </h2>
+
+                  <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-light">
+                    Subscribe to receive 2 or 4 custom diamond-cut acrylic frame magnets delivered to your door every single month. Simply reply to our monthly WhatsApp reminder with your latest phone photos.
                   </p>
 
-                  <div className="p-3.5 rounded-xl bg-white/70 border border-[#E9DAC8] space-y-1 font-mono text-[11px]">
-                    <div className="flex justify-between">
-                      <span className="text-[#8C7A68]">Turnaround:</span>
-                      <span className="font-bold text-[#1E1B18]">24–48 Hours</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                      <span className="text-xs font-mono text-[#C4A574] uppercase tracking-wider font-bold">Duo Plan</span>
+                      <div className="font-serif text-2xl text-white">₹299 <span className="text-xs text-neutral-400 font-mono">/ month</span></div>
+                      <p className="text-xs text-neutral-400">2 Custom Frames every month with free doorstep delivery.</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#8C7A68]">Direct Hotline:</span>
-                      <span className="font-bold text-[#1E1B18]">+91 93925 76792</span>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                      <span className="text-xs font-mono text-[#C4A574] uppercase tracking-wider font-bold">Family Quad Plan</span>
+                      <div className="font-serif text-2xl text-white">₹549 <span className="text-xs text-neutral-400 font-mono">/ month</span></div>
+                      <p className="text-xs text-neutral-400">4 Custom Frames every month across any shape mix.</p>
                     </div>
                   </div>
+
+                  <div className="pt-2">
+                    <a
+                      href={waLink("Hi KRIA Tech! I would like to subscribe to the Monthly Keepsake Club. Please share plan onboarding details.")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                    >
+                      <MessageCircle className="h-4.5 w-4.5" />
+                      <span>Inquire Subscription On WhatsApp</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-5 rounded-3xl bg-white/5 border border-white/10 p-7 space-y-4">
+                  <h4 className="font-serif text-xl text-white">How Subscription Works</h4>
+                  <ul className="text-xs text-neutral-300 space-y-3 font-mono">
+                    <li className="flex items-start gap-2.5">
+                      <span className="h-5 w-5 rounded-full bg-[#C4A574]/20 text-[#C4A574] flex items-center justify-center shrink-0">1</span>
+                      <span>Pick your monthly plan (2 or 4 frames).</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="h-5 w-5 rounded-full bg-[#C4A574]/20 text-[#C4A574] flex items-center justify-center shrink-0">2</span>
+                      <span>On the 1st of every month, share your photos on WhatsApp.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="h-5 w-5 rounded-full bg-[#C4A574]/20 text-[#C4A574] flex items-center justify-center shrink-0">3</span>
+                      <span>Laser-cut & delivered to your door in 48 hours. Cancel anytime.</span>
+                    </li>
+                  </ul>
                 </div>
 
               </div>
@@ -752,23 +926,27 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
               </div>
             </div>
 
-            {/* Col 2: Shapes List */}
+            {/* Col 2: Navigation */}
             <div className="md:col-span-3 space-y-2">
               <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#8C6436] font-bold">
-                Signature Collection
+                Navigation
               </p>
               <ul className="text-xs text-[#635546] space-y-1.5">
-                {PRODUCTS.map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProductId(p.id)}
-                      className="hover:text-[#8C6436] transition-colors cursor-pointer"
-                    >
-                      {p.name}
-                    </button>
-                  </li>
-                ))}
+                <li>
+                  <a href="#products" onClick={() => setSelectedProductId(null)} className="hover:text-[#8C6436] transition-colors">
+                    Products
+                  </a>
+                </li>
+                <li>
+                  <a href="#starter-kit" onClick={() => setSelectedProductId(null)} className="hover:text-[#8C6436] transition-colors">
+                    Starter Kit (12 for ₹999)
+                  </a>
+                </li>
+                <li>
+                  <a href="#subscription" onClick={() => setSelectedProductId(null)} className="hover:text-[#8C6436] transition-colors">
+                    Subscription
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -814,7 +992,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             if (activeProduct && currentSize) {
               window.open(waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings)), '_blank');
             } else {
-              handleOpenConfigurator('heart');
+              handleOpenConfigurator('rectangle');
             }
           }}
           className="group flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:shadow-[0_12px_40px_rgba(37,211,102,0.55)] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
