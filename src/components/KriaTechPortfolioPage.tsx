@@ -3,7 +3,7 @@ import {
   MessageCircle, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck,
   Package, Award, Heart, Sparkles, CheckCircle2, Phone,
   MapPin, Clock, Users, ArrowUpRight,
-  ArrowLeft, ZoomIn, Check, Info, Calendar, Gift, Crown, Truck, Coins
+  ArrowLeft, ZoomIn, Check, Info, Calendar, Gift, Crown, Truck, Coins, Key
 } from 'lucide-react';
 
 const WA_NUMBER = '919392576792';
@@ -147,11 +147,168 @@ const FAQS = [
   },
   {
     q: 'What is included in the ₹999 Starter Kit?',
-    a: 'The Starter Kit includes 12 custom acrylic frame magnets: 2 of each shape (2× Rectangle, 2× Square, 2× Circle, 2× Heart, 2× Polaroid, 2× Mini) with free doorstep delivery across India.'
+    a: 'The Starter Kit includes 10 custom acrylic photo frames (Square K1, Portrait K2, Gallery K3, Heart K4, Circle K5, Cloud K6, Wide Cloud K6-L, Filmstrip K7, Grande K9, and Adhesive K2) plus 2 FREE Bonus Acrylic Photo Keychains (Round K10 & Pocket Mini K11) with free doorstep air delivery across India.'
   },
   {
     q: 'How fast is dispatch and shipping across India?',
     a: 'Produced within 24–48 hours at our Hyderabad facility, then shipped via express air couriers (Blue Dart / DTDC / Delhivery) delivering in 2–4 business days with tracking.'
+  }
+];
+
+// 10 Custom Acrylic Frames + 2 FREE Bonus Keychains from Catalog
+const STARTER_KIT_ITEMS = [
+  {
+    code: 'K1',
+    name: 'Minimal Square',
+    size: '2.2 × 2.2 in',
+    subtitle: 'Balanced square ratio for candid memories',
+    category: 'Fridge Magnet',
+    badge: 'Square',
+    image: '/images/couple_portrait_sample_1782458143228.jpg',
+    aspectRatio: 'aspect-square',
+    roundedClass: 'rounded-2xl',
+    isBonus: false
+  },
+  {
+    code: 'K2',
+    name: 'Classic Portrait',
+    size: '3.5 × 2.5 in',
+    subtitle: 'Signature polaroid ratio portrait frame',
+    category: 'Fridge Magnet',
+    badge: 'Most Selling',
+    badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
+    image: '/images/scalloped_stand_product_preview_1782458429878.jpg',
+    aspectRatio: 'aspect-[2.5/3.5]',
+    roundedClass: 'rounded-2xl',
+    isBonus: false
+  },
+  {
+    code: 'K3',
+    name: 'Medium Gallery',
+    size: '3.0 × 4.0 in',
+    subtitle: 'Substantial portrait frame for fridge & desk',
+    category: 'Fridge Magnet',
+    badge: 'Medium',
+    image: '/images/architectural_detail_sample_1782458171090.jpg',
+    aspectRatio: 'aspect-[3/4]',
+    roundedClass: 'rounded-2xl',
+    isBonus: false
+  },
+  {
+    code: 'K4',
+    name: 'Sculpted Love Heart',
+    size: '3.0 in',
+    subtitle: 'Laser-contoured heart perimeter for couples',
+    category: 'Fridge Magnet',
+    badge: 'Heart',
+    image: '/images/shape_heart_wedding_couple.png',
+    aspectRatio: 'aspect-square',
+    roundedClass: 'rounded-[2rem]',
+    isBonus: false,
+    isHeart: true
+  },
+  {
+    code: 'K5',
+    name: 'Pure Geometric Circle',
+    size: '3.0 in',
+    subtitle: 'Radial symmetry with hand-buffed perimeter',
+    category: 'Fridge Magnet',
+    badge: 'Circle',
+    image: '/images/shape_circle_family_dog.jpg',
+    aspectRatio: 'aspect-square',
+    roundedClass: 'rounded-full',
+    isBonus: false
+  },
+  {
+    code: 'K6',
+    name: 'Scalloped Cloud',
+    size: '2.5 × 3.5 in',
+    subtitle: 'Undulating scalloped edge cloud silhouette',
+    category: 'Fridge Magnet',
+    badge: 'Artisanal Scallop',
+    image: '/images/shape_cloud_magnet_1780939383548.png',
+    aspectRatio: 'aspect-[2.5/3.5]',
+    roundedClass: 'rounded-3xl border-dashed',
+    isBonus: false
+  },
+  {
+    code: 'K6-L',
+    name: 'Wide Cloud Panorama',
+    size: '4.0 × 3.0 in',
+    subtitle: 'Horizontal scalloped cloud for landscapes',
+    category: 'Fridge Magnet',
+    badge: 'Landscape Cloud',
+    image: '/images/shape_cloud_magnet_1780939383548.png',
+    aspectRatio: 'aspect-[4/3]',
+    roundedClass: 'rounded-3xl border-dashed',
+    isBonus: false
+  },
+  {
+    code: 'K7',
+    name: '3-Photo Story Filmstrip',
+    size: '2.25 × 6.0 in',
+    subtitle: 'Vertical 3-photo story timeline bookmark',
+    category: 'Fridge Magnet',
+    badge: '3-Photo Strip',
+    image: '/images/shape_filmstrip_magnet_1780939443747.png',
+    aspectRatio: 'aspect-[2.25/6]',
+    roundedClass: 'rounded-xl',
+    isBonus: false,
+    isFilmstrip: true
+  },
+  {
+    code: 'K9',
+    name: 'Grande Panorama',
+    size: '4.0 × 6.0 in',
+    subtitle: 'Architectural full-scale statement frame',
+    category: 'Fridge Magnet',
+    badge: 'Most Selling',
+    badgeColor: 'bg-amber-100 text-amber-900 border-amber-300',
+    image: '/images/scenic_landscape_sample_1782458156606.jpg',
+    aspectRatio: 'aspect-[6/4]',
+    roundedClass: 'rounded-2xl',
+    isBonus: false
+  },
+  {
+    code: 'K2-Adh',
+    name: 'Adhesive Wall/Mirror Plate',
+    size: '3.5 × 2.5 in',
+    subtitle: 'Non-magnetic adhesive back for tiles & wood',
+    category: 'Adhesive Frame',
+    badge: 'No Magnet (Adhesive)',
+    badgeColor: 'bg-blue-50 text-blue-900 border-blue-200',
+    image: '/images/couple_portrait_sample_1782458143228.jpg',
+    aspectRatio: 'aspect-[2.5/3.5]',
+    roundedClass: 'rounded-2xl',
+    isBonus: false
+  },
+  {
+    code: 'K10',
+    name: 'Round Acrylic Keychain',
+    size: '2.0 × 2.0 in',
+    subtitle: 'Double-sided acrylic with metal ring & chain',
+    category: 'Bonus Gift',
+    badge: 'FREE OFFER GIFT',
+    badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
+    image: '/images/shape_circle_family_dog.jpg',
+    aspectRatio: 'aspect-square',
+    roundedClass: 'rounded-full',
+    isBonus: true,
+    isKeychain: true
+  },
+  {
+    code: 'K11',
+    name: 'Pocket Mini Keychain',
+    size: '1.4 × 2.0 in',
+    subtitle: 'Everyday pocket photo medallion with ring',
+    category: 'Bonus Gift',
+    badge: 'FREE OFFER GIFT',
+    badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
+    image: '/images/scalloped_stand_product_preview_1782458429878.jpg',
+    aspectRatio: 'aspect-[1.4/2]',
+    roundedClass: 'rounded-xl',
+    isBonus: true,
+    isKeychain: true
   }
 ];
 
@@ -772,55 +929,161 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             </div>
           </section>
 
-          {/* ─── DEDICATED STARTER KIT SECTION: 12 FRAMES FOR ₹999 ─── */}
+          {/* ─── DEDICATED STARTER KIT SECTION: 10 FRAMES + 2 FREE KEYCHAINS (₹999) ─── */}
           <section id="starter-kit" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FAF3EA] via-white to-[#F4E9DC] backdrop-blur-2xl border border-white p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-                
-                {/* Left Description */}
-                <div className="lg:col-span-7 space-y-6">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-xs tracking-wider uppercase font-semibold">
-                    <Gift className="h-3.5 w-3.5 text-[#8C6436]" />
-                    <span>Special Discovery Offer</span>
-                  </div>
-
-                  <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
-                    KRIA Tech Starter Kit · <span className="text-[#8C6436] font-medium">12 Frames for ₹999</span>
-                  </h2>
-
-                  <p className="text-sm sm:text-base text-[#615446] leading-relaxed">
-                    Experience our signature forms in optical 3mm acrylic. The Starter Kit includes 12 custom acrylic frames for ₹999.
-                  </p>
-
-                  <div className="pt-2">
-                    <a
-                      href={waLink("Hi KRIA Tech! I would like to order the Starter Kit (12 Custom Acrylic Magnetic Frames for ₹999). Please guide me on submitting photos.")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
-                    >
-                      <MessageCircle className="h-4.5 w-4.5" />
-                      <span>Order 12-Frame Starter Kit (₹999)</span>
-                    </a>
-                  </div>
+            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FCF9F4] via-white to-[#F7EDE1] backdrop-blur-2xl border border-white p-6 sm:p-12 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
+              
+              {/* Section Header */}
+              <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-4">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-xs tracking-wider uppercase font-semibold border border-[#E8DACB]">
+                  <Gift className="h-4 w-4 text-[#8C6436]" />
+                  <span>The 10 + 2 Atelier Discovery Box · ₹999 Total</span>
                 </div>
 
-                {/* Right Visual Card */}
-                <div className="lg:col-span-5 rounded-3xl bg-white/85 border border-white p-7 shadow-xs space-y-4 text-center">
-                  <div className="relative aspect-video rounded-2xl overflow-hidden mb-3 border border-[#EADECE]">
-                    <img 
-                      src="/images/lifestyle_gallery_workspace_1779653492345.png" 
-                      alt="12 Frame Starter Kit Gallery"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/60 text-white font-mono text-[10px] uppercase tracking-wider backdrop-blur-md">
-                      12 Frames · ₹999
+                <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
+                  KRIA Tech Starter Kit
+                </h2>
+
+                <p className="text-sm sm:text-base text-[#695B4E] leading-relaxed">
+                  Experience every signature form crafted in our Hyderabad atelier. Includes <strong>10 custom acrylic photo frames</strong> for your fridge, walls & desks, plus <strong>2 matching acrylic photo keychains completely FREE</strong>.
+                </p>
+
+                {/* Value Highlights Pill Bar */}
+                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2 font-mono text-xs">
+                  <span className="px-4 py-1.5 rounded-full bg-[#1E1B18] text-[#FAF7F2] font-bold tracking-wider shadow-xs">
+                    ₹999 Total · 12 Pieces (Just ₹83/item)
+                  </span>
+                  <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-semibold">
+                    ✓ 2 FREE Bonus Keychains Included
+                  </span>
+                  <span className="px-3.5 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 font-semibold">
+                    ✓ Free Pan-India Air Delivery
+                  </span>
+                </div>
+              </div>
+
+              {/* ─── 12-PRODUCT VISUAL ATELIER TRAY (10 FRAMES + 2 FREE KEYCHAINS) ─── */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                {STARTER_KIT_ITEMS.map((item) => (
+                  <div
+                    key={item.code}
+                    className={`relative rounded-3xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-300 border ${
+                      item.isBonus
+                        ? 'bg-gradient-to-b from-[#FFFDF7] via-amber-50/40 to-white border-[#EAD5B5] shadow-[0_8px_25px_rgba(212,175,55,0.14)] hover:border-[#D4AF37] hover:scale-[1.02]'
+                        : 'bg-white/80 backdrop-blur-md border-[#EFE5D9] hover:border-[#D8C7B5] shadow-[0_8px_25px_rgba(180,140,80,0.06)] hover:shadow-[0_14px_35px_rgba(180,140,80,0.12)] hover:-translate-y-1'
+                    }`}
+                  >
+                    {/* Top Row: Model Code, Dimensions, & Badge */}
+                    <div>
+                      <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                        <span className="px-2 py-0.5 rounded-md bg-[#FAF3EA] text-[#7A562D] font-mono text-[11px] font-bold border border-[#EADBCC]">
+                          {item.code}
+                        </span>
+                        <span className="font-mono text-[11px] font-semibold text-[#8C7A68]">
+                          {item.size}
+                        </span>
+                      </div>
+
+                      {/* Bonus Gift Banner or Most Selling Badge */}
+                      {item.badge && (
+                        <div className="mb-3">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider border ${
+                              item.badgeColor || 'bg-[#FAF4ED] text-[#7C6348] border-[#EADCCB]'
+                            }`}
+                          >
+                            {item.isBonus && <Key className="h-3 w-3 text-emerald-700" />}
+                            <span>{item.badge}</span>
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Acrylic Frame Mockup Showcase */}
+                      <div className="relative my-3 p-3 rounded-2xl bg-gradient-to-b from-[#FAF5EE] to-[#F3E7D7]/50 border border-[#EFE4D6] flex flex-col items-center justify-center min-h-[160px] overflow-hidden group">
+                        
+                        {/* If Keychain: Render Metallic Ring & Chain above acrylic */}
+                        {item.isKeychain && (
+                          <div className="flex flex-col items-center mb-1">
+                            <div className="h-4 w-4 rounded-full border-2 border-neutral-400 bg-neutral-100 shadow-inner" />
+                            <div className="w-0.5 h-2 bg-gradient-to-b from-neutral-400 to-neutral-300" />
+                          </div>
+                        )}
+
+                        {/* Acrylic Photo Frame Container */}
+                        <div
+                          className={`relative overflow-hidden border border-white/90 shadow-[0_6px_16px_rgba(90,60,30,0.14)] ${item.roundedClass} ${item.aspectRatio} ${
+                            item.isFilmstrip ? 'w-20 max-h-[140px]' : item.isKeychain ? 'w-20' : 'w-28 sm:w-32'
+                          }`}
+                        >
+                          <img
+                            src={item.image}
+                            alt={`${item.name} (${item.size})`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          
+                          {/* 3mm Glass Reflection Glare */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-white/10 pointer-events-none" />
+
+                          {/* Filmstrip cell dividers preview if K7 */}
+                          {item.isFilmstrip && (
+                            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                              <div className="h-1/3 border-b border-black/30 bg-black/5" />
+                              <div className="h-1/3 border-b border-black/30 bg-black/5" />
+                              <div className="h-1/3 bg-black/5" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Sub-surface UV Seal Micro-tag */}
+                        <div className="absolute bottom-1.5 right-2 opacity-70">
+                          <span className="text-[8px] font-mono text-[#8C7A68]">3mm Cast</span>
+                        </div>
+                      </div>
+
+                      {/* Product Name & Tagline */}
+                      <h4 className="font-serif text-base font-medium text-[#1E1B18] mt-2 leading-snug">
+                        {item.name}
+                      </h4>
+                      <p className="text-[11px] text-[#7A6A5A] mt-0.5 leading-relaxed">
+                        {item.subtitle}
+                      </p>
+                    </div>
+
+                    {/* Bottom Material Label */}
+                    <div className="mt-3 pt-2.5 border-t border-[#F0E5D7] flex items-center justify-between text-[10px] font-mono text-[#8C7A68]">
+                      <span>{item.category}</span>
+                      <span className="font-semibold">{item.size}</span>
                     </div>
                   </div>
-                  <h4 className="font-serif text-xl text-[#1E1B18] font-medium">Starter Kit Sampler</h4>
+                ))}
+              </div>
+
+              {/* ─── BOTTOM WHATSAPP CALL TO ACTION SUMMARY BOX ─── */}
+              <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#FAF2E6] via-white to-[#F5ECE0] border border-[#E8DACB] flex flex-col lg:flex-row items-center justify-between gap-6 shadow-[0_10px_30px_rgba(180,140,80,0.08)]">
+                <div className="space-y-1.5 text-center lg:text-left">
+                  <div className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[#8C6436]">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Complete 12-Piece Box Set</span>
+                  </div>
+                  <h3 className="font-serif text-2xl sm:text-3xl font-light text-[#1E1B18]">
+                    Ready to bring your 12 memories to life?
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#6E6153]">
+                    10 Custom Acrylic Frames + 2 FREE Bonus Keychains for just <strong>₹999</strong> with free doorstep delivery.
+                  </p>
                 </div>
 
+                <a
+                  href={waLink("Hi KRIA Tech! I would like to order the 12-Piece Starter Kit (₹999 Total - 10 Custom Acrylic Frames + 2 FREE Bonus Keychains: K1 Square, K2 Portrait, K3 Medium, K4 Heart, K5 Circle, K6 Cloud, K6-L Wide Cloud, K7 Filmstrip, K9 Grande, K2 Adhesive + K10 & K11 Keychains). I have my photos ready for review.")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full lg:w-auto shrink-0 inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span>Order 12-Piece Kit on WhatsApp (₹999)</span>
+                </a>
               </div>
+
             </div>
           </section>
 
