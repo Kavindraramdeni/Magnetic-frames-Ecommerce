@@ -324,6 +324,16 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [customQtyValue, setCustomQtyValue] = useState<number>(75);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
+  const [activeGalleryTab, setActiveGalleryTab] = useState<'frame' | 'how_to_use' | 'on_fridge' | 'gift_box'>('frame');
+  const [isHoverZooming, setIsHoverZooming] = useState<boolean>(false);
+  const [zoomCoords, setZoomCoords] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
+
+  const handlePreviewMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setZoomCoords({ x, y });
+  };
 
   // Active product calculation
   const activeProduct = selectedProductId ? PRODUCTS.find((p) => p.id === selectedProductId) || null : null;
@@ -445,10 +455,12 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  // Reset size index when product changes
+  // Reset size index and gallery tab when product changes
   useEffect(() => {
     setActiveSizeIndex(0);
     setSelectedQtyLabel('50 Pcs');
+    setActiveGalleryTab('frame');
+    setIsHoverZooming(false);
   }, [selectedProductId]);
 
   // Sync scroll on view change
@@ -617,28 +629,119 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             
             {/* ── LEFT COLUMN: PREVIEW IMAGE ───────────────────── */}
             <div className="lg:col-span-6 lg:sticky lg:top-24">
-              <div className="relative rounded-3xl bg-white/90 backdrop-blur-2xl border border-white p-6 sm:p-10 shadow-[0_20px_50px_rgba(180,140,80,0.12)] overflow-hidden group">
+              <div className="relative rounded-3xl bg-white/90 backdrop-blur-2xl border border-white p-6 sm:p-8 shadow-[0_20px_50px_rgba(180,140,80,0.12)] overflow-hidden group">
                 
                 {/* Subtle crystal reflection border */}
                 <div className="absolute inset-0 border border-[#EADCCE]/70 rounded-3xl pointer-events-none" />
                 
-                {/* Image Frame Container */}
-                <div className="relative aspect-square w-full max-w-md mx-auto flex items-center justify-center p-4 rounded-2xl bg-gradient-to-b from-[#FAF5EE] to-[#F1E5D5]/60 overflow-hidden">
-                  <img
-                    src={activeProduct.image}
-                    alt={activeProduct.name}
-                    className="w-full h-full object-contain filter drop-shadow-[0_20px_35px_rgba(80,50,20,0.28)] transition-transform duration-700 group-hover:scale-105"
-                  />
+                {/* Image Frame Container with Dynamic Dimensions & Interactive Zoom */}
+                <div 
+                  className="relative aspect-square w-full max-w-md mx-auto flex items-center justify-center p-4 rounded-2xl bg-gradient-to-b from-[#FAF5EE] to-[#F1E5D5]/60 overflow-hidden select-none cursor-crosshair border border-[#E8DACB]"
+                  onMouseEnter={() => setIsHoverZooming(true)}
+                  onMouseLeave={() => setIsHoverZooming(false)}
+                  onMouseMove={handlePreviewMouseMove}
+                >
+                  {/* Dynamic Dimension Frame Scaling */}
+                  {activeGalleryTab === 'frame' ? (
+                    <div 
+                      className="relative transition-all duration-300 ease-out flex items-center justify-center p-2"
+                      style={
+                        currentSize?.label?.includes('2 × 3') ? { width: '60%', height: '84%', maxWidth: '230px', aspectRatio: '2/3' } :
+                        currentSize?.label?.includes('3 × 4') ? { width: '74%', height: '92%', maxWidth: '280px', aspectRatio: '3/4' } :
+                        currentSize?.label?.includes('4 × 6') ? { width: '88%', height: '100%', maxWidth: '330px', aspectRatio: '2/3' } :
+                        currentSize?.label?.includes('2 × 2') ? { width: '58%', height: '58%', maxWidth: '210px', aspectRatio: '1/1' } :
+                        currentSize?.label?.includes('3 × 3') ? { width: '76%', height: '76%', maxWidth: '275px', aspectRatio: '1/1' } :
+                        currentSize?.label?.includes('4 × 4') ? { width: '92%', height: '92%', maxWidth: '330px', aspectRatio: '1/1' } :
+                        { width: '80%', height: '80%', maxWidth: '300px' }
+                      }
+                    >
+                      <img
+                        src={activeProduct.image}
+                        alt={activeProduct.name}
+                        style={{
+                          transformOrigin: `${zoomCoords.x}% ${zoomCoords.y}%`,
+                          transform: isHoverZooming ? 'scale(2.2)' : 'scale(1)',
+                        }}
+                        className="w-full h-full object-contain filter drop-shadow-[0_20px_35px_rgba(80,50,20,0.28)] transition-transform duration-150 pointer-events-none select-none"
+                      />
+                      
+                      {/* Floating Dimension Tag on the Frame */}
+                      <div className="absolute bottom-1 right-1 px-2 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono font-bold text-[#5A4D3F] shadow-xs">
+                        {currentSize?.label}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative w-full h-full flex items-center justify-center p-2 overflow-hidden">
+                      <img
+                        src={
+                          activeGalleryTab === 'how_to_use'
+                            ? '/images/banner_easy_4step_installation.png'
+                            : activeGalleryTab === 'on_fridge'
+                            ? '/images/banner_perfect_for_magnetic_surfaces.png'
+                            : '/images/banner_premium_design_made_to_last.png'
+                        }
+                        alt={activeGalleryTab}
+                        style={{
+                          transformOrigin: `${zoomCoords.x}% ${zoomCoords.y}%`,
+                          transform: isHoverZooming ? 'scale(2.2)' : 'scale(1)',
+                        }}
+                        className="w-full h-full object-contain filter drop-shadow-md transition-transform duration-150 pointer-events-none select-none"
+                      />
+                    </div>
+                  )}
                   
                   {/* Acrylic Spec Floating Pill */}
-                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono font-bold uppercase tracking-wider text-[#7C6348] shadow-xs">
+                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono font-bold uppercase tracking-wider text-[#7C6348] shadow-xs pointer-events-none">
                     3mm Optical Cast Glass
                   </div>
 
-                  <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono text-[#5A4D3F] shadow-xs flex items-center gap-1.5">
+                  <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono text-[#5A4D3F] shadow-xs flex items-center gap-1.5 pointer-events-none">
                     <ZoomIn className="h-3 w-3 text-[#A78255]" />
-                    <span>Selected: {currentSize.dimensions}</span>
+                    <span>Selected: {currentSize?.dimensions}</span>
                   </div>
+                </div>
+
+                {/* Hover zoom helper label matching user screenshot */}
+                <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#8C7A68] font-mono">
+                  <ZoomIn className="h-3.5 w-3.5 text-[#A78255]" />
+                  <span>Hover over the image to zoom</span>
+                </div>
+
+                {/* 4 Interactive Thumbnails Gallery Row */}
+                <div className="grid grid-cols-4 gap-2.5 sm:gap-3 mt-4">
+                  {[
+                    { id: 'frame' as const, label: 'Frame Photo', image: activeProduct.image, isShape: true },
+                    { id: 'how_to_use' as const, label: 'How to Use', image: '/images/banner_easy_4step_installation.png', isShape: false },
+                    { id: 'on_fridge' as const, label: 'On Fridge', image: '/images/banner_perfect_for_magnetic_surfaces.png', isShape: false },
+                    { id: 'gift_box' as const, label: 'Gift Box', image: '/images/banner_premium_design_made_to_last.png', isShape: false }
+                  ].map((thumb) => {
+                    const isActive = activeGalleryTab === thumb.id;
+                    return (
+                      <button
+                        key={thumb.id}
+                        type="button"
+                        onClick={() => setActiveGalleryTab(thumb.id)}
+                        className={`flex flex-col items-center p-2 rounded-2xl border transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-white border-[#1E1B18] ring-2 ring-[#1E1B18]/15 shadow-sm scale-[1.02]'
+                            : 'bg-white/80 border-[#E8DACB] hover:border-[#BFA890] hover:bg-white'
+                        }`}
+                      >
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center overflow-hidden rounded-xl bg-[#FAF6F0] p-1">
+                          <img
+                            src={thumb.image}
+                            alt={thumb.label}
+                            className={`w-full h-full ${thumb.isShape ? 'object-contain' : 'object-cover'} rounded-lg`}
+                          />
+                        </div>
+                        <span className={`mt-1.5 text-[11px] sm:text-xs font-mono leading-tight text-center ${
+                          isActive ? 'font-bold text-[#1E1B18]' : 'text-[#736353]'
+                        }`}>
+                          {thumb.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <p className="mt-4 text-center text-xs text-[#8C7A68] font-mono">
@@ -657,7 +760,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                   {activeProduct.name}
                 </h1>
                 <p className="text-sm text-[#736353] mt-2 font-mono">
-                  {activeProduct.subtitle} · {currentSize.dimensions}
+                  {activeProduct.subtitle} · {currentSize?.dimensions}
                 </p>
               </div>
 
@@ -676,7 +779,10 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => setActiveSizeIndex(idx)}
+                      onClick={() => {
+                        setActiveSizeIndex(idx);
+                        setActiveGalleryTab('frame');
+                      }}
                       className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
                         activeSizeIndex === idx
                           ? 'bg-[#1E1B18] text-white border-[#1E1B18] shadow-md scale-[1.02]'
