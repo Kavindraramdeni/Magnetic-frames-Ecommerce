@@ -3,7 +3,7 @@ import {
   MessageCircle, Star, ChevronDown, ArrowRight, ShieldCheck,
   Package, Award, Heart, Sparkles, CheckCircle2, Phone,
   MapPin, Clock, Users, Factory, ArrowUpRight,
-  ArrowLeft, ZoomIn, Check
+  ArrowLeft, ZoomIn, Check, Info
 } from 'lucide-react';
 
 const WA_NUMBER = '919392576792';
@@ -134,6 +134,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [customQtyValue, setCustomQtyValue] = useState<number>(75);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
 
+  // Active product calculation
   const activeProduct = selectedProductId ? PRODUCTS.find((p) => p.id === selectedProductId) || null : null;
 
   // Reset size index when product changes
@@ -158,6 +159,24 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const totalPrice = unitDiscountedPrice * actualQty;
   const originalTotalPrice = unitOriginalPrice * actualQty;
   const factorySavings = originalTotalPrice - totalPrice;
+
+  // Helper to construct exact structured WhatsApp specifications
+  const buildExactQuoteMessage = (prodName: string, sizeLabel: string, dimensions: string, qty: number, unitRate: number, origRate: number, total: number, savings: number) => {
+    return `Hi KRIA Tech! I have selected my product specifications on your website:
+
+• Product Shape: ${prodName}
+• Dimension: ${sizeLabel} (${dimensions})
+• Batch Quantity: ${qty} pcs
+• Unit Rate: ₹${unitRate} / pc (Original ₹${origRate}, ${discountPercentage}% bulk discount)
+• Total Estimate: ₹${total.toLocaleString('en-IN')}
+• Factory Direct Savings: ₹${savings.toLocaleString('en-IN')}
+
+I have my photo ready for review. Please confirm order placement and dispatch timeline.`;
+  };
+
+  const handleOpenConfigurator = (shapeId: string = 'heart') => {
+    setSelectedProductId(shapeId);
+  };
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-[#1E1B18] font-sans antialiased overflow-x-hidden selection:bg-[#EBDDC7] selection:text-[#1E1B18]">
@@ -212,18 +231,28 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
             <a href="#faqs" className="hover:text-[#1E1B18] transition-colors py-1">Specifications</a>
           </nav>
 
-          {/* Quick Action Hotline Pill */}
+          {/* Quick Action Hotline Pill: Configures or sends exact specs */}
           <div className="flex items-center gap-2.5">
-            <a
-              href={waLink("Hello KRIA Tech team, I would like to inquire about your acrylic photo frame magnets.")}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">WhatsApp Concierge</span>
-              <span className="sm:hidden">WhatsApp</span>
-            </a>
+            {activeProduct && currentSize ? (
+              <a
+                href={waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings))}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>WhatsApp Quote ({actualQty} pcs)</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleOpenConfigurator('heart')}
+                className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>Choose Specs & Quote</span>
+              </button>
+            )}
 
             {onBackToStore && (
               <button
@@ -406,17 +435,24 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
                   </div>
                 </div>
 
-                {/* 4. Get WhatsApp Quote Button */}
+                {/* 4. Get WhatsApp Quote Button: Sends exact selected specs */}
                 <div className="pt-2">
                   <a
-                    href={waLink(`Hi KRIA Tech! I would like to get a quote for the "${activeProduct.name}" in ${currentSize.label} (${currentSize.dimensions}). Batch Quantity: ${actualQty} pcs (Estimated Total: ₹${totalPrice.toLocaleString('en-IN')}). Please share order details.`)}
+                    href={waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings))}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-sm font-bold uppercase tracking-[0.14em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] hover:shadow-[0_12px_32px_rgba(37,211,102,0.48)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
                   >
                     <MessageCircle className="h-5 w-5" />
-                    <span>Get WhatsApp Quote</span>
+                    <span>Get WhatsApp Quote (Sends Exact Specs)</span>
                   </a>
+                </div>
+
+                <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
+                  <Info className="h-4 w-4 shrink-0 text-amber-700 mt-0.5" />
+                  <span>
+                    Your exact selected shape, size ({currentSize.dimensions}), and batch quantity ({actualQty} pcs) will be automatically sent in the message so our team can review your photo immediately!
+                  </span>
                 </div>
               </div>
 
@@ -478,24 +514,23 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
                 Not plastic, not laminated paper. Genuine 3mm cast acrylic laser-contoured with mirror-beveled edges, 300 DPI sub-surface UV pigment printing, and rare-earth neodymium magnetic core.
               </p>
 
-              {/* CTA - Exactly as requested */}
+              {/* Primary Call to Action: Opens Configurator directly */}
               <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a
-                  href={waLink("Hi KRIA Tech! I would like to place a Direct WhatsApp Order for custom acrylic photo magnets.")}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => handleOpenConfigurator('heart')}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-9 py-4 rounded-2xl bg-gradient-to-r from-[#1E1B18] to-[#36302B] text-[#FBF8F4] text-xs font-bold uppercase tracking-[0.18em] shadow-[0_12px_30px_rgba(30,27,24,0.22)] hover:shadow-[0_16px_36px_rgba(30,27,24,0.3)] hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
                 >
                   <MessageCircle className="h-4.5 w-4.5 text-[#25D366]" />
-                  <span>Direct WhatsApp Order</span>
+                  <span>Choose Shape & WhatsApp Quote</span>
                   <ArrowRight className="h-3.5 w-3.5 opacity-70" />
-                </a>
+                </button>
 
                 <a
                   href="#shapes"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/80 hover:bg-white border border-[#DFCDBB] text-[#55493C] text-xs font-bold uppercase tracking-[0.16em] transition-all cursor-pointer"
                 >
-                  <span>Explore 4 Shapes</span>
+                  <span>Explore 4 Shapes & Sizes</span>
                 </a>
               </div>
 
@@ -512,7 +547,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
                 Four Iconic Forms. Infinite Stories.
               </h2>
               <p className="mt-4 text-sm sm:text-base text-[#6E6153] leading-relaxed">
-                Click any product below to view available dimensions, batch wholesale pricing, and instant WhatsApp quotes.
+                Select your shape below to configure dimensions (2×2", 3×3", 4×4") and batch quantity with live pricing before sending on WhatsApp.
               </p>
             </div>
 
@@ -571,7 +606,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
                   {/* Open Separate Product Page CTA */}
                   <div className="mt-6 pt-4 border-t border-[#EFE5D9]">
                     <div className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#1E1B18] group-hover:bg-[#8C6436] text-[#FDFBF7] text-xs font-bold uppercase tracking-wider transition-colors">
-                      <span>View Sizes & Pricing</span>
+                      <span>Choose Size & Quantity</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </div>
                   </div>
@@ -606,15 +641,14 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
                   </div>
 
                   <div className="pt-2">
-                    <a
-                      href={waLink("Hello KRIA Tech! I would like to inquire about wedding return gifts or bulk corporate order.")}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => handleOpenConfigurator('heart')}
                       className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer"
                     >
                       <MessageCircle className="h-4 w-4" />
-                      <span>Get Bulk Wholesale Quote</span>
-                    </a>
+                      <span>Configure Shape & Quantity (50–1000 Pcs)</span>
+                    </button>
                   </div>
                 </div>
 
@@ -743,10 +777,10 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
             {/* Col 3: Direct Contact */}
             <div className="md:col-span-4 space-y-2.5">
               <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#8C6436] font-bold">
-                WhatsApp Concierge
+                WhatsApp Order Desk
               </p>
               <a
-                href={waLink("Hello KRIA Tech team, I have an inquiry.")}
+                href={waLink("Hi KRIA Tech! I am on your website and would like to order acrylic photo magnets.")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-bold text-[#25D366] hover:text-[#1EBE5D] transition-colors"
@@ -776,14 +810,15 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
 
       {/* ─── FLOATING WHATSAPP BUTTON (DESKTOP & MOBILE) ────────── */}
       <div className="fixed bottom-6 right-6 z-50">
-        <a
-          href={waLink(
-            activeProduct && currentSize
-              ? `Hi KRIA Tech! I am viewing ${activeProduct.name} (${currentSize.label}) and would like to order.`
-              : "Hi KRIA Tech! I am on your website and would like to talk about custom acrylic frames."
-          )}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => {
+            if (activeProduct && currentSize) {
+              window.open(waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings)), '_blank');
+            } else {
+              handleOpenConfigurator('heart');
+            }
+          }}
           className="group flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:shadow-[0_12px_40px_rgba(37,211,102,0.55)] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
           aria-label="Chat with KRIA Tech on WhatsApp"
         >
@@ -795,9 +830,9 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
             </span>
           </div>
           <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">
-            Chat On WhatsApp
+            {activeProduct ? 'WhatsApp Exact Specs' : 'Configure & WhatsApp'}
           </span>
-        </a>
+        </button>
       </div>
 
     </div>
