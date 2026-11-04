@@ -12,6 +12,7 @@ interface HeaderProps {
   onOpenAboutUs?: () => void;
   onOpenBOGO?: () => void;
   onOpenB2B?: () => void;
+  onOpenWholesale?: () => void;
   activeView?: string;
 }
 
@@ -24,6 +25,8 @@ export default function Header({
   onOpenGallery,
   onOpenAboutUs,
   onOpenBOGO,
+  onOpenB2B,
+  onOpenWholesale,
   activeView = 'home',
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -45,7 +48,7 @@ export default function Header({
         </button>
 
         {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-medium tracking-wider text-neutral-600 uppercase">
+        <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-xs font-medium tracking-wider text-neutral-600 uppercase">
           {/* 1. Shop */}
           <button
             type="button"
@@ -99,7 +102,18 @@ export default function Header({
             Gallery
           </button>
 
-          {/* 6. About Us */}
+          {/* 6. Wholesale Inquiries (Separate Page) */}
+          <button
+            type="button"
+            onClick={onOpenWholesale || onOpenB2B}
+            className={`nav-link transition-colors cursor-pointer ${
+              activeView === 'wholesale' || activeView === 'b2b' ? 'text-neutral-900 font-bold' : 'hover:text-neutral-900'
+            }`}
+          >
+            Wholesale Inquiries
+          </button>
+
+          {/* 7. About Us */}
           <button
             type="button"
             onClick={onOpenAboutUs || onHome}
@@ -200,6 +214,15 @@ export default function Header({
           >
             <span>Gallery</span>
             <span className="text-[10px] text-neutral-400">Customer Walls</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleNav(onOpenWholesale || onOpenB2B)}
+            className="w-full text-left py-2.5 px-3 rounded-xl text-xs font-semibold tracking-wider uppercase text-neutral-800 hover:bg-neutral-100 flex items-center justify-between"
+          >
+            <span>Wholesale Inquiries</span>
+            <span className="text-[10px] text-neutral-400">50+ Pcs & MOQ</span>
           </button>
 
           <button

@@ -14,7 +14,7 @@ import GalleryPage from './components/GalleryPage';
 import BOGOModal from './components/BOGOModal';
 import ReturnGiftDetailPage from './components/ReturnGiftDetailPage';
 import WhatsAppWidget from './components/WhatsAppWidget';
-import BulkCorporateModal from './components/BulkCorporateModal';
+import WholesaleInquiriesPage from './components/WholesaleInquiriesPage';
 import { initAnalytics } from './utils/analytics';
 import { MagnetShapeId, CartItem, ReturnGiftProduct } from './types';
 import { calculateBogoDiscount } from './lib/pricing';
@@ -77,10 +77,9 @@ function OrderTrackingView({ onBackToHome }: { onBackToHome: () => void }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery' | 'return-gift-detail'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'studio' | 'checkout' | 'style-experience' | 'admin' | 'cms' | 'policies' | 'tracking' | 'blog' | 'b2b' | 'gallery' | 'return-gift-detail' | 'wholesale'>('home');
   const [selectedReturnGift, setSelectedReturnGift] = useState<ReturnGiftProduct | null>(null);
   const [isBOGOOpen, setIsBOGOOpen] = useState(false);
-  const [isBulkCorporateOpen, setIsBulkCorporateOpen] = useState(false);
   const [adminToken, setAdminToken] = useState<string>(() => {
     try {
       return localStorage.getItem('adminToken') || '';
@@ -264,6 +263,11 @@ export default function App() {
     setCurrentView('gallery');
   };
 
+  const handleOpenWholesale = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentView('wholesale');
+  };
+
   const handleOpenReturnGiftDetail = (gift: ReturnGiftProduct) => {
     setSelectedReturnGift(gift);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -298,27 +302,34 @@ export default function App() {
     setCurrentView('admin');
   };
 
-  if (currentView === 'b2b' || currentView === 'style-experience') {
+  if (currentView === 'wholesale' || currentView === 'b2b' || currentView === 'style-experience') {
     return (
-      <>
-        <WholesaleB2BPage
-          onBackToHome={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setCurrentView('home');
-          }}
-          onAddToCart={(item: CartItem) => {
-            setCart((prev: CartItem[]) => {
-              const existingIndex = prev.findIndex((x) => x.id === item.id);
-              if (existingIndex > -1) {
-                const updated = [...prev];
-                updated[existingIndex].quantity += item.quantity;
-                return updated;
-              }
-              return [...prev, item];
-            });
-          }}
+      <div id="home-root" className="min-h-screen bg-[#FAF8F5] text-[#111111] font-sans antialiased overflow-x-hidden selection:bg-[#E8DCCF] selection:text-neutral-900">
+        <Header
+          cartItemsCount={cartCount}
           onOpenCart={() => setIsCartOpen(true)}
-          cartCount={cart.reduce((acc: number, x: CartItem) => acc + x.quantity, 0)}
+          onHome={handleOpenShop}
+          onStudio={() => goStudio()}
+          onOpenReturnGifts={handleOpenReturnGifts}
+          onOpenGallery={handleOpenGallery}
+          onOpenAboutUs={handleOpenAboutUs}
+          onOpenBOGO={() => setIsBOGOOpen(true)}
+          onOpenB2B={handleOpenWholesale}
+          onOpenWholesale={handleOpenWholesale}
+          activeView="wholesale"
+        />
+        <WholesaleInquiriesPage
+          onBackToHome={goHome}
+          onAddToCart={handleAddToCart}
+          onOpenCart={() => setIsCartOpen(true)}
+          cartCount={cartCount}
+        />
+        <Footer
+          onOpenAdmin={openAdmin}
+          onOpenPolicies={() => setCurrentView('policies')}
+          onOpenTracking={() => setCurrentView('tracking')}
+          onOpenBlog={() => setCurrentView('blog')}
+          onOpenB2B={handleOpenWholesale}
         />
         <CartDrawer
           isOpen={isCartOpen}
@@ -331,7 +342,11 @@ export default function App() {
             goCheckout(coupon);
           }}
         />
-      </>
+        <WhatsAppWidget
+          onOpenWholesale={handleOpenWholesale}
+          onOpenTracking={() => setCurrentView('tracking')}
+        />
+      </div>
     );
   }
 
@@ -409,7 +424,8 @@ export default function App() {
           onOpenGallery={handleOpenGallery}
           onOpenAboutUs={handleOpenAboutUs}
           onOpenBOGO={() => setIsBOGOOpen(true)}
-          onOpenB2B={() => setCurrentView('b2b')}
+          onOpenB2B={handleOpenWholesale}
+          onOpenWholesale={handleOpenWholesale}
           activeView={currentView}
         />
       )}
@@ -468,7 +484,7 @@ export default function App() {
             onOpenPolicies={() => setCurrentView('policies')}
             onOpenTracking={() => setCurrentView('tracking')}
             onOpenBlog={() => setCurrentView('blog')}
-            onOpenB2B={() => setCurrentView('b2b')}
+            onOpenB2B={handleOpenWholesale}
           />
 
           <MobileDock
@@ -511,18 +527,12 @@ export default function App() {
         }}
       />
 
-      {/* Floating Real-time WhatsApp Support & Bulk Enquiry Modal */}
+      {/* Floating Real-time WhatsApp Support */}
       {currentView !== 'admin' && currentView !== 'cms' && (
-        <>
-          <WhatsAppWidget
-            onOpenBulkModal={() => setIsBulkCorporateOpen(true)}
-            onOpenTracking={() => setCurrentView('tracking')}
-          />
-          <BulkCorporateModal
-            isOpen={isBulkCorporateOpen}
-            onClose={() => setIsBulkCorporateOpen(false)}
-          />
-        </>
+        <WhatsAppWidget
+          onOpenWholesale={handleOpenWholesale}
+          onOpenTracking={() => setCurrentView('tracking')}
+        />
       )}
     </div>
   );

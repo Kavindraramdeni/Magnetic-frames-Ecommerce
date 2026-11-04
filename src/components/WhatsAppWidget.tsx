@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { MessageSquare, X, Send, Truck, Sparkles, Gift, HelpCircle, CheckCircle2 } from 'lucide-react';
 
 interface WhatsAppWidgetProps {
+  onOpenWholesale?: () => void;
   onOpenBulkModal?: () => void;
   onOpenTracking?: () => void;
 }
 
-export default function WhatsAppWidget({ onOpenBulkModal, onOpenTracking }: WhatsAppWidgetProps) {
+export default function WhatsAppWidget({ onOpenWholesale, onOpenBulkModal, onOpenTracking }: WhatsAppWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [userQuery, setUserQuery] = useState('');
   const phone = '919392576792';
@@ -112,12 +113,13 @@ export default function WhatsAppWidget({ onOpenBulkModal, onOpenTracking }: What
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  if (onOpenBulkModal) onOpenBulkModal();
+                  if (onOpenWholesale) onOpenWholesale();
+                  else if (onOpenBulkModal) onOpenBulkModal();
                 }}
                 className="w-full bg-white hover:bg-neutral-100 text-neutral-800 p-2.5 rounded-xl border border-neutral-200 font-semibold flex items-center gap-2 transition cursor-pointer"
               >
                 <Gift className="h-4 w-4 text-[#6B1D2F]" />
-                <span>🎁 Wedding & Corporate Bulk Order (100+)</span>
+                <span>🎁 Wholesale Inquiries (50+ Pcs & MOQ)</span>
               </button>
             </div>
           </div>
