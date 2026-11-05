@@ -1,6 +1,16 @@
 const sharp = require('sharp');
+const fs = require('fs');
 
-async function patchDimensionText(inputPath, outputPath, newText) {
+const mag4mmPath = 'C:/Users/Kavin/.gemini/antigravity/brain/fd9d1f7d-98d5-4658-84fa-1180770e3f05/.user_uploaded/media_1793862677137_641c3f4b.jpg';
+const mag6mmPath = 'C:/Users/Kavin/.gemini/antigravity/brain/fd9d1f7d-98d5-4658-84fa-1180770e3f05/.user_uploaded/media_1793862623072_3916a0bb.jpg';
+
+async function createCardWithDashedLine(magPath, width, isSquare) {
+  const cardImg = await sharp(magPath).resize(width).toBuffer();
+  const meta = await sharp(cardImg).metadata();
+  return { buffer: cardImg, width: meta.width, height: meta.height };
+}
+
+async function patchDimensionAndMagnet(inputPath, outputPath, newText, is6mm, isSquare) {
   // Top text: x 484..552, y 91..121.
   // Extract clean background patch from x: 350, y: 85, width: 90, height: 45
   const topPatch = await sharp(inputPath)
@@ -13,12 +23,6 @@ async function patchDimensionText(inputPath, outputPath, newText) {
     .extract({ left: 25, top: 350, width: 75, height: 50 })
     .toBuffer();
 
-  // SVG text placed exactly at the center of the original text
-  // Top center: x = (484+552)/2 = 518, y = (91+121)/2 = 106
-  // Left text: was not rotated, it was vertical or horizontal! Notice y: 499..530, x: 41..99 -> it is horizontal!
-  // Width is 58px, height is 31px! It was NOT rotated in the original image!
-  // In the original, "3 in" on left is written horizontally: "3 in" with "3" on left and "in" on right or vertically stacked!
-  // Let's check original text layout on left.
   const svgText = `
   <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
     <style>
@@ -30,6 +34,12 @@ async function patchDimensionText(inputPath, outputPath, newText) {
         text-anchor: middle;
         dominant-baseline: central;
       }
+      .pointer-line {
+        stroke: #333333;
+        stroke-width: 1.5;
+        stroke-dasharray: 4,4;
+        fill: none;
+      }
     </style>
     <!-- Top text -->
     <text x="518" y="106" class="dim-text">${newText}</text>
@@ -38,41 +48,76 @@ async function patchDimensionText(inputPath, outputPath, newText) {
   </svg>
   `;
 
+  // Magnet card placement:
+  // Card at top-right: x: 775, y: 30
+  const cardWidth = 210;
+  const magPath = is6mm ? mag6mmPath : mag4mmPath;
+  const { buffer: cardBuf, width: cw, height: ch } = await createCardWithDashedLine(magPath, cardWidth, isSquare);
+
+  const cardX = 775;
+  const cardY = 32;
+
+  // Let's composite!
   await sharp(inputPath)
     .composite([
       { input: topPatch, left: 475, top: 85 },
       { input: leftPatch, left: 35, top: 490 },
-      { input: Buffer.from(svgText), left: 0, top: 0 }
+      { input: Buffer.from(svgText), left: 0, top: 0 },
+      { input: cardBuf, left: cardX, top: cardY }
     ])
     .toFile(outputPath);
 
-  console.log(`Generated seamless patch: ${outputPath}`);
+  console.log(`Generated: ${outputPath} with ${is6mm ? '6x2mm' : '4x2mm'} magnet spec`);
 }
 
 async function main() {
-  await patchDimensionText(
+  // Square
+  await patchDimensionAndMagnet(
     'public/images/dimension_preview_square_3x3_official.jpg',
     'public/images/dimension_preview_square_2x2.jpg',
-    '2 in'
+    '2 in',
+    false, // 4mm
+    true
   );
-  await patchDimensionText(
+  await patchDimensionAndMagnet(
+    'public/images/dimension_preview_square_3x3_official.jpg',
+    'public/images/dimension_preview_square_3x3.jpg',
+    '3 in',
+    false, // 4mm
+    true
+  );
+  await patchDimensionAndMagnet(
     'public/images/dimension_preview_square_3x3_official.jpg',
     'public/images/dimension_preview_square_4x4.jpg',
-    '4 in'
+    '4 in',
+    true, // 6mm
+    true
   );
 
-  await patchDimensionText(
+  // Heart
+  await patchDimensionAndMagnet(
     'public/images/dimension_preview_heart_3x3_official.jpg',
     'public/images/dimension_preview_heart_2x2.png',
-    '2 in'
+    '2 in',
+    false, // 4mm
+    false
   );
-  await patchDimensionText(
+  await patchDimensionAndMagnet(
+    'public/images/dimension_preview_heart_3x3_official.jpg',
+    'public/images/dimension_preview_heart_3x3.png',
+    '3 in',
+    false, // 4mm
+    false
+  );
+  await patchDimensionAndMagnet(
     'public/images/dimension_preview_heart_3x3_official.jpg',
     'public/images/dimension_preview_heart_4x4.png',
-    '4 in'
+    '4 in',
+    true, // 6mm
+    false
   );
 
-  console.log('Done seamless patching!');
+  console.log('All dimension preview images updated with magnet specs!');
 }
 
 main().catch(console.error);

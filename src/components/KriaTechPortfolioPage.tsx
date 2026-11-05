@@ -93,6 +93,20 @@ const PRODUCTS: Product[] = [
     ],
     accentColor: '#B76E79',
     bgGlow: 'from-rose-100/60 via-pink-50/40 to-transparent'
+  },
+  {
+    id: 'keychain',
+    name: 'Acrylic Keepsake Keychain',
+    tagline: 'Pocket Luxury & Daily Companions',
+    subtitle: 'Dual-sided 3mm acrylic photo keychain with metallic swivel ring',
+    image: '/images/keychain_square_backpack_official.jpg',
+    category: 'Keychains & Accessories',
+    sizes: [
+      { label: 'Circle Keychain (2.5")', dimensions: '2.5 inch Circle with Ring', basePrice: 149, originalPrice: 249, previewImage: '/images/keychain_backpack_lifestyle.png' },
+      { label: 'Square Keychain (3 × 3")', dimensions: '3 × 3 inch Square with Ring', basePrice: 179, originalPrice: 279, previewImage: '/images/keychain_square_backpack_official.jpg' }
+    ],
+    accentColor: '#D97706',
+    bgGlow: 'from-orange-100/60 via-amber-50/40 to-transparent'
   }
 ];
 
@@ -331,7 +345,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [customQtyValue, setCustomQtyValue] = useState<number>(75);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
-  const [activeGalleryTab, setActiveGalleryTab] = useState<'frame' | 'how_to_use' | 'on_fridge' | 'gift_box'>('frame');
+  const [activeGalleryTab, setActiveGalleryTab] = useState<'frame' | 'magnets' | 'how_to_use' | 'on_fridge' | 'gift_box'>('frame');
   const [isHoverZooming, setIsHoverZooming] = useState<boolean>(false);
   const [zoomCoords, setZoomCoords] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
 
@@ -665,7 +679,9 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                     <div className="relative w-full h-full flex items-center justify-center p-2 overflow-hidden">
                       <img
                         src={
-                          activeGalleryTab === 'how_to_use'
+                          activeGalleryTab === 'magnets'
+                            ? (currentSize?.label.includes('4 × 4') ? '/images/magnet_spec_6x2mm.jpg' : '/images/magnet_spec_4x2mm.jpg')
+                            : activeGalleryTab === 'how_to_use'
                             ? '/images/guide_easy_photo_frame_setup.png'
                             : activeGalleryTab === 'on_fridge'
                             ? '/images/fridge_memories_wedding_moments.png'
@@ -698,10 +714,16 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                   <span>Hover over the image to zoom</span>
                 </div>
 
-                {/* 4 Interactive Thumbnails Gallery Row */}
-                <div className="grid grid-cols-4 gap-2.5 sm:gap-3 mt-4">
+                {/* 5 Interactive Thumbnails Gallery Row (Including Genuine Neodymium Magnets Spec) */}
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2.5 mt-4">
                   {[
                     { id: 'frame' as const, label: 'Frame Photo', image: currentSize?.previewImage || activeProduct.image, isShape: true },
+                    { 
+                      id: 'magnets' as const, 
+                      label: currentSize?.label.includes('4 × 4') ? '6×2mm Mag' : '4×2mm Mag', 
+                      image: currentSize?.label.includes('4 × 4') ? '/images/magnet_spec_6x2mm.jpg' : '/images/magnet_spec_4x2mm.jpg', 
+                      isShape: true 
+                    },
                     { id: 'how_to_use' as const, label: 'How to Use', image: '/images/guide_easy_photo_frame_setup.png', isShape: false },
                     { id: 'on_fridge' as const, label: 'On Fridge', image: '/images/fridge_memories_wedding_moments.png', isShape: false },
                     { id: 'gift_box' as const, label: 'Gift Box', image: '/images/premium_magnetic_photo_frame_design.png', isShape: false }
@@ -711,21 +733,21 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                       <button
                         key={thumb.id}
                         type="button"
-                        onClick={() => setActiveGalleryTab(thumb.id)}
-                        className={`flex flex-col items-center p-2 rounded-2xl border transition-all cursor-pointer ${
+                        onClick={() => setActiveGalleryTab(thumb.id as any)}
+                        className={`flex flex-col items-center p-1.5 sm:p-2 rounded-2xl border transition-all cursor-pointer ${
                           isActive
                             ? 'bg-white border-[#1E1B18] ring-2 ring-[#1E1B18]/15 shadow-sm scale-[1.02]'
                             : 'bg-white/80 border-[#E8DACB] hover:border-[#BFA890] hover:bg-white'
                         }`}
                       >
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center overflow-hidden rounded-xl bg-[#FAF6F0] p-1">
+                        <div className="w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center overflow-hidden rounded-xl bg-[#FAF6F0] p-1">
                           <img
                             src={thumb.image}
                             alt={thumb.label}
                             className={`w-full h-full ${thumb.isShape ? 'object-contain' : 'object-cover'} rounded-lg`}
                           />
                         </div>
-                        <span className={`mt-1.5 text-[11px] sm:text-xs font-mono leading-tight text-center ${
+                        <span className={`mt-1 text-[10px] sm:text-[11px] font-mono leading-tight text-center truncate w-full ${
                           isActive ? 'font-bold text-[#1E1B18]' : 'text-[#736353]'
                         }`}>
                           {thumb.label}
@@ -1038,8 +1060,8 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
         <main className="relative z-10">
           
           {/* ─── SLIDING IMAGES HERO SECTION ──────────────────────── */}
-          <section className="relative px-4 sm:px-8 pt-6 pb-12 max-w-7xl mx-auto">
-            <div className="relative rounded-[2.5rem] overflow-hidden shadow-[0_25px_60px_rgba(180,140,80,0.16)] border border-white/80 bg-[#1E1B18] aspect-[16/9] sm:aspect-[21/9] max-h-[580px]">
+          <section className="relative px-3 sm:px-8 pt-3 sm:pt-6 pb-6 sm:pb-10 max-w-7xl mx-auto">
+            <div className="relative rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-[0_15px_40px_rgba(180,140,80,0.12)] border border-white/80 bg-[#1E1B18] aspect-[16/9] sm:aspect-[21/9] max-h-[520px]">
               
               {/* Carousel Slides */}
               {HERO_SLIDES.map((slide, idx) => (
@@ -1061,29 +1083,29 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
               <button
                 type="button"
                 onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white/60 hover:text-black transition-all cursor-pointer"
+                className="absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 z-20 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white/60 hover:text-black transition-all cursor-pointer"
                 aria-label="Previous Slide"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <button
                 type="button"
                 onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white/60 hover:text-black transition-all cursor-pointer"
+                className="absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 z-20 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white/60 hover:text-black transition-all cursor-pointer"
                 aria-label="Next Slide"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
 
               {/* Slide Indicators Dots */}
-              <div className="absolute bottom-4 right-6 z-20 flex items-center gap-1.5">
+              <div className="absolute bottom-3 sm:bottom-4 right-4 sm:right-6 z-20 flex items-center gap-1 sm:gap-1.5">
                 {HERO_SLIDES.map((_, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => setCurrentSlideIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                      idx === currentSlideIndex ? 'w-6 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
+                    className={`h-1 sm:h-1.5 rounded-full transition-all cursor-pointer ${
+                      idx === currentSlideIndex ? 'w-4 sm:w-6 bg-white' : 'w-1.5 sm:w-2 bg-white/40 hover:bg-white/70'
                     }`}
                     aria-label={`Slide ${idx + 1}`}
                   />
@@ -1093,64 +1115,64 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             </div>
           </section>
 
-          {/* ─── 4 SHAPES SECTION (RECTANGLE, SQUARE, CIRCLE, HEART) ─── */}
-          <section id="products" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-14">
-              <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-2">
+          {/* ─── 5 SIGNATURE PRODUCTS (RECTANGLE, SQUARE, CIRCLE, HEART, KEYCHAIN) ─── */}
+          <section id="products" className="py-8 sm:py-14 max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
+              <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-1.5">
                 Curated Collection
               </p>
-              <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18]">
-                Four Signature Forms
+              <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18]">
+                Five Signature Forms & Keychains
               </h2>
-              <p className="mt-3 text-sm sm:text-base text-[#6E6153] leading-relaxed">
-                Click any product below to configure dimensions and batch quantities with live pricing.
+              <p className="mt-2 text-xs sm:text-sm text-[#6E6153] leading-relaxed">
+                Choose your shape to preview dimensions, magnet specifications, and tier discounts.
               </p>
             </div>
 
-            {/* 4 Cards Grid arranged strictly: Rectangle, Square, Circle, Heart */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* 5 Cards Grid: Rectangle, Square, Circle, Heart, Keychain */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
               {PRODUCTS.map((prod) => (
                 <div
                   key={prod.id}
                   onClick={() => handleOpenProduct(prod.id)}
-                  className="group rounded-3xl bg-white/75 backdrop-blur-xl border border-white hover:border-[#D9C4AC] p-6 shadow-[0_12px_35px_rgba(180,140,80,0.06)] hover:shadow-[0_22px_55px_rgba(180,140,80,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                  className="group rounded-3xl bg-white/75 backdrop-blur-xl border border-white hover:border-[#D9C4AC] p-4 sm:p-5 shadow-[0_12px_35px_rgba(180,140,80,0.06)] hover:shadow-[0_22px_55px_rgba(180,140,80,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
                 >
                   <div>
                     {/* Visual Area */}
-                    <div className={`relative h-60 rounded-2xl bg-gradient-to-b ${prod.bgGlow} border border-[#F0E4D5] flex items-center justify-center p-6 overflow-hidden mb-5`}>
+                    <div className={`relative h-48 sm:h-56 rounded-2xl bg-gradient-to-b ${prod.bgGlow} border border-[#F0E4D5] flex items-center justify-center p-4 overflow-hidden mb-4`}>
                       <img
                         src={prod.image}
                         alt={prod.name}
-                        className="w-full h-full object-contain filter drop-shadow-[0_12px_22px_rgba(90,60,30,0.22)] group-hover:scale-108 transition-transform duration-500"
+                        className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(90,60,30,0.2)] group-hover:scale-108 transition-transform duration-500"
                       />
-                      <div className="absolute top-3 right-3">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB]">
+                      <div className="absolute top-2.5 right-2.5">
+                        <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB]">
                           3mm Cast
                         </span>
                       </div>
                     </div>
 
                     {/* Title & Tagline */}
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#9C8773] font-semibold">
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-[#9C8773] font-semibold">
                       {prod.category}
                     </span>
-                    <h3 className="font-serif text-2xl font-medium text-[#1E1B18] mt-1 group-hover:text-[#8C6436] transition-colors">
+                    <h3 className="font-serif text-xl sm:text-2xl font-medium text-[#1E1B18] mt-0.5 group-hover:text-[#8C6436] transition-colors leading-snug">
                       {prod.name}
                     </h3>
-                    <p className="mt-1 text-xs text-[#8C7A68] font-mono">
+                    <p className="mt-1 text-[11px] text-[#8C7A68] font-mono line-clamp-2">
                       {prod.tagline}
                     </p>
 
                     {/* Formats preview */}
-                    <div className="mt-4 pt-3.5 border-t border-[#EFE5D9]">
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-[#9A8775] mb-2 font-bold">
+                    <div className="mt-3 pt-3 border-t border-[#EFE5D9]">
+                      <p className="text-[9px] font-mono uppercase tracking-widest text-[#9A8775] mb-1.5 font-bold">
                         Available Sizes
                       </p>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-1">
                         {prod.sizes.map((s, idx) => (
                           <span
                             key={idx}
-                            className="text-[10px] font-mono px-2 py-1 rounded-md bg-[#FAF4ED] text-[#695B4E] border border-[#EAE0D3]"
+                            className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#FAF4ED] text-[#695B4E] border border-[#EAE0D3]"
                           >
                             {s.label}
                           </span>
@@ -1172,18 +1194,18 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
           </section>
 
           {/* ─── DEDICATED STARTER KIT SECTION: 2-COLUMN PREVIEW BLOCK ─── */}
-          <section id="starter-kit" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FAF3EA] via-white to-[#F4E9DC] backdrop-blur-2xl border border-white p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+          <section id="starter-kit" className="py-8 sm:py-12 max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FAF3EA] via-white to-[#F4E9DC] backdrop-blur-2xl border border-white p-5 sm:p-10 shadow-[0_20px_50px_rgba(180,140,80,0.1)]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-center">
                 
                 {/* Left Side: Preview Image of Starter Kit (Clickable to open all 12 products) */}
                 {/* Left Side: Clickable Single Fridge Photo Preview of the Starter Kit */}
                 <div 
                   onClick={handleOpenStarterKit}
-                  className="lg:col-span-5 relative rounded-3xl overflow-hidden shadow-[0_20px_45px_rgba(180,140,80,0.15)] border-2 border-white group cursor-pointer"
+                  className="lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.12)] border border-white group cursor-pointer"
                   title="Click to inspect all 12 products on the fridge"
                 >
-                  <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-[#FAF4ED]">
+                  <div className="relative aspect-[4/3] rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF4ED]">
                     <img 
                       src="/images/starter_kit_complete_fridge_collection.jpg" 
                       alt="Complete 12-Piece Box Set Preview on Refrigerator"
@@ -1191,73 +1213,73 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                     
-                    <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] font-mono text-[11px] font-bold border border-[#EADBCC] shadow-xs">
+                    <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] font-mono text-[10px] sm:text-[11px] font-bold border border-[#EADBCC] shadow-xs">
                       All 12 Pieces in Kit
                     </div>
                     
-                    <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-emerald-600 text-white font-mono text-[11px] font-bold shadow-md">
+                    <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-emerald-600 text-white font-mono text-[10px] sm:text-[11px] font-bold shadow-md">
                       ₹999 Total
                     </div>
 
-                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs font-mono">
-                      <span className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-full">
-                        <ZoomIn className="h-3.5 w-3.5" />
-                        <span>Click to zoom in on all 12 products</span>
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-[11px] font-mono">
+                      <span className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full">
+                        <ZoomIn className="h-3 w-3" />
+                        <span>Tap to zoom 12 products</span>
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Right Side: Copy & Action Buttons */}
-                <div className="lg:col-span-7 space-y-6">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-xs tracking-wider uppercase font-semibold">
+                <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-[11px] tracking-wider uppercase font-semibold">
                     <Package className="h-3.5 w-3.5 text-[#8C6436]" />
                     <span>Special Discovery Offer</span>
                   </div>
 
                   <div>
-                    <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
+                    <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
                       Complete 12-Piece Box Set
                     </h2>
-                    <p className="font-serif italic text-lg sm:text-2xl text-[#8C6436] mt-1.5 font-medium">
+                    <p className="font-serif italic text-base sm:text-xl text-[#8C6436] mt-1 font-medium">
                       Ready to bring your 12 memories to life?
                     </p>
                   </div>
 
-                  <p className="text-sm sm:text-base text-[#615446] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#615446] leading-relaxed">
                     10 Custom Acrylic Frames + 2 FREE Bonus Keychains for just <strong>₹999</strong> with free doorstep delivery.
                   </p>
 
                   {/* Highlights Checklist */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs text-[#5D5042] font-mono">
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-[#E8DACB]">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                      <span>10 Custom Acrylic Frames</span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] sm:text-xs text-[#5D5042] font-mono">
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
+                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span>10 Custom Frames</span>
                     </div>
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-[#E8DACB]">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                      <span>2 FREE Bonus Keychains</span>
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
+                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span>2 FREE Keychains</span>
                     </div>
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-[#E8DACB]">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                      <span>3mm Monolithic Cast Acrylic</span>
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
+                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span>3mm Cast Acrylic</span>
                     </div>
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-[#E8DACB]">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                      <span>Free Pan-India Air Delivery</span>
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
+                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span>Free Air Delivery</span>
                     </div>
                   </div>
 
                   {/* Below Buttons: Button to open all 12 products + Button for WhatsApp order */}
-                  <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
+                  <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
                     {/* Button 1: Opens all 12 products */}
                     <button
                       type="button"
                       onClick={handleOpenStarterKit}
-                      className="inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-md transition-all cursor-pointer group"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-md transition-all cursor-pointer group"
                     >
                       <span>Inspect 12-Piece Kit on Fridge</span>
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                     </button>
 
                     {/* Button 2: WhatsApp order */}
@@ -1265,9 +1287,9 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                       href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains). I have my 12 photos ready for review.")}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
                     >
-                      <MessageCircle className="h-4.5 w-4.5" />
+                      <MessageCircle className="h-4 w-4" />
                       <span>Order on WhatsApp (₹999)</span>
                     </a>
                   </div>
@@ -1279,88 +1301,88 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
           </section>
 
           {/* ─── DEDICATED KRIA SUBSCRIPTION SECTION (FROM POSTER) ─── */}
-          <section id="subscription" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="rounded-[2.5rem] bg-gradient-to-br from-[#FCFAF6] via-white to-[#F6EDE2] backdrop-blur-2xl border border-[#EADECE] p-8 sm:p-14 shadow-[0_25px_65px_rgba(180,140,80,0.12)]">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <section id="subscription" className="py-8 sm:py-12 max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FCFAF6] via-white to-[#F6EDE2] backdrop-blur-2xl border border-[#EADECE] p-5 sm:p-10 shadow-[0_20px_50px_rgba(180,140,80,0.1)]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-center">
                 
                 {/* Left Description & Benefits */}
-                <div className="lg:col-span-7 space-y-6">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-xs tracking-wider uppercase font-semibold border border-[#EAD5BA]">
+                <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[11px] tracking-wider uppercase font-semibold border border-[#EAD5BA]">
                     <Crown className="h-3.5 w-3.5 text-[#B8860B]" />
                     <span>Exclusive Member Privilege</span>
                   </div>
 
                   <div>
-                    <h2 className="font-serif text-3xl sm:text-5xl font-light text-[#1E1B18] leading-tight">
+                    <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
                       KRIA Subscription
                     </h2>
-                    <p className="font-serif italic text-lg sm:text-xl text-[#8C6436] mt-1">
+                    <p className="font-serif italic text-base sm:text-lg text-[#8C6436] mt-0.5">
                       More Savings. Priority Service.
                     </p>
                   </div>
 
                   {/* Gold Badge: ONLY ₹499 · 3 MONTHS VALIDITY */}
-                  <div className="inline-flex items-center gap-4 py-3 px-5 rounded-2xl bg-gradient-to-r from-[#FDEFD8] via-[#FFF9F0] to-[#F7E7CE] border border-[#DEB887] shadow-sm">
-                    <span className="font-serif text-3xl sm:text-4xl font-bold text-[#8C6436]">
+                  <div className="inline-flex items-center gap-3 py-2 px-4 rounded-xl bg-gradient-to-r from-[#FDEFD8] via-[#FFF9F0] to-[#F7E7CE] border border-[#DEB887] shadow-xs">
+                    <span className="font-serif text-2xl sm:text-3xl font-bold text-[#8C6436]">
                       ONLY ₹499
                     </span>
-                    <span className="h-7 w-px bg-[#DEB887]/60" />
-                    <span className="font-mono text-xs uppercase tracking-widest text-[#6B4E2B] font-bold">
+                    <span className="h-5 w-px bg-[#DEB887]/60" />
+                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-[#6B4E2B] font-bold">
                       3 MONTHS VALIDITY
                     </span>
                   </div>
 
                   {/* 3 Main Value Pillars from Poster */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
                     {/* Pillar 1 */}
-                    <div className="p-4 rounded-2xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-2">
-                      <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto sm:mx-0">
-                        <Coins className="h-5 w-5" />
+                    <div className="p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-7 w-7 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Coins className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className="font-serif text-lg font-bold text-[#1E1B18]">₹2 OFF</div>
-                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold mt-0.5">
+                        <div className="font-serif text-base font-bold text-[#1E1B18]">₹2 OFF</div>
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
                           On Every Frame
                         </p>
                       </div>
                     </div>
 
                     {/* Pillar 2 */}
-                    <div className="p-4 rounded-2xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-2">
-                      <div className="h-9 w-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto sm:mx-0">
-                        <Truck className="h-5 w-5" />
+                    <div className="p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Truck className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className="font-serif text-lg font-bold text-[#1E1B18]">1 Day Dispatch</div>
-                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold mt-0.5">
-                          On Ready To Stock Frames
+                        <div className="font-serif text-base font-bold text-[#1E1B18]">1 Day Dispatch</div>
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                          On Ready Frames
                         </p>
                       </div>
                     </div>
 
                     {/* Pillar 3 */}
-                    <div className="p-4 rounded-2xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-2">
-                      <div className="h-9 w-9 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center mx-auto sm:mx-0">
-                        <Crown className="h-5 w-5" />
+                    <div className="p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-7 w-7 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Crown className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className="font-serif text-lg font-bold text-[#1E1B18]">Customer Priority</div>
-                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold mt-0.5">
-                          Faster Support & Exclusive Service
+                        <div className="font-serif text-base font-bold text-[#1E1B18]">Customer Priority</div>
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                          Exclusive Support
                         </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Join Now WhatsApp CTA */}
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <a
                       href={waLink("Hi KRIA Tech! I would like to join the KRIA Subscription plan (ONLY ₹499 for 3 MONTHS VALIDITY). Please share activation details for ₹2 OFF on every frame, 1-day dispatch, and priority customer service.")}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
                     >
-                      <MessageCircle className="h-4.5 w-4.5" />
+                      <MessageCircle className="h-4 w-4" />
                       <span>Join KRIA Subscription (₹499)</span>
                     </a>
                   </div>
@@ -1368,7 +1390,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
 
                 {/* Right Visual Poster Showcase */}
                 <div className="lg:col-span-5">
-                  <div className="relative rounded-3xl overflow-hidden shadow-[0_20px_45px_rgba(180,140,80,0.18)] border-2 border-[#E7D6C2] bg-white group hover:shadow-[0_25px_55px_rgba(180,140,80,0.25)] transition-all duration-300">
+                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.15)] border-2 border-[#E7D6C2] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.2)] transition-all duration-300">
                     <img 
                       src="/images/kria_subscription_banner.jpg" 
                       alt="KRIA Subscription - Only ₹499, 3 Months Validity"
@@ -1382,39 +1404,39 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
           </section>
 
           {/* ─── FREQUENTLY ASKED QUESTIONS (COMPACT & SMALLER) ───── */}
-          <section id="faqs" className="py-14 sm:py-20 max-w-3xl mx-auto px-4 sm:px-8">
-            <div className="text-center mb-8">
-              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold">
+          <section id="faqs" className="py-8 sm:py-12 max-w-3xl mx-auto px-4 sm:px-8">
+            <div className="text-center mb-5">
+              <p className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold">
                 Clear Answers
               </p>
-              <h2 className="font-serif text-2xl sm:text-3xl font-light text-[#1E1B18] mt-1">
+              <h2 className="font-serif text-xl sm:text-2xl font-light text-[#1E1B18] mt-0.5">
                 Frequently Asked Questions
               </h2>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {FAQS.map((faq, idx) => {
                 const isOpen = activeFaqIndex === idx;
                 return (
                   <div
                     key={idx}
-                    className="rounded-xl bg-white/75 backdrop-blur-md border border-[#E9DCCE] overflow-hidden transition-all duration-150"
+                    className="rounded-xl bg-white/80 backdrop-blur-md border border-[#E9DCCE] overflow-hidden transition-all duration-150"
                   >
                     <button
                       type="button"
                       onClick={() => setActiveFaqIndex(isOpen ? null : idx)}
-                      className="w-full py-3.5 px-4 text-left flex items-center justify-between gap-3 cursor-pointer"
+                      className="w-full py-2.5 px-3.5 text-left flex items-center justify-between gap-2.5 cursor-pointer"
                     >
-                      <span className="font-serif text-sm text-[#1E1B18] font-normal">
+                      <span className="font-serif text-xs sm:text-sm text-[#1E1B18] font-normal">
                         {faq.q}
                       </span>
-                      <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 transition-transform duration-150 ${isOpen ? 'rotate-180 text-[#8C6436]' : 'text-[#8A7969]'}`}>
-                        <ChevronDown className="h-3.5 w-3.5" />
+                      <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 transition-transform duration-150 ${isOpen ? 'rotate-180 text-[#8C6436]' : 'text-[#8A7969]'}`}>
+                        <ChevronDown className="h-3 w-3" />
                       </div>
                     </button>
 
                     {isOpen && (
-                      <div className="px-4 pb-4 text-xs text-[#615345] leading-relaxed border-t border-[#F2E7DC] pt-2.5">
+                      <div className="px-3.5 pb-3 text-[11px] sm:text-xs text-[#615345] leading-relaxed border-t border-[#F2E7DC] pt-2">
                         {faq.a}
                       </div>
                     )}
