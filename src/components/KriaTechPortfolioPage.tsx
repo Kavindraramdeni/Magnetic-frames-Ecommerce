@@ -3,7 +3,8 @@ import {
   MessageCircle, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck,
   Package, Award, Heart, Sparkles, CheckCircle2, Phone,
   MapPin, Clock, Users, ArrowUpRight,
-  ArrowLeft, ZoomIn, Check, Info, Calendar, Gift, Crown, Truck, Coins, Key
+  ArrowLeft, ZoomIn, Check, Info, Calendar, Gift, Crown, Truck, Coins, Key,
+  ShoppingCart, Trash2, Plus, Minus, X
 } from 'lucide-react';
 
 const WA_NUMBER = '919392576792';
@@ -30,6 +31,19 @@ interface Product {
   sizes: ProductSize[];
   accentColor: string;
   bgGlow: string;
+}
+
+export interface KriaCartItem {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  sizeLabel: string;
+  dimensions: string;
+  quantity: number;
+  unitPrice: number;
+  originalUnitPrice: number;
+  totalPrice: number;
 }
 
 // Exactly arranged in order: rectangle, square, circle, heart
@@ -349,6 +363,27 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [isHoverZooming, setIsHoverZooming] = useState<boolean>(false);
   const [zoomCoords, setZoomCoords] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
 
+  // Multi-item Cart State (Different shapes & sizes)
+  const [cart, setCart] = useState<KriaCartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('kria_multi_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState<boolean>(false);
+  const [cartToastMessage, setCartToastMessage] = useState<string | null>(null);
+
+  // Persist cart to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('kria_multi_cart', JSON.stringify(cart));
+    } catch (e) {
+      console.warn('Failed to save cart to localStorage', e);
+    }
+  }, [cart]);
+
   const handlePreviewMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
@@ -501,7 +536,110 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const originalTotalPrice = unitOriginalPrice * actualQty;
   const factorySavings = originalTotalPrice - totalPrice;
 
-  // Helper to construct exact structured WhatsApp specifications
+  // Multi-Item Cart Actions
+  const handleAddToCart = () => {
+    if (!activeProduct || !currentSize) return;
+    const itemId = `${activeProduct.id}_${currentSize.label}_${Date.now()}`;
+    const newItem: KriaCartItem = {
+      id: itemId,
+      productId: activeProduct.id,
+      productName: activeProduct.name,
+      productImage: currentSize.previewImage || activeProduct.image,
+      sizeLabel: currentSize.label,
+      dimensions: currentSize.dimensions,
+      quantity: actualQty,
+      unitPrice: unitDiscountedPrice,
+      originalUnitPrice: unitOriginalPrice,
+      totalPrice: totalPrice
+    };
+
+    setCart((prev) => {
+      // Check if exact same product & size already exists in cart
+      const existingIdx = prev.findIndex(
+        (it) => it.productId === newItem.productId && it.sizeLabel === newItem.sizeLabel
+      );
+      if (existingIdx >= 0) {
+        const updated = [...prev];
+        const existing = updated[existingIdx];
+        const newQty = existing.quantity + newItem.quantity;
+        // Recalculate tier discount
+        const newDiscountRate = newQty >= 1000 ? 0.50 : newQty >= 500 ? 0.45 : newQty >= 250 ? 0.40 : newQty >= 100 ? 0.35 : newQty >= 50 ? 0.30 : 0.15;
+        const newUnitPrice = Math.round(existing.originalUnitPrice * (1 - newDiscountRate));
+        updated[existingIdx] = {
+          ...existing,
+          quantity: newQty,
+          unitPrice: newUnitPrice,
+          totalPrice: newUnitPrice * newQty
+        };
+        return updated;
+      }
+      return [...prev, newItem];
+    });
+
+    setCartToastMessage(`Added ${actualQty}x ${activeProduct.name} (${currentSize.label}) to Cart!`);
+    setIsCartDrawerOpen(true);
+    setTimeout(() => {
+      setCartToastMessage(null);
+    }, 4000);
+  };
+
+  const handleUpdateCartItemQty = (id: string, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((item) => {
+          if (item.id === id) {
+            const newQty = Math.max(1, item.quantity + delta);
+            const newDiscountRate = newQty >= 1000 ? 0.50 : newQty >= 500 ? 0.45 : newQty >= 250 ? 0.40 : newQty >= 100 ? 0.35 : newQty >= 50 ? 0.30 : 0.15;
+            const newUnitPrice = Math.round(item.originalUnitPrice * (1 - newDiscountRate));
+            return {
+              ...item,
+              quantity: newQty,
+              unitPrice: newUnitPrice,
+              totalPrice: newUnitPrice * newQty
+            };
+          }
+          return item;
+        })
+    );
+  };
+
+  const handleRemoveCartItem = (id: string) => {
+    setCart((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  const handleClearCart = () => {
+    setCart([]);
+  };
+
+  // Cart summary calculations
+  const totalCartFrames = cart.reduce((acc, it) => acc + it.quantity, 0);
+  const totalCartPrice = cart.reduce((acc, it) => acc + it.totalPrice, 0);
+  const totalCartOriginal = cart.reduce((acc, it) => acc + (it.originalUnitPrice * it.quantity), 0);
+  const totalCartSavings = totalCartOriginal - totalCartPrice;
+
+  // Build Comprehensive Multi-Product WhatsApp Order Message
+  const buildMultiCartWhatsAppMessage = () => {
+    if (cart.length === 0) return '';
+    let msg = `Hi KRIA Tech! I would like to place an order for multiple customized acrylic products:\n\n`;
+    msg += `🛒 *ORDER SUMMARY (${cart.length} item types · ${totalCartFrames} total pcs):*\n`;
+    msg += `─────────────────────────\n`;
+
+    cart.forEach((it, idx) => {
+      msg += `${idx + 1}. *${it.productName}*\n`;
+      msg += `   • Size: ${it.sizeLabel} (${it.dimensions})\n`;
+      msg += `   • Quantity: ${it.quantity} pcs\n`;
+      msg += `   • Price: ₹${it.unitPrice}/pc (₹${it.totalPrice.toLocaleString('en-IN')})\n\n`;
+    });
+
+    msg += `─────────────────────────\n`;
+    msg += `💰 *TOTAL ESTIMATE: ₹${totalCartPrice.toLocaleString('en-IN')}*\n`;
+    if (totalCartSavings > 0) {
+      msg += `✨ *FACTORY DIRECT SAVINGS: ₹${totalCartSavings.toLocaleString('en-IN')}*\n`;
+    }
+    msg += `🚚 *Doorstep Express Air Delivery Across India Included*\n\n`;
+    msg += `I have my photos ready for review. Please confirm order placement and dispatch timeline!`;
+    return msg;
+  };
   const buildExactQuoteMessage = (prodName: string, sizeLabel: string, dimensions: string, qty: number, unitRate: number, origRate: number, total: number, savings: number) => {
     return `Hi KRIA Tech! I have selected my product specifications on your website:
 
@@ -592,26 +730,53 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             </a>
           </nav>
 
-          {/* Quick Action Hotline Pill: Configures or sends exact specs */}
-          <div className="flex items-center gap-2.5">
+          {/* Quick Action & Cart Button */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Multi-Item Cart Button with live Badge */}
+            <button
+              type="button"
+              onClick={() => setIsCartDrawerOpen(true)}
+              className="relative inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-full bg-white border border-[#D8C7B5] hover:border-[#1E1B18] shadow-xs text-[#1E1B18] text-xs font-mono font-semibold transition-all cursor-pointer"
+              title="View Cart"
+            >
+              <ShoppingCart className="h-4 w-4 text-[#8C6436]" />
+              <span className="hidden sm:inline">Cart</span>
+              {cart.length > 0 && (
+                <span className="h-5 min-w-[20px] px-1 rounded-full bg-[#1E1B18] text-white text-[10px] font-bold flex items-center justify-center">
+                  {cart.length}
+                </span>
+              )}
+            </button>
+
             {activeProduct && currentSize ? (
               <a
                 href={waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings))}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
               >
                 <MessageCircle className="h-4 w-4" />
-                <span>WhatsApp Quote ({actualQty} pcs)</span>
+                <span className="hidden sm:inline">WhatsApp Quote ({actualQty} pcs)</span>
+                <span className="sm:hidden">Quote ({actualQty})</span>
+              </a>
+            ) : cart.length > 0 ? (
+              <a
+                href={waLink(buildMultiCartWhatsAppMessage())}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>WhatsApp Order ({cart.length})</span>
               </a>
             ) : (
               <button
                 type="button"
                 onClick={() => handleOpenConfigurator('rectangle')}
-                className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
               >
                 <MessageCircle className="h-4 w-4" />
-                <span>Choose Specs & Quote</span>
+                <span>Choose Specs</span>
               </button>
             )}
 
@@ -882,23 +1047,34 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                   </div>
                 </div>
 
-                {/* 4. Get WhatsApp Quote Button: Sends exact selected specs */}
-                <div className="pt-2">
+                {/* 4. Action Buttons: Add to Cart + Direct WhatsApp Order */}
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  {/* Button A: Add To Cart (allows adding different shapes & sizes) */}
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="flex-1 inline-flex items-center justify-center gap-2.5 py-4 px-5 rounded-2xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-md hover:shadow-lg transition-all cursor-pointer group"
+                  >
+                    <ShoppingCart className="h-4.5 w-4.5 text-[#E5D7C5] group-hover:scale-110 transition-transform" />
+                    <span>Add to Cart ({actualQty} pcs)</span>
+                  </button>
+
+                  {/* Button B: Direct WhatsApp Quote */}
                   <a
                     href={waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings))}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-sm font-bold uppercase tracking-[0.14em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] hover:shadow-[0_12px_32px_rgba(37,211,102,0.48)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+                    className="flex-1 inline-flex items-center justify-center gap-2.5 py-4 px-5 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] hover:shadow-[0_12px_32px_rgba(37,211,102,0.48)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
                   >
-                    <MessageCircle className="h-5 w-5" />
-                    <span>Get WhatsApp Quote (Sends Exact Specs)</span>
+                    <MessageCircle className="h-4.5 w-4.5" />
+                    <span>Order Now on WhatsApp</span>
                   </a>
                 </div>
 
                 <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
                   <Info className="h-4 w-4 shrink-0 text-amber-700 mt-0.5" />
                   <span>
-                    Your exact selected shape ({activeProduct.name}), size ({currentSize.dimensions}), and batch quantity ({actualQty} pcs) are automatically attached so our team confirms your order immediately.
+                    Add multiple shapes and sizes to your Cart! When you are ready, tap <strong>"Order All on WhatsApp"</strong> from the cart drawer to submit your entire custom combination in one clean message.
                   </span>
                 </div>
               </div>
@@ -1531,12 +1707,28 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
         </div>
       </footer>
 
-      {/* ─── FLOATING WHATSAPP BUTTON (DESKTOP & MOBILE) ────────── */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* ─── FLOATING CART & WHATSAPP BUTTONS (DESKTOP & MOBILE) ────────── */}
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+        {/* Floating Cart Button (shows count when items exist) */}
+        {cart.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setIsCartDrawerOpen(true)}
+            className="flex items-center gap-2 px-4 py-3 rounded-full bg-[#1E1B18] text-white shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:bg-[#8C6436] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            aria-label="View Cart"
+          >
+            <ShoppingCart className="h-5 w-5 text-[#E7D6C2]" />
+            <span className="text-xs font-mono font-bold">{cart.length} item{cart.length > 1 ? 's' : ''}</span>
+            <span className="text-xs font-serif font-bold text-[#E7D6C2] ml-0.5">· ₹{totalCartPrice.toLocaleString('en-IN')}</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => {
-            if (activeProduct && currentSize) {
+            if (cart.length > 0) {
+              window.open(waLink(buildMultiCartWhatsAppMessage()), '_blank');
+            } else if (activeProduct && currentSize) {
               window.open(waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings)), '_blank');
             } else {
               handleOpenConfigurator('rectangle');
@@ -1553,10 +1745,202 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             </span>
           </div>
           <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">
-            {activeProduct ? 'WhatsApp Exact Specs' : 'Configure & WhatsApp'}
+            {cart.length > 0 ? `WhatsApp Order (${cart.length})` : activeProduct ? 'WhatsApp Exact Specs' : 'Configure & WhatsApp'}
           </span>
         </button>
       </div>
+
+      {/* ─── TOAST NOTIFICATION WHEN ITEM ADDED TO CART ────────── */}
+      {cartToastMessage && (
+        <div className="fixed top-20 right-4 sm:right-8 z-50 animate-bounce">
+          <div className="flex items-center gap-2.5 py-3 px-4 rounded-2xl bg-[#1E1B18] text-white shadow-2xl border border-white/20 text-xs font-mono">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{cartToastMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MULTI-ITEM CART SLIDEOUT DRAWER ─────────────────────── */}
+      {isCartDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/45 backdrop-blur-xs transition-opacity cursor-pointer"
+            onClick={() => setIsCartDrawerOpen(false)}
+          />
+
+          {/* Drawer Body */}
+          <div className="relative w-full max-w-md bg-[#FAF7F2] h-full shadow-2xl z-10 flex flex-col justify-between overflow-hidden border-l border-[#EADECE]">
+            
+            {/* Drawer Header */}
+            <div className="p-4 sm:p-5 bg-white border-b border-[#EADECE] flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-[#FAF1E3] flex items-center justify-center border border-[#E9D7C1]">
+                  <ShoppingCart className="h-4 w-4 text-[#8C6436]" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-[#1E1B18]">Your Custom Cart</h3>
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-[#8A7969]">
+                    {cart.length} Shape{cart.length !== 1 ? 's' : ''} & Size{cart.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {cart.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearCart}
+                    className="text-[10px] font-mono text-[#9B8977] hover:text-rose-600 px-2 py-1 rounded hover:bg-rose-50 transition-colors cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsCartDrawerOpen(false)}
+                  className="h-8 w-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="Close Cart"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Cart Items List */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
+              {cart.length === 0 ? (
+                <div className="py-16 text-center space-y-3">
+                  <div className="h-16 w-16 rounded-full bg-[#FAF0E2] border border-[#E7D6C0] flex items-center justify-center mx-auto text-[#8C6436]">
+                    <ShoppingCart className="h-7 w-7 opacity-60" />
+                  </div>
+                  <h4 className="font-serif text-xl font-medium text-[#1E1B18]">Your Cart is Empty</h4>
+                  <p className="text-xs text-[#8A7969] font-mono max-w-xs mx-auto">
+                    Select any product shape and size, then tap <strong>"Add to Cart"</strong> to combine different items.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCartDrawerOpen(false);
+                      handleCloseProduct('#products');
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1E1B18] text-white text-xs font-mono font-semibold uppercase tracking-wider hover:bg-[#8C6436] transition-colors cursor-pointer mt-2"
+                  >
+                    <span>Browse 5 Products</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                cart.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3.5 rounded-2xl bg-white border border-[#EADBCC] shadow-xs flex items-center justify-between gap-3 group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-14 w-14 rounded-xl bg-[#FAF5EE] border border-[#EADBCC] flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                        <img
+                          src={item.productImage}
+                          alt={item.productName}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-serif text-sm font-semibold text-[#1E1B18] truncate">
+                          {item.productName}
+                        </h4>
+                        <p className="text-[11px] font-mono text-[#8C6436] font-medium mt-0.5">
+                          {item.sizeLabel}
+                        </p>
+                        <p className="text-[10px] font-mono text-[#8A7969]">
+                          ₹{item.unitPrice}/pc × {item.quantity} pcs
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <span className="font-serif text-sm font-bold text-[#1E1B18]">
+                        ₹{item.totalPrice.toLocaleString('en-IN')}
+                      </span>
+
+                      {/* Quantity Stepper */}
+                      <div className="flex items-center gap-1 bg-[#FAF6F0] border border-[#E7D7C4] rounded-lg p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateCartItemQty(item.id, -10)}
+                          className="h-5 w-5 rounded flex items-center justify-center text-[#695B4E] hover:bg-white transition-colors cursor-pointer"
+                          title="-10 pcs"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="text-[11px] font-mono font-bold px-1.5 text-[#1E1B18]">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateCartItemQty(item.id, 10)}
+                          className="h-5 w-5 rounded flex items-center justify-center text-[#695B4E] hover:bg-white transition-colors cursor-pointer"
+                          title="+10 pcs"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCartItem(item.id)}
+                        className="text-[10px] font-mono text-stone-400 hover:text-rose-600 transition-colors cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <Trash2 className="h-2.5 w-2.5" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Drawer Footer with Structured WhatsApp Checkout CTA */}
+            {cart.length > 0 && (
+              <div className="p-4 sm:p-5 bg-white border-t border-[#EADECE] space-y-3">
+                <div className="space-y-1.5 font-mono text-xs">
+                  <div className="flex justify-between items-center text-[#6E6152]">
+                    <span>Total Items:</span>
+                    <strong className="text-[#1E1B18]">{cart.length} types · {totalCartFrames} total pcs</strong>
+                  </div>
+                  {totalCartSavings > 0 && (
+                    <div className="flex justify-between items-center text-emerald-800 bg-emerald-50/70 p-2 rounded-lg border border-emerald-200">
+                      <span>Total Savings:</span>
+                      <strong className="font-bold">₹{totalCartSavings.toLocaleString('en-IN')}</strong>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-baseline pt-1 border-t border-[#EFE5D9]">
+                    <span className="font-bold text-[#1E1B18]">Grand Total:</span>
+                    <span className="font-serif text-2xl font-bold text-[#1E1B18]">
+                      ₹{totalCartPrice.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Submit All to WhatsApp */}
+                <a
+                  href={waLink(buildMultiCartWhatsAppMessage())}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-[0_6px_22px_rgba(37,211,102,0.35)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+                >
+                  <MessageCircle className="h-4.5 w-4.5" />
+                  <span>Order All on WhatsApp (₹{totalCartPrice.toLocaleString('en-IN')})</span>
+                </a>
+
+                <p className="text-[10px] font-mono text-center text-[#8C7A68]">
+                  🔒 Your entire multi-shape order summary will be sent to WhatsApp. Share your photos there to preview before production!
+                </p>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
