@@ -1198,7 +1198,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                 {/* Direct WhatsApp CTA Button */}
                 <div className="space-y-3 pt-2">
                   <a
-                    href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains as shown in the starter kit photo). I have my 12 photos ready for review.")}
+                    href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains as shown in the starter kit photo). Please confirm bulk order placement and dispatch timeline.")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
@@ -1208,7 +1208,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                   </a>
 
                   <p className="text-[11px] font-mono text-center text-[#8C7A68]">
-                    🔒 No upfront payment needed · Share your 12 photos on WhatsApp to preview first
+                    🔒 No upfront payment needed · Chat with us on WhatsApp to place your bulk order
                   </p>
                 </div>
               </div>
@@ -1458,7 +1458,7 @@ Please confirm bulk order placement and dispatch timeline.`;
 
                     {/* Button 2: WhatsApp order */}
                     <a
-                      href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains). I have my 12 photos ready for review.")}
+                      href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains). Please confirm bulk order placement and dispatch timeline.")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
@@ -1673,10 +1673,9 @@ Please confirm bulk order placement and dispatch timeline.`;
                     <button
                       type="button"
                       onClick={onBackToStore}
-                      className="hover:text-[#8C6436] transition-colors cursor-pointer text-left inline-flex items-center gap-1.5"
+                      className="hover:text-[#8C6436] transition-colors cursor-pointer text-left"
                     >
-                      <span>Visit Full Store</span>
-                      <ArrowRight className="h-3 w-3" />
+                      Store
                     </button>
                   </li>
                 )}
@@ -1717,7 +1716,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                     onClick={onBackToStore}
                     className="text-[#8C6436] hover:text-[#1E1B18] font-bold uppercase underline underline-offset-2 transition-colors cursor-pointer"
                   >
-                    Online Store
+                    Store
                   </button>
                 </>
               )}
@@ -1952,7 +1951,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                 </a>
 
                 <p className="text-[10px] font-mono text-center text-[#8C7A68]">
-                  🔒 Your entire multi-shape order summary will be sent to WhatsApp. Share your photos there to preview before production!
+                  🔒 Your entire multi-shape order summary will be sent to WhatsApp. Please confirm order placement and dispatch timeline!
                 </p>
               </div>
             )}

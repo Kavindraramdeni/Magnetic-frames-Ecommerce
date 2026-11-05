@@ -1,0 +1,8 @@
+# robots.txt for https://kriatech.in
+# Allow all search engines including Googlebot and Googlebot-Image to crawl and index
+
+User-agent: *
+Allow: /
+
+# Direct sitemap reference for Google Search Console
+Sitemap: https://kriatech.in/sitemap.xml
