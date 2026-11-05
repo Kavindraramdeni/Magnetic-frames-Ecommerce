@@ -53,7 +53,7 @@ const PRODUCTS: Product[] = [
     name: 'Classic Rectangle',
     tagline: 'Architectural & Landscape Panorama',
     subtitle: 'Personalised acrylic magnetic rectangle frame',
-    image: '/images/shape_rectangle_wedding_portrait.png',
+    image: '/images/prod_thumb_rectangle.png',
     category: 'Landscape & Panorama',
     sizes: [
       { label: '3.5 × 2.5"', dimensions: '3.5 × 2.5 inch', basePrice: 229, originalPrice: 329, previewImage: '/images/dimension_preview_3.5x2.5.png' },
@@ -68,7 +68,7 @@ const PRODUCTS: Product[] = [
     name: 'Minimal Square',
     tagline: 'Geometric Balance & Modern Grids',
     subtitle: 'Personalised acrylic magnetic square frame',
-    image: '/images/shape_square_romantic_embrace.png',
+    image: '/images/prod_thumb_square.png',
     category: 'Grid & Modern Living',
     sizes: [
       { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_square_2x2.jpg' },
@@ -83,7 +83,7 @@ const PRODUCTS: Product[] = [
     name: 'Minimal Circle',
     tagline: 'Infinite Symmetry & Contemporary Zen',
     subtitle: 'Personalised acrylic magnetic circle frame',
-    image: '/images/shape_circle_family_furry_friend.png',
+    image: '/images/prod_thumb_circle.png',
     category: 'Modern Living',
     sizes: [
       { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_circle_2x2.png' },
@@ -98,7 +98,7 @@ const PRODUCTS: Product[] = [
     name: 'Sculpted Heart',
     tagline: 'Romance & Everlasting Keepsakes',
     subtitle: 'Personalised acrylic magnetic heart frame',
-    image: '/images/shape_heart_romantic_wedding.png',
+    image: '/images/prod_thumb_heart.png',
     category: 'Celebration & Gifting',
     sizes: [
       { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_heart_2x2.png' },
@@ -113,7 +113,7 @@ const PRODUCTS: Product[] = [
     name: 'Keychains',
     tagline: 'Pocket Luxury & Daily Companions',
     subtitle: 'Dual-sided 3mm acrylic photo keychain with metallic swivel ring',
-    image: '/images/keychain_square_official.jpg',
+    image: '/images/prod_thumb_keychain.jpg',
     category: 'Keychains & Accessories',
     sizes: [
       { label: '2.5"', dimensions: '2.5 inch Circle with Ring', basePrice: 149, originalPrice: 249, previewImage: '/images/keychain_circle_official.jpg' },
@@ -412,7 +412,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     }
   };
 
-  // Open Complete 12-Piece Box Set dedicated page with browser history
+  // Open Starter Kit with 12 Frames dedicated page with browser history
   const handleOpenStarterKit = () => {
     setSelectedProductId(null);
     setIsStarterKitOpen(true);
@@ -1153,52 +1153,33 @@ Please confirm bulk order placement and dispatch timeline.`;
                   </div>
 
                   <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
-                    Complete 12-Piece Box Set
+                    Starter Kit with 12 Frames
                   </h1>
 
                   <p className="font-serif italic text-lg sm:text-xl text-[#8C6436]">
                     Ready to bring your 12 memories to life?
                   </p>
 
-                  <p className="text-sm text-[#695B4E] leading-relaxed">
-                    10 Custom Acrylic Frames + 2 FREE Bonus Keychains for just <strong>₹999</strong> with free doorstep delivery across India.
-                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-3">
+                      <span className="font-serif text-4xl sm:text-6xl font-bold text-[#1E1B18] tracking-tight">₹999</span>
+                      <span className="text-base sm:text-lg font-mono text-[#8C7A68] line-through">₹2,499</span>
+                      <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-3 py-1 rounded-full uppercase tracking-wider">
+                        Special Factory Direct Price
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-[#695B4E] font-medium leading-relaxed">
+                      10 Custom Acrylic Frames + 2 FREE Bonus Keychains (12 total pieces)
+                    </p>
+                  </div>
                 </div>
 
-                {/* What is Included List */}
-                <div className="p-5 rounded-2xl bg-white/85 backdrop-blur-md border border-[#EADBCC] space-y-3 font-mono text-xs text-[#52463A]">
-                  <p className="font-bold uppercase tracking-wider text-[#7C6348] flex items-center gap-2">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    <span>Included Inside The Kit:</span>
-                  </p>
-                  <ul className="space-y-2.5 text-[11px] leading-relaxed text-[#6E6153]">
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-600 font-bold">✓</span>
-                      <span><strong>10 Custom Acrylic Frames</strong>: Square, Classic Portrait, Medium Gallery, Sculpted Heart, Scalloped Clouds & 3-Photo Story Filmstrip</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-600 font-bold">✓</span>
-                      <span><strong>2 FREE Bonus Keychains</strong>: Round Photo Medallion + Pocket Mini Keychain with durable rings</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-600 font-bold">✓</span>
-                      <span><strong>3mm Monolithic Cast Glass</strong>: Hand-buffed diamond bevels & rare-earth neodymium flush magnets</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-600 font-bold">✓</span>
-                      <span><strong>100% Free Doorstep Air Delivery</strong> anywhere in India</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-amber-700 font-bold">★</span>
-                      <span><strong>Stall Owner & Reseller Ready</strong>: Use these 12 pieces as a live counter display sample board</span>
-                    </li>
-                  </ul>
-                </div>
+
 
                 {/* Direct WhatsApp CTA Button */}
                 <div className="space-y-3 pt-2">
                   <a
-                    href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains as shown in the starter kit photo). Please confirm bulk order placement and dispatch timeline.")}
+                    href={waLink("Hi KRIA Tech! I would like to order the Starter Kit with 12 Frames (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains as shown in the starter kit photo). Please confirm bulk order placement and dispatch timeline.")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
@@ -1248,7 +1229,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                 <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-black/55 backdrop-blur-md border border-white/20 text-white shadow-lg inline-flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                   <p className="text-[11px] sm:text-xs font-serif tracking-wide drop-shadow">
-                    Diamond-Cut Acrylic Frames & Keychains · Factory Direct Hyderabad
+                    Trusted by 500+ Stall Owners & Resellers · 1,00,000+ Acrylic Products Delivered Across India
                   </p>
                 </div>
               </div>
@@ -1313,29 +1294,25 @@ Please confirm bulk order placement and dispatch timeline.`;
                 >
                   <div>
                     {/* Visual Area */}
-                    <div className={`relative h-48 sm:h-56 rounded-2xl bg-gradient-to-b ${prod.bgGlow} border border-[#F0E4D5] flex items-center justify-center p-4 overflow-hidden mb-4`}>
+                    <div className={`relative h-56 sm:h-64 rounded-2xl bg-gradient-to-b ${prod.bgGlow} flex items-center justify-center p-2 overflow-hidden mb-3.5 transition-transform duration-300 group-hover:scale-[1.02]`}>
                       <img
                         src={prod.image}
                         alt={prod.name}
-                        className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(90,60,30,0.2)] group-hover:scale-108 transition-transform duration-500"
+                        className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(90,60,30,0.18)] group-hover:scale-110 transition-transform duration-500"
                       />
                       <div className="absolute top-2.5 right-2.5">
-                        <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB]">
+                        <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB] shadow-xs">
                           3mm Cast
                         </span>
                       </div>
                     </div>
 
                     {/* Title & Tagline */}
-                    <span className="text-[9px] font-mono uppercase tracking-widest text-[#9C8773] font-semibold">
-                      {prod.category}
-                    </span>
+                    
                     <h3 className="font-serif text-xl sm:text-2xl font-medium text-[#1E1B18] mt-0.5 group-hover:text-[#8C6436] transition-colors leading-snug">
                       {prod.name}
                     </h3>
-                    <p className="mt-1 text-[11px] text-[#8C7A68] font-mono line-clamp-2">
-                      {prod.tagline}
-                    </p>
+                    
 
                     {/* Formats preview */}
                     <div className="mt-3 pt-3 border-t border-[#EFE5D9]">
@@ -1382,7 +1359,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                   <div className="relative aspect-[4/3] rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF4ED]">
                     <img 
                       src="/images/starter_kit_complete_fridge_collection.jpg" 
-                      alt="Complete 12-Piece Box Set Preview on Refrigerator"
+                      alt="Starter Kit with 12 Frames Preview on Refrigerator"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
@@ -1413,34 +1390,39 @@ Please confirm bulk order placement and dispatch timeline.`;
 
                   <div>
                     <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
-                      Complete 12-Piece Box Set
+                      Starter Kit with 12 Frames
                     </h2>
                     <p className="font-serif italic text-base sm:text-xl text-[#8C6436] mt-1 font-medium">
                       Ready to bring your 12 memories to life?
                     </p>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-[#615446] leading-relaxed">
-                    10 Custom Acrylic Frames + 2 FREE Bonus Keychains for just <strong>₹999</strong> with free doorstep delivery.
-                  </p>
+                  <div className="space-y-1.5 py-1">
+                    <div className="flex items-baseline gap-3">
+                      <span className="font-serif text-4xl sm:text-6xl font-bold text-[#1E1B18] tracking-tight">₹999</span>
+                      <span className="text-base sm:text-lg font-mono text-[#8C7A68] line-through">₹2,499</span>
+                      <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-3 py-1 rounded-full uppercase tracking-wider">
+                        Special Offer
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-[#615446] leading-relaxed font-medium">
+                      10 Custom Acrylic Frames + 2 FREE Bonus Keychains (12 total pieces)
+                    </p>
+                  </div>
 
-                  {/* Highlights Checklist */}
-                  <div className="grid grid-cols-2 gap-2 text-[11px] sm:text-xs text-[#5D5042] font-mono">
-                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
+                  {/* Highlights Checklist without Free Air Delivery */}
+                  <div className="grid grid-cols-3 gap-2 text-[11px] sm:text-xs text-[#5D5042] font-mono">
+                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
                       <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span>10 Custom Frames</span>
+                      <span>10 Frames</span>
                     </div>
-                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
+                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
                       <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span>2 FREE Keychains</span>
+                      <span>2 Keychains</span>
                     </div>
-                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
+                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
                       <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span>3mm Cast Acrylic</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
-                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span>Free Air Delivery</span>
+                      <span>3mm Cast</span>
                     </div>
                   </div>
 
@@ -1452,13 +1434,13 @@ Please confirm bulk order placement and dispatch timeline.`;
                       onClick={handleOpenStarterKit}
                       className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-md transition-all cursor-pointer group"
                     >
-                      <span>Inspect 12-Piece Kit on Fridge</span>
+                      <span>View Starter Kit (12 Frames)</span>
                       <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                     </button>
 
                     {/* Button 2: WhatsApp order */}
                     <a
-                      href={waLink("Hi KRIA Tech! I would like to order the Complete 12-Piece Box Set (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains). Please confirm bulk order placement and dispatch timeline.")}
+                      href={waLink("Hi KRIA Tech! I would like to order the Starter Kit with 12 Frames (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains). Please confirm bulk order placement and dispatch timeline.")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
