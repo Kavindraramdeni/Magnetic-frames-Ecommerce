@@ -110,14 +110,14 @@ const PRODUCTS: Product[] = [
   },
   {
     id: 'keychain',
-    name: 'Acrylic Keepsake Keychain',
+    name: 'Keychains',
     tagline: 'Pocket Luxury & Daily Companions',
     subtitle: 'Dual-sided 3mm acrylic photo keychain with metallic swivel ring',
-    image: '/images/keychain_square_backpack_official.jpg',
+    image: '/images/keychain_square_official.jpg',
     category: 'Keychains & Accessories',
     sizes: [
-      { label: 'Circle Keychain (2.5")', dimensions: '2.5 inch Circle with Ring', basePrice: 149, originalPrice: 249, previewImage: '/images/keychain_backpack_lifestyle.png' },
-      { label: 'Square Keychain (3 × 3")', dimensions: '3 × 3 inch Square with Ring', basePrice: 179, originalPrice: 279, previewImage: '/images/keychain_square_backpack_official.jpg' }
+      { label: '2.5"', dimensions: '2.5 inch Circle with Ring', basePrice: 149, originalPrice: 249, previewImage: '/images/keychain_circle_official.jpg' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch Square with Ring', basePrice: 179, originalPrice: 279, previewImage: '/images/keychain_square_official.jpg' }
     ],
     accentColor: '#D97706',
     bgGlow: 'from-orange-100/60 via-amber-50/40 to-transparent'
@@ -143,7 +143,7 @@ const HERO_SLIDES = [
   },
   {
     image: '/images/hero_2.jpg',
-    title: 'Sub-Surface 300 DPI UV Pigment',
+    title: 'Optically Clear Monolithic Acrylic',
     subtitle: 'Fade-proof photographic clarity backed by rare-earth neodymium magnetic cores',
     badge: 'Optical Clarity'
   },
@@ -171,10 +171,6 @@ const FAQS = [
   {
     q: 'Why cast acrylic over regular plastic or photo frames?',
     a: 'We use 100% cell-cast monolithic acrylic with 93% optical light transmittance. It never yellows, does not warp, and is completely shatterproof.'
-  },
-  {
-    q: 'How is my photo printed onto the frame?',
-    a: 'Printed at 300 DPI directly onto the sub-surface of 3mm acrylic with UV-cured pigment ink and a pure white light-blocking backcoat. Resistant to moisture, sun UV, and fingerprints.'
   },
   {
     q: 'Will the neodymium magnet slide or scratch metal surfaces?',
@@ -452,18 +448,20 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   // Close product/starter-kit and return to home view (respects browser history)
   const handleCloseProduct = (targetHash?: string) => {
     try {
-      if (window.history.state?.page === 'product' || window.history.state?.page === 'starter-kit') {
-        window.history.back();
-      } else {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('product');
-        url.searchParams.delete('kit');
-        if (targetHash) {
-          url.hash = targetHash;
-        }
-        window.history.replaceState({ page: 'home' }, '', url.toString());
-        setSelectedProductId(null);
-        setIsStarterKitOpen(false);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('product');
+      url.searchParams.delete('kit');
+      if (targetHash) {
+        url.hash = targetHash;
+      }
+      window.history.replaceState({ page: 'home' }, '', url.toString());
+      setSelectedProductId(null);
+      setIsStarterKitOpen(false);
+      if (targetHash) {
+        setTimeout(() => {
+          const el = document.querySelector(targetHash);
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
       }
     } catch {
       setSelectedProductId(null);
@@ -636,8 +634,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     if (totalCartSavings > 0) {
       msg += `✨ *FACTORY DIRECT SAVINGS: ₹${totalCartSavings.toLocaleString('en-IN')}*\n`;
     }
-    msg += `🚚 *Doorstep Express Air Delivery Across India Included*\n\n`;
-    msg += `I have my photos ready for review. Please confirm order placement and dispatch timeline!`;
+    msg += `Please confirm order placement and dispatch timeline!`;
     return msg;
   };
   const buildExactQuoteMessage = (prodName: string, sizeLabel: string, dimensions: string, qty: number, unitRate: number, origRate: number, total: number, savings: number) => {
@@ -650,7 +647,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
 • Total Estimate: ₹${total.toLocaleString('en-IN')}
 • Factory Direct Savings: ₹${savings.toLocaleString('en-IN')}
 
-I have my photo ready for review. Please confirm order placement and dispatch timeline.`;
+Please confirm bulk order placement and dispatch timeline.`;
   };
 
   const handleOpenConfigurator = (shapeId: string = 'rectangle') => {
@@ -770,27 +767,18 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                 <span>WhatsApp Order ({cart.length})</span>
               </a>
             ) : (
-              <button
-                type="button"
-                onClick={() => handleOpenConfigurator('rectangle')}
+              <a
+                href={waLink("Hi KRIA Tech! I need assistance with your acrylic frames and keychains. Can you please help me?")}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs font-bold uppercase tracking-wider shadow-[0_6px_20px_rgba(37,211,102,0.28)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
               >
                 <MessageCircle className="h-4 w-4" />
-                <span>Choose Specs</span>
-              </button>
+                <span>WhatsApp Support</span>
+              </a>
             )}
 
-            {onBackToStore && (
-              <button
-                type="button"
-                onClick={onBackToStore}
-                className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-mono tracking-widest uppercase text-[#857566] hover:text-[#1E1B18] border border-[#E0D0BE]/70 rounded-full bg-white/50 hover:bg-white/90 transition-all cursor-pointer"
-                title="Switch to Storefront view"
-              >
-                <span>Store</span>
-                <ArrowRight className="h-3 w-3" />
-              </button>
-            )}
+            
           </div>
         </div>
       </header>
@@ -1255,6 +1243,16 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                 </div>
               ))}
 
+              {/* Common Hovering Sentence on Slides */}
+              <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-6 z-20 pointer-events-none">
+                <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-black/55 backdrop-blur-md border border-white/20 text-white shadow-lg inline-flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <p className="text-[11px] sm:text-xs font-serif tracking-wide drop-shadow">
+                    Diamond-Cut Acrylic Frames & Keychains · Factory Direct Hyderabad
+                  </p>
+                </div>
+              </div>
+
               {/* Slider Arrows */}
               <button
                 type="button"
@@ -1633,15 +1631,15 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             {/* Col 1: Brand Info */}
             <div className="md:col-span-5 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-white border border-[#E0D0BF] flex items-center justify-center shadow-xs">
-                  <Sparkles className="h-3.5 w-3.5 text-[#8C6436]" />
+                <div className="h-8 w-8 rounded-xl bg-white border border-[#E0D0BF] flex items-center justify-center p-1 shadow-xs overflow-hidden">
+                  <img src="/images/kria_logo_official.png" alt="KRIA Tech" className="h-full w-full object-contain" />
                 </div>
                 <span className="font-serif text-xl font-semibold tracking-tight text-[#1E1B18]">
                   KRIA<span className="text-[#A78255] font-light">Tech</span>
                 </span>
               </div>
               <p className="text-xs text-[#6E6152] leading-relaxed max-w-sm">
-                Diamond-cut 3mm monolithic cast acrylic photo magnets. Crafted with UV-cured sub-surface pigment and rare-earth neodymium magnetic cores. Factory-direct in Hyderabad.
+                Diamond-cut 3mm monolithic cast acrylic photo magnets. Crafted from 100% cell-cast acrylic with rare-earth neodymium magnetic cores. Factory-direct in Hyderabad.
               </p>
               <div className="flex items-center gap-2 text-xs font-mono text-[#8C7762]">
                 <MapPin className="h-3.5 w-3.5 text-[#8C6436]" />
@@ -1675,7 +1673,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                     <button
                       type="button"
                       onClick={onBackToStore}
-                      className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-[#1E1B18] text-[#FDFBF7] hover:bg-[#8C6436] text-[11px] font-mono font-medium tracking-wide transition-all cursor-pointer mt-1"
+                      className="hover:text-[#8C6436] transition-colors cursor-pointer text-left inline-flex items-center gap-1.5"
                     >
                       <span>Visit Full Store</span>
                       <ArrowRight className="h-3 w-3" />
@@ -1691,7 +1689,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                 WhatsApp Order Desk
               </p>
               <a
-                href={waLink("Hi KRIA Tech! I am on your website and would like to order acrylic photo magnets.")}
+                href={waLink("Hi KRIA Tech! I am interested in ordering custom acrylic photo frames and keychains. Please share your product catalog and bulk pricing.")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-bold text-[#25D366] hover:text-[#1EBE5D] transition-colors"
@@ -1699,9 +1697,6 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                 <Phone className="h-4 w-4" />
                 <span>+91 93925 76792</span>
               </a>
-              <p className="text-[11px] text-[#8F7E6E] font-mono">
-                Pan-India Express Air Shipping with Live Courier Tracking
-              </p>
             </div>
 
           </div>
@@ -1711,7 +1706,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             <div className="flex items-center gap-3">
               <span>3mm Cast Acrylic</span>
               <span>•</span>
-              <span>300 DPI UV Pigment</span>
+              <span>Optical Glass Grade</span>
               <span>•</span>
               <span>Neodymium Grip</span>
               {onBackToStore && (
@@ -1750,12 +1745,12 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
         <button
           type="button"
           onClick={() => {
-            if (cart.length > 0) {
-              window.open(waLink(buildMultiCartWhatsAppMessage()), '_blank');
-            } else if (activeProduct && currentSize) {
+            if (activeProduct && currentSize) {
               window.open(waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings)), '_blank');
+            } else if (cart.length > 0) {
+              window.open(waLink(buildMultiCartWhatsAppMessage()), '_blank');
             } else {
-              handleOpenConfigurator('rectangle');
+              window.open(waLink("Hi KRIA Tech! I need assistance with your acrylic frames and keychains. Can you please help me?"), '_blank');
             }
           }}
           className="group flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-full bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:shadow-[0_12px_40px_rgba(37,211,102,0.55)] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
@@ -1769,7 +1764,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
             </span>
           </div>
           <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">
-            {cart.length > 0 ? `WhatsApp Order (${cart.length})` : activeProduct ? 'WhatsApp Exact Specs' : 'Configure & WhatsApp'}
+            {activeProduct ? 'WhatsApp Order' : cart.length > 0 ? `WhatsApp Order (${cart.length})` : 'WhatsApp Support'}
           </span>
         </button>
       </div>
