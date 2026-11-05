@@ -1654,7 +1654,7 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
               <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#8C6436] font-bold">
                 Navigation
               </p>
-              <ul className="text-xs text-[#635546] space-y-1.5">
+              <ul className="text-xs text-[#635546] space-y-2">
                 <li>
                   <a href="#products" onClick={() => handleCloseProduct('#products')} className="hover:text-[#8C6436] transition-colors">
                     Products
@@ -1670,6 +1670,18 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
                     Subscription
                   </a>
                 </li>
+                {onBackToStore && (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={onBackToStore}
+                      className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-[#1E1B18] text-[#FDFBF7] hover:bg-[#8C6436] text-[11px] font-mono font-medium tracking-wide transition-all cursor-pointer mt-1"
+                    >
+                      <span>Visit Full Store</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -1702,6 +1714,18 @@ I have my photo ready for review. Please confirm order placement and dispatch ti
               <span>300 DPI UV Pigment</span>
               <span>•</span>
               <span>Neodymium Grip</span>
+              {onBackToStore && (
+                <>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={onBackToStore}
+                    className="text-[#8C6436] hover:text-[#1E1B18] font-bold uppercase underline underline-offset-2 transition-colors cursor-pointer"
+                  >
+                    Online Store
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
