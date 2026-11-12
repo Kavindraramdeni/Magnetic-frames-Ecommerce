@@ -21,14 +21,33 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/kria_logo_official.png" />
 
     <!-- JSON-LD Structured Data for Google Search Rich Results & Brand Logo -->
+    <!-- Open Graph / Social Sharing (Facebook, WhatsApp, LinkedIn, Instagram) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="KRIA TECH" />
+    <meta property="og:url" content="https://kriatech.in/" />
+    <meta property="og:title" content="KRIA Tech | Luxury Custom Acrylic Photo Fridge Magnets & Keychains" />
+    <meta property="og:description" content="Factory-direct 3mm diamond-cut acrylic photo frames, fridge magnets, and keychains handcrafted in Hyderabad. Special Starter Kit: 12 frames for ₹999." />
+    <meta property="og:image" content="https://kriatech.in/images/kria_logo_official.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="KRIA TECH Official Emblem Logo" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="KRIA Tech | Luxury Custom Acrylic Photo Magnets & Keychains" />
+    <meta name="twitter:description" content="Factory-direct 3mm diamond-cut acrylic photo fridge magnets & keychains in Hyderabad. Bulk discounts for stall owners and resellers." />
+    <meta name="twitter:image" content="https://kriatech.in/images/kria_logo_official.png" />
+
+    <!-- Google Search Rich Snippets: Organization, Products, Pricing & FAQ Schema -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@graph": [
         {
-          "@type": "Organization",
+          "@type": ["LocalBusiness", "Organization"],
           "@id": "https://kriatech.in/#organization",
           "name": "KRIA Tech",
+          "alternateName": ["KRIA Tech Hyderabad", "kriatech.in", "KRIA Acrylic Atelier"],
           "url": "https://kriatech.in/",
           "logo": {
             "@type": "ImageObject",
@@ -39,16 +58,20 @@
           },
           "image": "https://kriatech.in/images/kria_logo_official.png",
           "description": "Manufacturer of luxury diamond-cut acrylic photo frames, fridge magnets, and keychains direct from Hyderabad facility.",
+          "telephone": "+91-9392576792",
+          "priceRange": "₹149 - ₹999",
           "address": {
             "@type": "PostalAddress",
             "addressLocality": "Hyderabad",
             "addressRegion": "Telangana",
             "addressCountry": "IN"
           },
+          "areaServed": "IN",
           "contactPoint": {
             "@type": "ContactPoint",
             "telephone": "+91-9392576792",
             "contactType": "sales",
+            "areaServed": "IN",
             "availableLanguage": ["English", "Hindi", "Telugu"]
           }
         },
@@ -58,79 +81,97 @@
           "url": "https://kriatech.in/",
           "name": "KRIA Tech",
           "publisher": { "@id": "https://kriatech.in/#organization" }
+        },
+        {
+          "@type": "Product",
+          "name": "KRIA Tech Starter Kit (12 Custom Acrylic Frames & Keychains)",
+          "image": "https://kriatech.in/images/starter_kit_complete_fridge_collection.jpg",
+          "description": "Complete Starter Kit featuring 10 custom acrylic photo frames + 2 FREE bonus keychains made with 3mm monolithic cell-cast glass and neodymium magnets.",
+          "brand": { "@type": "Brand", "name": "KRIA Tech" },
+          "offers": {
+            "@type": "Offer",
+            "url": "https://kriatech.in/#starter-kit",
+            "priceCurrency": "INR",
+            "price": "999",
+            "availability": "https://schema.org/InStock",
+            "itemCondition": "https://schema.org/NewCondition"
+          }
+        },
+        {
+          "@type": "Product",
+          "name": "Custom Acrylic Photo Fridge Magnets (Rectangle, Square, Circle, Heart)",
+          "image": "https://kriatech.in/images/prod_thumb_rectangle.png",
+          "description": "Personalized diamond-cut acrylic photo fridge magnets handcrafted in Hyderabad with grade N35 rare-earth neodymium flush magnets.",
+          "brand": { "@type": "Brand", "name": "KRIA Tech" },
+          "offers": {
+            "@type": "AggregateOffer",
+            "priceCurrency": "INR",
+            "lowPrice": "199",
+            "highPrice": "349",
+            "offerCount": "12",
+            "offers": [
+              {
+                "@type": "Offer",
+                "name": "Classic Rectangle Frame",
+                "price": "229",
+                "priceCurrency": "INR",
+                "availability": "https://schema.org/InStock"
+              },
+              {
+                "@type": "Offer",
+                "name": "Minimal Square Frame",
+                "price": "199",
+                "priceCurrency": "INR",
+                "availability": "https://schema.org/InStock"
+              },
+              {
+                "@type": "Offer",
+                "name": "Keychains",
+                "price": "149",
+                "priceCurrency": "INR",
+                "availability": "https://schema.org/InStock"
+              }
+            ]
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Why cast acrylic over regular plastic or photo frames?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "We use 100% cell-cast monolithic acrylic with 93% optical light transmittance. It never yellows, does not warp, and is completely shatterproof."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Will the neodymium magnet slide or scratch metal surfaces?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. Grade N35 rare-earth neodymium magnets are countersunk flush into the back for strong shear resistance that will not slip down or scratch enamel."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What is included in the ₹999 Starter Kit?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The Starter Kit includes 10 custom acrylic photo frames (Square, Portrait, Gallery, Heart, Circle, Cloud, Filmstrip) plus 2 FREE Bonus Acrylic Photo Keychains with doorstep delivery across India."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How fast is dispatch and shipping across India?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Produced within 24-48 hours at our Hyderabad facility, then shipped via express air couriers delivering in 2-4 business days with tracking."
+              }
+            }
+          ]
         }
       ]
-    }
-    </script>
-
-    <!-- Open Graph / Social Sharing (Facebook, WhatsApp, LinkedIn, Instagram) -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="KRIA TECH" />
-    <meta property="og:url" content="https://kriatech.in" />
-    <meta property="og:title" content="KRIA TECH | Luxury Custom Acrylic Photo Fridge Magnets & Keychains" />
-    <meta property="og:description" content="Turn your cherished memories into luxury 3mm diamond-cut acrylic photo fridge magnets and keychains. High-gloss sub-surface UV finish with neodymium magnets. Fast pan-India delivery." />
-    <meta property="og:image" content="https://kriatech.in/images/kria_logo_official.png" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
-    <meta property="og:image:alt" content="KRIA TECH Official Emblem Logo" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="KRIA TECH | Luxury Custom Acrylic Photo Magnets & Keychains" />
-    <meta name="twitter:description" content="Custom 3mm diamond-cut acrylic photo fridge magnets & keychains handcrafted in Hyderabad. Fast pan-India air shipping." />
-    <meta name="twitter:image" content="https://kriatech.in/images/kria_logo_official.png" />
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-    <!-- Google Analytics GA4 Tag (Replace GA_MEASUREMENT_ID when live) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KRIASTUDIO1"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-KRIASTUDIO1');
-    </script>
-
-    <!-- Meta Facebook Pixel Tag (Replace PIXEL_ID when live) -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '1234567890123456');
-      fbq('track', 'PageView');
-    </script>
-
-    <!-- JSON-LD E-Commerce Schema Markup for Google Search Ranking -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org/",
-      "@type": "Organization",
-      "name": "KRIA TECH",
-      "alternateName": ["kriatech.in", "KRIA Tech Hyderabad", "KRIA Acrylic Studio"],
-      "url": "https://kriatech.in",
-      "logo": "https://kriatech.in/images/kria_logo_official.png",
-      "description": "KRIA Tech crafts handcrafted 3mm monolithic cell-cast acrylic photo fridge magnets and keychains with 300 DPI sub-surface UV printing and rare-earth neodymium magnets in Hyderabad, India.",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Hyderabad",
-        "addressRegion": "Telangana",
-        "addressCountry": "IN"
-      },
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "telephone": "+91 9392576792",
-        "contactType": "customer service",
-        "areaServed": "IN",
-        "availableLanguage": ["English", "Hindi", "Telugu"]
-      }
     }
     </script>
   </head>
