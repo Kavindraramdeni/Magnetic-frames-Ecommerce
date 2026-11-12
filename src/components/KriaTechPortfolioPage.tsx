@@ -150,7 +150,7 @@ const HERO_SLIDES = [
   {
     image: '/images/hero_3.jpg',
     title: 'Demo Starter Kit · 24 Pieces for ₹999',
-    subtitle: 'Includes 10 custom acrylic frames + 2 FREE bonus keychains with free delivery',
+    subtitle: 'Includes 20 acrylic frames in different sizes & shapes + 4 FREE bonus keychains with free delivery',
     badge: 'Special Value Offer'
   },
   {
@@ -170,15 +170,23 @@ const HERO_SLIDES = [
 const FAQS = [
   {
     q: 'Why cast acrylic over regular plastic or photo frames?',
-    a: 'We use 100% cell-cast monolithic acrylic with 93% optical light transmittance. It never yellows, does not warp, and is completely shatterproof.'
+    a: 'We use 100% cell-cast monolithic 2mm acrylic with 93% optical light transmittance. It never yellows, does not warp, and is completely shatterproof.'
   },
   {
     q: 'Will the neodymium magnet slide or scratch metal surfaces?',
     a: 'No. Grade N35 rare-earth neodymium magnets are countersunk flush into the back for strong shear resistance that will not slip down or scratch enamel.'
   },
   {
-    q: 'What is included in the ₹999 Starter Kit?',
-    a: 'The Starter Kit includes 10 custom acrylic photo frames (Square K1, Portrait K2, Gallery K3, Heart K4, Circle K5, Cloud K6, Wide Cloud K6-L, Filmstrip K7, Grande K9, and Adhesive K2) plus 2 FREE Bonus Acrylic Photo Keychains (Round K10 & Pocket Mini K11) with free doorstep air delivery across India.'
+    q: 'What is included in the ₹999 Demo Starter Kit?',
+    a: 'The Kria Tech Demo Starter Kit includes 20 custom acrylic photo frames in different sizes and shapes plus 4 FREE Bonus Acrylic Photo Keychains (24 pieces total) with free doorstep air delivery across India — ideal for stall owners and resellers to test quality before ordering in bulk.'
+  },
+  {
+    q: 'Do you offer wholesale pricing and bulk discounts for resellers and stall owners?',
+    a: 'Yes. We offer factory-direct B2B wholesale pricing with tiered bulk discounts starting from low MOQs for fridge magnet stall owners, gift shops, photographers, and resellers across India.'
+  },
+  {
+    q: 'Can we order custom acrylic magnets for corporate gifting or wedding return gifts?',
+    a: 'Yes. We manufacture bulk custom-branded corporate gifts, conference keepsakes, and wedding return gifts in Rectangle, Square, Circle, Heart, and Keychain formats with pan-India express dispatch.'
   },
   {
     q: 'How fast is dispatch and shipping across India?',
@@ -1289,13 +1297,13 @@ Please confirm bulk order placement and dispatch timeline.`;
           <section id="products" className="py-8 sm:py-14 max-w-7xl mx-auto px-4 sm:px-8">
             <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
               <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-1.5">
-                Curated Collection
+                Factory-Direct B2B Wholesale · Hyderabad
               </p>
-              <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18]">
-                Five Signature Forms & Keychains
-              </h2>
+              <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18]">
+                Wholesale Custom Acrylic Magnets &amp; Keychains
+              </h1>
               <p className="mt-2 text-xs sm:text-sm text-[#6E6153] leading-relaxed">
-                Choose your shape to preview dimensions, magnet specifications, and tier discounts.
+                Choose a 2mm cast acrylic shape to preview dimensions, N35 neodymium magnet specs, and bulk tier discounts.
               </p>
             </div>
 
@@ -1312,7 +1320,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                     <div className={`relative h-56 sm:h-64 rounded-2xl bg-gradient-to-b ${prod.bgGlow} flex items-center justify-center p-2 overflow-hidden mb-3.5 transition-transform duration-300 group-hover:scale-[1.02]`}>
                       <img
                         src={prod.image}
-                        alt={prod.name}
+                        alt={`${prod.name} — Wholesale Custom 2mm Acrylic Photo Fridge Magnet by KRIA Tech`}
                         className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(90,60,30,0.18)] group-hover:scale-110 transition-transform duration-500"
                       />
                       <div className="absolute top-2.5 right-2.5">
