@@ -112,7 +112,7 @@ const PRODUCTS: Product[] = [
     id: 'keychain',
     name: 'Keychains',
     tagline: 'Pocket Luxury & Daily Companions',
-    subtitle: 'Dual-sided 3mm acrylic photo keychain with metallic swivel ring',
+    subtitle: 'Dual-sided 2mm acrylic photo keychain with metallic swivel ring',
     image: '/images/prod_thumb_keychain.jpg',
     category: 'Keychains & Accessories',
     sizes: [
@@ -138,7 +138,7 @@ const HERO_SLIDES = [
   {
     image: '/images/hero_1.jpg',
     title: 'Diamond-Cut Acrylic Frame Magnets',
-    subtitle: 'Laser-contoured 3mm monolithic cast acrylic handcrafted in Hyderabad',
+    subtitle: 'Laser-contoured 2mm monolithic cast acrylic handcrafted in Hyderabad',
     badge: 'Real Lifestyle Gallery'
   },
   {
@@ -852,7 +852,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                   
                   {/* Acrylic Spec Floating Pill */}
                   <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono font-bold uppercase tracking-wider text-[#7C6348] shadow-xs pointer-events-none">
-                    3mm Optical Cast Glass
+                    2mm Optical Cast Glass
                   </div>
 
                   <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E4D3C0] text-[10px] font-mono text-[#5A4D3F] shadow-xs flex items-center gap-1.5 pointer-events-none">
@@ -1075,7 +1075,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Check className="h-4 w-4 text-[#8C6436] shrink-0" />
-                  <span>Clear 3mm cast acrylic with flush neodymium magnetic closure</span>
+                  <span>Clear 2mm cast acrylic with flush neodymium magnetic closure</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Check className="h-4 w-4 text-[#8C6436] shrink-0" />
@@ -1317,7 +1317,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                       />
                       <div className="absolute top-2.5 right-2.5">
                         <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB] shadow-xs">
-                          3mm Cast
+                          2mm Cast
                         </span>
                       </div>
                     </div>
@@ -1636,7 +1636,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                 </span>
               </div>
               <p className="text-xs text-[#6E6152] leading-relaxed max-w-sm">
-                Diamond-cut 3mm monolithic cast acrylic photo magnets. Crafted from 100% cell-cast acrylic with rare-earth neodymium magnetic cores. Factory-direct in Hyderabad.
+                Diamond-cut 2mm monolithic cast acrylic photo magnets. Crafted from 100% cell-cast acrylic with rare-earth neodymium magnetic cores. Factory-direct in Hyderabad.
               </p>
               <div className="flex items-center gap-2 text-xs font-mono text-[#8C7762]">
                 <MapPin className="h-3.5 w-3.5 text-[#8C6436]" />
@@ -1698,7 +1698,7 @@ Please confirm bulk order placement and dispatch timeline.`;
           <div className="mt-10 pt-5 border-t border-[#E8DACB] flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] font-mono text-[#8F7E6E]">
             <p>© {new Date().getFullYear()} KRIA Tech. All rights reserved.</p>
             <div className="flex items-center gap-3">
-              <span>3mm Cast Acrylic</span>
+              <span>2mm Cast Acrylic</span>
               <span>•</span>
               <span>Optical Glass Grade</span>
               <span>•</span>
