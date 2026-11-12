@@ -2409,6 +2409,11 @@ app.post("/api/shiprocket/schedule-pickup", requireAdmin, async (req, res) => {
   }
 });
 
+app.get("/google81c247d102102a90.html", (_req, res) => {
+  res.type("text/html");
+  res.send("google-site-verification: google81c247d102102a90.html");
+});
+
 app.get("/robots.txt", async (_req, res) => {
   res.type("text/plain");
   res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: https://kriatech.in/sitemap.xml`);
