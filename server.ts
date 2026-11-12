@@ -2411,7 +2411,7 @@ app.post("/api/shiprocket/schedule-pickup", requireAdmin, async (req, res) => {
 
 app.get("/robots.txt", async (_req, res) => {
   res.type("text/plain");
-  res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: https://magnetic-frames-ecommerce.onrender.com/sitemap.xml`);
+  res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: https://kriatech.in/sitemap.xml`);
 });
 
 app.get("/sitemap.xml", async (_req, res) => {
@@ -2419,16 +2419,34 @@ app.get("/sitemap.xml", async (_req, res) => {
   res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://magnetic-frames-ecommerce.onrender.com/</loc>
+    <loc>https://kriatech.in/</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://magnetic-frames-ecommerce.onrender.com/tracking</loc>
+    <loc>https://kriatech.in/#products</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://kriatech.in/#starter-kit</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://kriatech.in/#subscription</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://kriatech.in/tracking</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>`);
 });
