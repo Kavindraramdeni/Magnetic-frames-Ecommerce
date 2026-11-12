@@ -1650,17 +1650,15 @@ Please confirm bulk order placement and dispatch timeline.`;
                     Subscription
                   </a>
                 </li>
-                {onBackToStore && (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={onBackToStore}
-                      className="hover:text-[#8C6436] transition-colors cursor-pointer text-left"
-                    >
-                      Store
-                    </button>
-                  </li>
-                )}
+                <li>
+                  <a
+                    href="#products"
+                    onClick={() => handleCloseProduct('#products')}
+                    className="hover:text-[#8C6436] transition-colors cursor-pointer text-left"
+                  >
+                    Store
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -1690,18 +1688,6 @@ Please confirm bulk order placement and dispatch timeline.`;
               <span>Optical Glass Grade</span>
               <span>•</span>
               <span>Neodymium Grip</span>
-              {onBackToStore && (
-                <>
-                  <span>•</span>
-                  <button
-                    type="button"
-                    onClick={onBackToStore}
-                    className="text-[#8C6436] hover:text-[#1E1B18] font-bold uppercase underline underline-offset-2 transition-colors cursor-pointer"
-                  >
-                    Store
-                  </button>
-                </>
-              )}
             </div>
           </div>
         </div>

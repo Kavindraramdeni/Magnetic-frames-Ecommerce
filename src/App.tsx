@@ -333,20 +333,8 @@ export default function App() {
     setCurrentView('admin');
   };
 
-  if (currentView === 'home' || currentView === 'portfolio') {
-    return (
-      <KriaTechPortfolioPage
-        onBackToStore={() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          try {
-            const url = new URL(window.location.href);
-            url.searchParams.set('view', 'store');
-            window.history.pushState({ view: 'store' }, '', url.toString());
-          } catch {}
-          setCurrentView('store');
-        }}
-      />
-    );
+  if (currentView === 'home' || currentView === 'portfolio' || currentView === 'store') {
+    return <KriaTechPortfolioPage />;
   }
 
   if (currentView === 'wholesale' || currentView === 'b2b' || currentView === 'style-experience') {
