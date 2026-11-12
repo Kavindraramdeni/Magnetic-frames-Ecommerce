@@ -149,7 +149,7 @@ const HERO_SLIDES = [
   },
   {
     image: '/images/hero_3.jpg',
-    title: 'Starter Kit · 12 Frames for ₹999',
+    title: 'Demo Starter Kit · 24 Pieces for ₹999',
     subtitle: 'Includes 10 custom acrylic frames + 2 FREE bonus keychains with free delivery',
     badge: 'Special Value Offer'
   },
@@ -716,7 +716,7 @@ Please confirm bulk order placement and dispatch timeline.`;
               onClick={() => handleCloseProduct('#starter-kit')}
               className="hover:text-[#1E1B18] transition-colors py-1 cursor-pointer"
             >
-              Starter Kit (12 for ₹999)
+              Demo Starter Kit (₹999)
             </a>
             <a 
               href="#subscription" 
@@ -1128,7 +1128,7 @@ Please confirm bulk order placement and dispatch timeline.`;
 
                     {/* Floating Badges */}
                     <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md text-[#7C6348] font-mono text-xs font-bold border border-[#EADBCC] shadow-md pointer-events-none">
-                      All 12 Pieces in Kit
+                      24 Pieces Total
                     </div>
 
                     <div className="absolute top-4 right-4 px-3.5 py-1.5 rounded-full bg-emerald-600 text-white font-mono text-xs font-bold shadow-md pointer-events-none">
@@ -1149,28 +1149,43 @@ Please confirm bulk order placement and dispatch timeline.`;
                 <div className="space-y-3">
                   <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-xs tracking-wider uppercase font-semibold border border-[#E8DACB]">
                     <Sparkles className="h-3.5 w-3.5 text-[#8C6436]" />
-                    <span>10 Custom Frames + 2 FREE Keychains</span>
+                    <span>Kria Tech Demo Starter Kit</span>
                   </div>
 
                   <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
-                    Starter Kit with 12 Frames
+                    Start Your Magnet Business for Just ₹999!
                   </h1>
 
-                  <p className="font-serif italic text-lg sm:text-xl text-[#8C6436]">
-                    Ready to bring your 12 memories to life?
-                  </p>
+                  <ul className="space-y-2 text-xs sm:text-sm text-[#52463A] font-sans">
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Start a fridge magnet stall with minimal investment.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Test our quality before ordering in bulk.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>20 Acrylic Frames in different sizes & shapes.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>4 FREE Bonus Keychains — <strong>24 Pieces Total</strong>.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Perfect for beginners, stall owners & resellers.</span>
+                    </li>
+                  </ul>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1 pt-1">
                     <div className="flex items-baseline gap-3">
                       <span className="font-serif text-4xl sm:text-6xl font-bold text-[#1E1B18] tracking-tight">₹999</span>
-                      <span className="text-base sm:text-lg font-mono text-[#8C7A68] line-through">₹2,499</span>
                       <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-3 py-1 rounded-full uppercase tracking-wider">
-                        Special Factory Direct Price
+                        Special Starter Kit Price
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm text-[#695B4E] font-medium leading-relaxed">
-                      10 Custom Acrylic Frames + 2 FREE Bonus Keychains (12 total pieces)
-                    </p>
                   </div>
                 </div>
 
@@ -1179,13 +1194,13 @@ Please confirm bulk order placement and dispatch timeline.`;
                 {/* Direct WhatsApp CTA Button */}
                 <div className="space-y-3 pt-2">
                   <a
-                    href={waLink("Hi KRIA Tech! I would like to order the Starter Kit with 12 Frames (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains as shown in the starter kit photo). Please confirm bulk order placement and dispatch timeline.")}
+                    href={waLink("Hi KRIA Tech! I would like to order the Kria Tech Demo Starter Kit (₹999 Special Starter Kit Price: 20 Acrylic Frames in different sizes & shapes + 4 FREE Bonus Keychains — 24 Pieces Total). Please confirm order placement and dispatch timeline.")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.16em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
                   >
                     <MessageCircle className="h-5 w-5" />
-                    <span>Order 12-Piece Kit on WhatsApp (₹999)</span>
+                    <span>Order Your Starter Kit</span>
                   </a>
 
                   <p className="text-[11px] font-mono text-center text-[#8C7A68]">
@@ -1354,18 +1369,18 @@ Please confirm bulk order placement and dispatch timeline.`;
                 <div 
                   onClick={handleOpenStarterKit}
                   className="lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.12)] border border-white group cursor-pointer"
-                  title="Click to inspect all 12 products on the fridge"
+                  title="Click to inspect the Demo Starter Kit"
                 >
                   <div className="relative aspect-[4/3] rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF4ED]">
                     <img 
                       src="/images/starter_kit_complete_fridge_collection.jpg" 
-                      alt="Starter Kit with 12 Frames Preview on Refrigerator"
+                      alt="Kria Tech Demo Starter Kit Preview"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                     
                     <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] font-mono text-[10px] sm:text-[11px] font-bold border border-[#EADBCC] shadow-xs">
-                      All 12 Pieces in Kit
+                      24 Pieces Total
                     </div>
                     
                     <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-emerald-600 text-white font-mono text-[10px] sm:text-[11px] font-bold shadow-md">
@@ -1375,7 +1390,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-[11px] font-mono">
                       <span className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full">
                         <ZoomIn className="h-3 w-3" />
-                        <span>Tap to zoom 12 products</span>
+                        <span>Tap to zoom starter kit</span>
                       </span>
                     </div>
                   </div>
@@ -1385,68 +1400,68 @@ Please confirm bulk order placement and dispatch timeline.`;
                 <div className="lg:col-span-7 space-y-4 sm:space-y-5">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-[11px] tracking-wider uppercase font-semibold">
                     <Package className="h-3.5 w-3.5 text-[#8C6436]" />
-                    <span>Special Discovery Offer</span>
+                    <span>Kria Tech Demo Starter Kit</span>
                   </div>
 
                   <div>
                     <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
-                      Starter Kit with 12 Frames
+                      Start Your Magnet Business for Just ₹999!
                     </h2>
-                    <p className="font-serif italic text-base sm:text-xl text-[#8C6436] mt-1 font-medium">
-                      Ready to bring your 12 memories to life?
-                    </p>
                   </div>
 
-                  <div className="space-y-1.5 py-1">
+                  <ul className="space-y-2 text-xs sm:text-sm text-[#52463A] font-sans">
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Start a fridge magnet stall with minimal investment.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Test our quality before ordering in bulk.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>20 Acrylic Frames in different sizes & shapes.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>4 FREE Bonus Keychains — <strong>24 Pieces Total</strong>.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Perfect for beginners, stall owners & resellers.</span>
+                    </li>
+                  </ul>
+
+                  <div className="space-y-1 py-1">
                     <div className="flex items-baseline gap-3">
                       <span className="font-serif text-4xl sm:text-6xl font-bold text-[#1E1B18] tracking-tight">₹999</span>
-                      <span className="text-base sm:text-lg font-mono text-[#8C7A68] line-through">₹2,499</span>
                       <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-3 py-1 rounded-full uppercase tracking-wider">
-                        Special Offer
+                        Special Starter Kit Price
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm text-[#615446] leading-relaxed font-medium">
-                      10 Custom Acrylic Frames + 2 FREE Bonus Keychains (12 total pieces)
-                    </p>
                   </div>
 
-                  {/* Highlights Checklist without Free Air Delivery */}
-                  <div className="grid grid-cols-3 gap-2 text-[11px] sm:text-xs text-[#5D5042] font-mono">
-                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
-                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span>10 Frames</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
-                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span>2 Keychains</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-white/70 border border-[#E8DACB]">
-                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span>3mm Cast</span>
-                    </div>
-                  </div>
-
-                  {/* Below Buttons: Button to open all 12 products + Button for WhatsApp order */}
+                  {/* Below Buttons: Button to inspect kit + CTA for WhatsApp order */}
                   <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-                    {/* Button 1: Opens all 12 products */}
+                    {/* Button 1: Opens full kit preview */}
                     <button
                       type="button"
                       onClick={handleOpenStarterKit}
                       className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-md transition-all cursor-pointer group"
                     >
-                      <span>View Starter Kit (12 Frames)</span>
+                      <span>View Demo Starter Kit</span>
                       <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                     </button>
 
                     {/* Button 2: WhatsApp order */}
                     <a
-                      href={waLink("Hi KRIA Tech! I would like to order the Starter Kit with 12 Frames (₹999 Total: 10 Custom Acrylic Frames + 2 FREE Bonus Keychains). Please confirm bulk order placement and dispatch timeline.")}
+                      href={waLink("Hi KRIA Tech! I would like to order the Kria Tech Demo Starter Kit (₹999 Special Starter Kit Price: 20 Acrylic Frames in different sizes & shapes + 4 FREE Bonus Keychains — 24 Pieces Total). Please confirm order placement and dispatch timeline.")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
                     >
                       <MessageCircle className="h-4 w-4" />
-                      <span>Order on WhatsApp (₹999)</span>
+                      <span>Order Your Starter Kit</span>
                     </a>
                   </div>
 
@@ -1642,7 +1657,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                 </li>
                 <li>
                   <a href="#starter-kit" onClick={() => handleCloseProduct('#starter-kit')} className="hover:text-[#8C6436] transition-colors">
-                    Starter Kit (12 for ₹999)
+                    Demo Starter Kit (₹999)
                   </a>
                 </li>
                 <li>
