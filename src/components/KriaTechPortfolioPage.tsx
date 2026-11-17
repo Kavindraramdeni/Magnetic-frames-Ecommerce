@@ -56,9 +56,9 @@ const PRODUCTS: Product[] = [
     image: '/images/prod_thumb_rectangle.png',
     category: 'Landscape & Panorama',
     sizes: [
-      { label: '3.5 × 2.5"', dimensions: '3.5 × 2.5 inch', basePrice: 229, originalPrice: 329, previewImage: '/images/dimension_preview_3.5x2.5.png' },
-      { label: '3 × 4"', dimensions: '3 × 4 inch', basePrice: 279, originalPrice: 379, previewImage: '/images/dimension_preview_3x4.png' },
-      { label: '6 × 4"', dimensions: '6 × 4 inch', basePrice: 349, originalPrice: 499, previewImage: '/images/dimension_preview_6x4.png' }
+      { label: '3.5 × 2.5"', dimensions: '3.5 × 2.5 inch', basePrice: 64, originalPrice: 99, previewImage: '/images/dimension_preview_3.5x2.5.png' },
+      { label: '3 × 4"', dimensions: '3 × 4 inch', basePrice: 75, originalPrice: 119, previewImage: '/images/dimension_preview_3x4.png' },
+      { label: '6 × 4"', dimensions: '6 × 4 inch', basePrice: 113, originalPrice: 179, previewImage: '/images/dimension_preview_6x4.png' }
     ],
     accentColor: '#365349',
     bgGlow: 'from-emerald-100/60 via-sand-50/40 to-transparent'
@@ -71,9 +71,9 @@ const PRODUCTS: Product[] = [
     image: '/images/prod_thumb_square.png',
     category: 'Grid & Modern Living',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_square_2x2.jpg' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/dimension_preview_square_3x3.jpg' },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/dimension_preview_square_4x4.jpg' }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 49, originalPrice: 79, previewImage: '/images/dimension_preview_square_2x2.jpg' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 65, originalPrice: 99, previewImage: '/images/dimension_preview_square_3x3.jpg' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 88, originalPrice: 139, previewImage: '/images/dimension_preview_square_4x4.jpg' }
     ],
     accentColor: '#A3704C',
     bgGlow: 'from-amber-100/60 via-stone-50/40 to-transparent'
@@ -86,9 +86,9 @@ const PRODUCTS: Product[] = [
     image: '/images/prod_thumb_circle.png',
     category: 'Modern Living',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_circle_2x2.png' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/dimension_preview_circle_3x3.png' },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/dimension_preview_circle_4x4.png' }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 49, originalPrice: 79, previewImage: '/images/dimension_preview_circle_2x2.png' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 65, originalPrice: 99, previewImage: '/images/dimension_preview_circle_3x3.png' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 88, originalPrice: 139, previewImage: '/images/dimension_preview_circle_4x4.png' }
     ],
     accentColor: '#4A6B82',
     bgGlow: 'from-sky-100/60 via-amber-50/40 to-transparent'
@@ -101,9 +101,9 @@ const PRODUCTS: Product[] = [
     image: '/images/prod_thumb_heart.png',
     category: 'Celebration & Gifting',
     sizes: [
-      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 199, originalPrice: 299, previewImage: '/images/dimension_preview_heart_2x2.png' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 249, originalPrice: 349, previewImage: '/images/dimension_preview_heart_3x3.png' },
-      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 299, originalPrice: 399, previewImage: '/images/dimension_preview_heart_4x4.png' }
+      { label: '2 × 2"', dimensions: '2 × 2 inch', basePrice: 49, originalPrice: 79, previewImage: '/images/dimension_preview_heart_2x2.png' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch', basePrice: 65, originalPrice: 99, previewImage: '/images/dimension_preview_heart_3x3.png' },
+      { label: '4 × 4"', dimensions: '4 × 4 inch', basePrice: 88, originalPrice: 139, previewImage: '/images/dimension_preview_heart_4x4.png' }
     ],
     accentColor: '#B76E79',
     bgGlow: 'from-rose-100/60 via-pink-50/40 to-transparent'
@@ -116,8 +116,8 @@ const PRODUCTS: Product[] = [
     image: '/images/prod_thumb_keychain.jpg',
     category: 'Keychains & Accessories',
     sizes: [
-      { label: '2.5"', dimensions: '2.5 inch Circle with Ring', basePrice: 149, originalPrice: 249, previewImage: '/images/keychain_circle_official.jpg' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch Square with Ring', basePrice: 179, originalPrice: 279, previewImage: '/images/keychain_square_official.jpg' }
+      { label: '2.5"', dimensions: '2.5 inch Circle with Ring', basePrice: 40, originalPrice: 69, previewImage: '/images/keychain_circle_official.jpg' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch Square with Ring', basePrice: 48, originalPrice: 79, previewImage: '/images/keychain_square_official.jpg' }
     ],
     accentColor: '#D97706',
     bgGlow: 'from-orange-100/60 via-amber-50/40 to-transparent'
@@ -125,12 +125,12 @@ const PRODUCTS: Product[] = [
 ];
 
 const QUANTITY_TIERS = [
-  { label: '50 Pcs', count: 50, discountPct: 30 },
-  { label: '100 pcs', count: 100, discountPct: 35 },
-  { label: '250 pcs', count: 250, discountPct: 40 },
-  { label: '500 pcs', count: 500, discountPct: 45 },
-  { label: '1000 pcs', count: 1000, discountPct: 50 },
-  { label: 'Custom', count: 0, discountPct: 30 }
+  { label: '50 Pcs', count: 50, discountPct: 15 },
+  { label: '100 pcs', count: 100, discountPct: 25 },
+  { label: '250 pcs', count: 250, discountPct: 28 },
+  { label: '500 pcs', count: 500, discountPct: 30 },
+  { label: '1000 pcs', count: 1000, discountPct: 33 },
+  { label: 'Custom', count: 0, discountPct: 15 }
 ];
 
 // Sliding images for Hero Carousel
@@ -533,9 +533,9 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   // Calculation for Product Detail Page
   const currentSize = activeProduct ? activeProduct.sizes[activeSizeIndex] || activeProduct.sizes[0] : null;
   const currentTier = QUANTITY_TIERS.find((t) => t.label === selectedQtyLabel) || QUANTITY_TIERS[0];
-  const actualQty = currentTier.label === 'Custom' ? Math.max(1, customQtyValue) : currentTier.count;
-  const discountRate = actualQty >= 1000 ? 0.50 : actualQty >= 500 ? 0.45 : actualQty >= 250 ? 0.40 : actualQty >= 100 ? 0.35 : actualQty >= 50 ? 0.30 : 0.15;
-  const unitOriginalPrice = currentSize ? currentSize.basePrice : 199;
+  const actualQty = currentTier.label === 'Custom' ? Math.max(50, customQtyValue) : currentTier.count;
+  const discountRate = actualQty >= 1000 ? 0.33 : actualQty >= 500 ? 0.30 : actualQty >= 250 ? 0.28 : actualQty >= 100 ? 0.25 : 0.15;
+  const unitOriginalPrice = currentSize ? currentSize.basePrice : 49;
   const unitDiscountedPrice = Math.round(unitOriginalPrice * (1 - discountRate));
   const discountPercentage = Math.round(discountRate * 100);
   const totalPrice = unitDiscountedPrice * actualQty;
@@ -569,7 +569,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
         const existing = updated[existingIdx];
         const newQty = existing.quantity + newItem.quantity;
         // Recalculate tier discount
-        const newDiscountRate = newQty >= 1000 ? 0.50 : newQty >= 500 ? 0.45 : newQty >= 250 ? 0.40 : newQty >= 100 ? 0.35 : newQty >= 50 ? 0.30 : 0.15;
+        const newDiscountRate = newQty >= 1000 ? 0.33 : newQty >= 500 ? 0.30 : newQty >= 250 ? 0.28 : newQty >= 100 ? 0.25 : 0.15;
         const newUnitPrice = Math.round(existing.originalUnitPrice * (1 - newDiscountRate));
         updated[existingIdx] = {
           ...existing,
@@ -1002,13 +1002,13 @@ Please confirm bulk order placement and dispatch timeline.`;
                 {/* Custom Quantity Stepper if Custom is chosen */}
                 {selectedQtyLabel === 'Custom' && (
                   <div className="mt-4 pt-3 border-t border-[#EFE5D9] flex items-center gap-3">
-                    <span className="text-xs font-mono text-[#6E6153]">Enter exact pieces:</span>
+                    <span className="text-xs font-mono text-[#6E6153]">Enter exact pieces (MOQ 50):</span>
                     <input
                       type="number"
-                      min={1}
+                      min={50}
                       max={10000}
                       value={customQtyValue}
-                      onChange={(e) => setCustomQtyValue(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) => setCustomQtyValue(Math.max(50, parseInt(e.target.value) || 50))}
                       className="w-28 px-3 py-1.5 rounded-lg border border-[#D8C7B5] bg-white font-mono text-sm text-[#1E1B18] outline-none focus:ring-2 focus:ring-[#C4A574]"
                     />
                     <span className="text-xs font-mono text-[#8C7A68]">frames</span>
