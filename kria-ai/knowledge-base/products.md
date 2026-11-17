@@ -34,4 +34,4 @@
 | `custom` | Custom Silhouette | — | ₹399 | — | Custom cut |
 
 ## 4. Bundles / Kits
-- **KRIA Tech Starter Kit:** 12 Custom Acrylic Frames & Keychains (10 custom acrylic photo frames + 2 bonus keychains) — **₹999**
+- **KRIA Tech Demo Starter Kit:** 24 Pieces Total (20 custom acrylic photo frames in different sizes & shapes + 4 FREE bonus keychains) — **₹999** (free doorstep air delivery)

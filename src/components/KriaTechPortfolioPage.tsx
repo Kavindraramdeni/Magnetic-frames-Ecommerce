@@ -194,7 +194,7 @@ const FAQS = [
   }
 ];
 
-// 10 Custom Acrylic Frames + 2 FREE Bonus Keychains from Catalog
+// 20 Custom Acrylic Frames + 4 FREE Bonus Keychains (24 Pieces Total)
 const STARTER_KIT_ITEMS = [
   {
     code: 'K1',
@@ -420,14 +420,14 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     }
   };
 
-  // Open Starter Kit with 12 Frames dedicated page with browser history
+  // Open Starter Kit with 24 Pieces dedicated page with browser history
   const handleOpenStarterKit = () => {
     setSelectedProductId(null);
     setIsStarterKitOpen(true);
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete('product');
-      url.searchParams.set('kit', '12-piece');
+      url.searchParams.set('kit', '24-piece');
       window.history.pushState({ page: 'starter-kit' }, '', url.toString());
     } catch (e) {
       console.warn('history.pushState error:', e);
@@ -1097,7 +1097,7 @@ Please confirm bulk order placement and dispatch timeline.`;
         </main>
       ) : isStarterKitOpen ? (
         /* ══════════════════════════════════════════════════════════
-            VIEW 2: DEDICATED COMPLETE 12-PIECE BOX SET PAGE
+            VIEW 2: DEDICATED COMPLETE 24-PIECE BOX SET PAGE
         ══════════════════════════════════════════════════════════ */
         <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-16">
           {/* Breadcrumb / Back button */}
@@ -1126,7 +1126,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                   <div className="relative aspect-square w-full overflow-hidden bg-[#FAF6F0]">
                     <img
                       src="/images/starter_kit_complete_fridge_collection.jpg"
-                      alt="Complete 12-Piece Starter Kit Collection on Refrigerator"
+                      alt="Complete 24-Piece Starter Kit Collection on Refrigerator"
                       style={{
                         transformOrigin: `${zoomCoords.x}% ${zoomCoords.y}%`,
                         transform: isHoverZooming ? 'scale(2.2)' : 'scale(1)',
