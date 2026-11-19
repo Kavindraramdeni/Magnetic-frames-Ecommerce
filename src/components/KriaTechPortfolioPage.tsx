@@ -597,7 +597,15 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
       prev
         .map((item) => {
           if (item.id === id) {
-            const newQty = Math.max(1, item.quantity + delta);
+            let newQty: number;
+            if (delta < 0) {
+              // Decreasing by 10, minimum 10
+              newQty = Math.max(10, item.quantity - 10);
+            } else {
+              // Increasing by 10 (rounds up to clean multiple of 10 if odd)
+              const roundedBase = Math.floor(item.quantity / 10) * 10;
+              newQty = Math.max(10, roundedBase + 10);
+            }
             const newDiscountRate = newQty >= 1000 ? 0.33 : newQty >= 500 ? 0.30 : newQty >= 250 ? 0.28 : newQty >= 100 ? 0.25 : newQty >= 50 ? 0.15 : newQty >= 20 ? 0.05 : 0;
             const newUnitPrice = Math.round(item.originalUnitPrice * (1 - newDiscountRate));
             return {
