@@ -1714,8 +1714,19 @@ Please confirm bulk order placement and dispatch timeline.`;
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-center">
                 
-                {/* Left Description & Benefits */}
-                <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+                {/* Visual Poster Showcase (Left on Desktop, Opposite to Plan 1) */}
+                <div className="lg:col-span-5 order-2 lg:order-1">
+                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.2)] border-2 border-[#D4AF37] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.25)] transition-all duration-300">
+                    <img 
+                      src="/images/kria_subscription_annual_999.jpg" 
+                      alt="KRIA Subscription - Only ₹999, 12 Months Validity"
+                      className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Description & Benefits (Right on Desktop, Opposite to Plan 1) */}
+                <div className="lg:col-span-7 order-1 lg:order-2 space-y-4 sm:space-y-5">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[11px] tracking-wider uppercase font-semibold border border-[#D4AF37]/50">
                     <Crown className="h-3.5 w-3.5 text-[#B8860B]" />
                     <span>Annual VIP Privilege</span>
@@ -1794,17 +1805,6 @@ Please confirm bulk order placement and dispatch timeline.`;
                       <MessageCircle className="h-4 w-4" />
                       <span>Join Annual VIP Plan (₹999)</span>
                     </a>
-                  </div>
-                </div>
-
-                {/* Right Visual Poster Showcase */}
-                <div className="lg:col-span-5">
-                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.2)] border-2 border-[#D4AF37] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.25)] transition-all duration-300">
-                    <img 
-                      src="/images/kria_subscription_annual_999.jpg" 
-                      alt="KRIA Subscription - Only ₹999, 12 Months Validity"
-                      className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-500"
-                    />
                   </div>
                 </div>
 
