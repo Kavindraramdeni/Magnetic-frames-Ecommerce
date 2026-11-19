@@ -126,15 +126,56 @@ const PRODUCTS: Product[] = [
 ];
 
 const QUANTITY_TIERS = [
-  { label: '10 Pcs', count: 10, discountPct: 0 },
-  { label: '20 Pcs', count: 20, discountPct: 5 },
-  { label: '50 Pcs', count: 50, discountPct: 15 },
-  { label: '100 pcs', count: 100, discountPct: 25 },
-  { label: '250 pcs', count: 250, discountPct: 28 },
-  { label: '500 pcs', count: 500, discountPct: 30 },
-  { label: '1000 pcs', count: 1000, discountPct: 33 },
-  { label: 'Custom', count: 0, discountPct: 0 }
+  { label: '50 pcs', count: 50 },
+  { label: '100 pcs', count: 100 },
+  { label: '200 pcs', count: 200 },
+  { label: '300 pcs', count: 300 },
+  { label: '500 pcs', count: 500 },
+  { label: '1000 pcs', count: 1000 },
+  { label: 'Custom', count: 0 }
 ];
+
+// Verified B2B Wholesale Unit Rate Matrix (50, 100, 200, 300, 500, 1000 pcs)
+const B2B_RATE_MATRIX: Record<string, Record<string, Record<number, number>>> = {
+  square: {
+    '2 × 2"': { 50: 28, 100: 27.5, 200: 27, 300: 26.5, 500: 26, 1000: 25 },
+    '3 × 3"': { 50: 36, 100: 35.5, 200: 35, 300: 34.5, 500: 34, 1000: 33 },
+    '4 × 4"': { 50: 51, 100: 50.5, 200: 50, 300: 49.5, 500: 49, 1000: 48 }
+  },
+  rectangle: {
+    '3.5 × 2.5"': { 50: 36, 100: 35.5, 200: 35, 300: 34.5, 500: 34, 1000: 33 },
+    '3 × 4"': { 50: 41, 100: 40.5, 200: 40, 300: 39.5, 500: 39, 1000: 38 },
+    '6 × 4"': { 50: 61, 100: 60.5, 200: 60, 300: 59.5, 500: 59, 1000: 58 }
+  },
+  circle: {
+    '2 × 2"': { 50: 25, 100: 24.5, 200: 24, 300: 23.5, 500: 23, 1000: 22 },
+    '3 × 3"': { 50: 33, 100: 32.5, 200: 32, 300: 31.5, 500: 31, 1000: 30 },
+    '4 × 4"': { 50: 47, 100: 46.5, 200: 46, 300: 45.5, 500: 45, 1000: 44 }
+  },
+  heart: {
+    '2 × 2"': { 50: 25, 100: 24.5, 200: 24, 300: 23.5, 500: 23, 1000: 22 },
+    '3 × 3"': { 50: 33, 100: 32.5, 200: 32, 300: 31.5, 500: 31, 1000: 30 },
+    '4 × 4"': { 50: 47, 100: 46.5, 200: 46, 300: 45.5, 500: 45, 1000: 44 }
+  },
+  keychain: {
+    '2.5"': { 50: 30, 100: 29.5, 200: 29, 300: 28.5, 500: 28, 1000: 27 },
+    '3 × 3"': { 50: 36, 100: 35.5, 200: 35, 300: 34.5, 500: 34, 1000: 33 }
+  }
+};
+
+function getTierUnitRate(productId: string, sizeLabel: string, totalPcs: number, fallbackBase: number): number {
+  const prod = B2B_RATE_MATRIX[productId];
+  if (!prod) return fallbackBase;
+  const rates = prod[sizeLabel];
+  if (!rates) return fallbackBase;
+
+  if (totalPcs >= 1000) return rates[1000];
+  if (totalPcs >= 500) return rates[500];
+  if (totalPcs >= 300) return rates[300];
+  if (totalPcs >= 200) return rates[200];
+  if (totalPcs >= 100) return rates[100];
+  return rates[50];
+}
 
 // Sliding images for Hero Carousel
 const HERO_SLIDES = [
@@ -537,13 +578,16 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const currentSize = activeProduct ? activeProduct.sizes[activeSizeIndex] || activeProduct.sizes[0] : null;
   const currentTier = QUANTITY_TIERS.find((t) => t.label === selectedQtyLabel) || QUANTITY_TIERS[0];
   const actualQty = currentTier.label === 'Custom' ? Math.max(1, customQtyValue) : currentTier.count;
-  const discountRate = actualQty >= 1000 ? 0.33 : actualQty >= 500 ? 0.30 : actualQty >= 250 ? 0.28 : actualQty >= 100 ? 0.25 : actualQty >= 50 ? 0.15 : actualQty >= 20 ? 0.05 : 0;
-  const unitOriginalPrice = currentSize ? currentSize.basePrice : 49;
-  const unitDiscountedPrice = Math.round(unitOriginalPrice * (1 - discountRate));
-  const discountPercentage = Math.round(discountRate * 100);
-  const totalPrice = unitDiscountedPrice * actualQty;
+  const unitOriginalPrice = currentSize ? currentSize.originalPrice : 79;
+  const unitDiscountedPrice = activeProduct && currentSize
+    ? getTierUnitRate(activeProduct.id, currentSize.label, actualQty, currentSize.basePrice)
+    : 28;
+  const discountPercentage = unitOriginalPrice > unitDiscountedPrice
+    ? Math.round(((unitOriginalPrice - unitDiscountedPrice) / unitOriginalPrice) * 100)
+    : 0;
+  const totalPrice = Math.round(unitDiscountedPrice * actualQty * 100) / 100;
   const originalTotalPrice = unitOriginalPrice * actualQty;
-  const factorySavings = originalTotalPrice - totalPrice;
+  const factorySavings = Math.round((originalTotalPrice - totalPrice) * 100) / 100;
 
   // Multi-Item Cart Actions
   const handleAddToCart = () => {
@@ -558,7 +602,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
       dimensions: currentSize.dimensions,
       quantity: actualQty,
       unitPrice: unitDiscountedPrice,
-      originalUnitPrice: unitOriginalPrice,
+      originalUnitPrice: currentSize.originalPrice,
       totalPrice: totalPrice
     };
 
@@ -567,22 +611,30 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
       const existingIdx = prev.findIndex(
         (it) => it.productId === newItem.productId && it.sizeLabel === newItem.sizeLabel
       );
+      let updatedItems: KriaCartItem[];
       if (existingIdx >= 0) {
         const updated = [...prev];
         const existing = updated[existingIdx];
         const newQty = existing.quantity + newItem.quantity;
-        // Recalculate tier discount
-        const newDiscountRate = newQty >= 1000 ? 0.33 : newQty >= 500 ? 0.30 : newQty >= 250 ? 0.28 : newQty >= 100 ? 0.25 : newQty >= 50 ? 0.15 : newQty >= 20 ? 0.05 : 0;
-        const newUnitPrice = Math.round(existing.originalUnitPrice * (1 - newDiscountRate));
         updated[existingIdx] = {
           ...existing,
-          quantity: newQty,
-          unitPrice: newUnitPrice,
-          totalPrice: newUnitPrice * newQty
+          quantity: newQty
         };
-        return updated;
+        updatedItems = updated;
+      } else {
+        updatedItems = [...prev, newItem];
       }
-      return [...prev, newItem];
+
+      // Dynamic B2B Cart-Wide Tier Pricing: based on total cart pieces!
+      const newTotalCartPcs = updatedItems.reduce((acc, it) => acc + it.quantity, 0);
+      return updatedItems.map((item) => {
+        const tierRate = getTierUnitRate(item.productId, item.sizeLabel, newTotalCartPcs, item.unitPrice);
+        return {
+          ...item,
+          unitPrice: tierRate,
+          totalPrice: Math.round(tierRate * item.quantity * 100) / 100
+        };
+      });
     });
 
     setCartToastMessage(`Added ${actualQty}x ${activeProduct.name} (${currentSize.label}) to Cart!`);
@@ -593,35 +645,50 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   };
 
   const handleUpdateCartItemQty = (id: string, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((item) => {
-          if (item.id === id) {
-            let newQty: number;
-            if (delta < 0) {
-              // Decreasing by 10, minimum 10
-              newQty = Math.max(10, item.quantity - 10);
-            } else {
-              // Increasing by 10 (rounds up to clean multiple of 10 if odd)
-              const roundedBase = Math.floor(item.quantity / 10) * 10;
-              newQty = Math.max(10, roundedBase + 10);
-            }
-            const newDiscountRate = newQty >= 1000 ? 0.33 : newQty >= 500 ? 0.30 : newQty >= 250 ? 0.28 : newQty >= 100 ? 0.25 : newQty >= 50 ? 0.15 : newQty >= 20 ? 0.05 : 0;
-            const newUnitPrice = Math.round(item.originalUnitPrice * (1 - newDiscountRate));
-            return {
-              ...item,
-              quantity: newQty,
-              unitPrice: newUnitPrice,
-              totalPrice: newUnitPrice * newQty
-            };
+    setCart((prev) => {
+      const updated = prev.map((item) => {
+        if (item.id === id) {
+          let newQty: number;
+          if (delta < 0) {
+            newQty = Math.max(10, item.quantity - 10);
+          } else {
+            const roundedBase = Math.floor(item.quantity / 10) * 10;
+            newQty = Math.max(10, roundedBase + 10);
           }
-          return item;
-        })
-    );
+          return {
+            ...item,
+            quantity: newQty
+          };
+        }
+        return item;
+      });
+
+      // Recalculate all item prices based on new total cart pieces!
+      const newTotalCartPcs = updated.reduce((acc, it) => acc + it.quantity, 0);
+      return updated.map((item) => {
+        const tierRate = getTierUnitRate(item.productId, item.sizeLabel, newTotalCartPcs, item.unitPrice);
+        return {
+          ...item,
+          unitPrice: tierRate,
+          totalPrice: Math.round(tierRate * item.quantity * 100) / 100
+        };
+      });
+    });
   };
 
   const handleRemoveCartItem = (id: string) => {
-    setCart((prev) => prev.filter((it) => it.id !== id));
+    setCart((prev) => {
+      const filtered = prev.filter((it) => it.id !== id);
+      const newTotalCartPcs = filtered.reduce((acc, it) => acc + it.quantity, 0);
+      return filtered.map((item) => {
+        const tierRate = getTierUnitRate(item.productId, item.sizeLabel, newTotalCartPcs, item.unitPrice);
+        return {
+          ...item,
+          unitPrice: tierRate,
+          totalPrice: Math.round(tierRate * item.quantity * 100) / 100
+        };
+      });
+    });
   };
 
   const handleClearCart = () => {
@@ -642,29 +709,36 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     msg += `─────────────────────────\n`;
 
     cart.forEach((it, idx) => {
+      const formattedUnitPrice = it.unitPrice % 1 === 0 ? it.unitPrice.toString() : it.unitPrice.toFixed(2);
+      const formattedTotalPrice = it.totalPrice.toLocaleString('en-IN', { minimumFractionDigits: it.totalPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
       msg += `${idx + 1}. *${it.productName}*\n`;
       msg += `   • Size: ${it.sizeLabel} (${it.dimensions})\n`;
       msg += `   • Quantity: ${it.quantity} pcs\n`;
-      msg += `   • Price: ₹${it.unitPrice}/pc (₹${it.totalPrice.toLocaleString('en-IN')})\n\n`;
+      msg += `   • Price: ₹${formattedUnitPrice}/pc (₹${formattedTotalPrice})\n\n`;
     });
 
     msg += `─────────────────────────\n`;
-    msg += `💰 *TOTAL ESTIMATE: ₹${totalCartPrice.toLocaleString('en-IN')}*\n`;
+    const formattedGrandTotal = totalCartPrice.toLocaleString('en-IN', { minimumFractionDigits: totalCartPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+    msg += `💰 *TOTAL ESTIMATE: ₹${formattedGrandTotal}*\n`;
     if (totalCartSavings > 0) {
-      msg += `✨ *FACTORY DIRECT SAVINGS: ₹${totalCartSavings.toLocaleString('en-IN')}*\n`;
+      const formattedSavings = totalCartSavings.toLocaleString('en-IN', { minimumFractionDigits: totalCartSavings % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+      msg += `✨ *FACTORY DIRECT SAVINGS: ₹${formattedSavings}*\n`;
     }
     msg += `Please confirm order placement and dispatch timeline!`;
     return msg;
   };
   const buildExactQuoteMessage = (prodName: string, sizeLabel: string, dimensions: string, qty: number, unitRate: number, origRate: number, total: number, savings: number) => {
+    const formattedUnitRate = unitRate % 1 === 0 ? unitRate.toString() : unitRate.toFixed(2);
+    const formattedTotal = total.toLocaleString('en-IN', { minimumFractionDigits: total % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+    const formattedSavings = savings.toLocaleString('en-IN', { minimumFractionDigits: savings % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
     return `Hi KRIA Tech! I have selected my product specifications on your website:
 
 • Product Shape: ${prodName}
 • Dimension: ${sizeLabel} (${dimensions})
 • Batch Quantity: ${qty} pcs
-• Unit Rate: ₹${unitRate} / pc (Original ₹${origRate}, ${discountPercentage}% bulk discount)
-• Total Estimate: ₹${total.toLocaleString('en-IN')}
-• Factory Direct Savings: ₹${savings.toLocaleString('en-IN')}
+• Unit Rate: ₹${formattedUnitRate} / pc (Original ₹${origRate}, ${discountPercentage}% bulk discount)
+• Total Estimate: ₹${formattedTotal}
+• Factory Direct Savings: ₹${formattedSavings}
 
 Please confirm bulk order placement and dispatch timeline.`;
   };
@@ -998,7 +1072,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                     Volume Tier Discount
                   </span>
                 </div>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                   {QUANTITY_TIERS.map((t) => (
                     <button
                       key={t.label}
@@ -1037,7 +1111,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                 <div className="flex items-baseline justify-between gap-4 flex-wrap">
                   <div className="flex items-baseline gap-3">
                     <span className="font-serif text-4xl sm:text-5xl font-medium text-[#1E1B18]">
-                      ₹{unitDiscountedPrice}
+                      ₹{unitDiscountedPrice % 1 === 0 ? unitDiscountedPrice : unitDiscountedPrice.toFixed(2)}
                     </span>
                     <span className="text-base text-[#918171] line-through font-mono">
                       ₹{unitOriginalPrice}/ pc
@@ -1051,11 +1125,11 @@ Please confirm bulk order placement and dispatch timeline.`;
                 <div className="pt-3 border-t border-[#EAE0D3] space-y-2 font-mono text-xs">
                   <div className="flex justify-between items-center text-[#5A4D3E]">
                     <span>Total ({actualQty} pcs):</span>
-                    <strong className="text-base text-[#1E1B18] font-serif">₹{totalPrice.toLocaleString('en-IN')}</strong>
+                    <strong className="text-base text-[#1E1B18] font-serif">₹{totalPrice.toLocaleString('en-IN', { minimumFractionDigits: totalPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
                   </div>
                   <div className="flex justify-between items-center text-emerald-800 bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200">
                     <span className="font-semibold">Factory Direct Savings:</span>
-                    <strong className="font-bold">₹{factorySavings.toLocaleString('en-IN')}</strong>
+                    <strong className="font-bold">₹{factorySavings.toLocaleString('en-IN', { minimumFractionDigits: factorySavings % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
                   </div>
                 </div>
 
@@ -1872,14 +1946,14 @@ Please confirm bulk order placement and dispatch timeline.`;
                           {item.sizeLabel}
                         </p>
                         <p className="text-[10px] font-mono text-[#8A7969]">
-                          ₹{item.unitPrice}/pc × {item.quantity} pcs
+                          ₹{item.unitPrice % 1 === 0 ? item.unitPrice : item.unitPrice.toFixed(2)}/pc × {item.quantity} pcs
                         </p>
                       </div>
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <span className="font-serif text-sm font-bold text-[#1E1B18]">
-                        ₹{item.totalPrice.toLocaleString('en-IN')}
+                        ₹{item.totalPrice.toLocaleString('en-IN', { minimumFractionDigits: item.totalPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}
                       </span>
 
                       {/* Quantity Stepper */}
@@ -1930,13 +2004,13 @@ Please confirm bulk order placement and dispatch timeline.`;
                   {totalCartSavings > 0 && (
                     <div className="flex justify-between items-center text-emerald-800 bg-emerald-50/70 p-2 rounded-lg border border-emerald-200">
                       <span>Total Savings:</span>
-                      <strong className="font-bold">₹{totalCartSavings.toLocaleString('en-IN')}</strong>
+                      <strong className="font-bold">₹{totalCartSavings.toLocaleString('en-IN', { minimumFractionDigits: totalCartSavings % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
                     </div>
                   )}
                   <div className="flex justify-between items-baseline pt-1 border-t border-[#EFE5D9]">
                     <span className="font-bold text-[#1E1B18]">Grand Total:</span>
                     <span className="font-serif text-2xl font-bold text-[#1E1B18]">
-                      ₹{totalCartPrice.toLocaleString('en-IN')}
+                      ₹{totalCartPrice.toLocaleString('en-IN', { minimumFractionDigits: totalCartPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>
