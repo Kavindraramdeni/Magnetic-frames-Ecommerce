@@ -21,17 +21,17 @@
 | **Sculpted Heart** | 3 × 3" | ₹33.00 | ₹32.50 | ₹32.00 | ₹31.50 | ₹31.00 | ₹30.00 |
 | **Sculpted Heart** | 4 × 4" | ₹47.00 | ₹46.50 | ₹46.00 | ₹45.50 | ₹45.00 | ₹44.00 |
 | **Circle Keychain** | 2.5" | ₹30.00 | ₹29.50 | ₹29.00 | ₹28.50 | ₹28.00 | ₹27.00 |
-| **Square Keychain** | 3 × 3" | ₹36.00 | ₹35.50 | ₹35.00 | ₹34.50 | ₹34.00 | ₹33.00 |
+| **Rectangle Keychain** | 2 × 3" | ₹36.00 | ₹35.50 | ₹35.00 | ₹34.50 | ₹34.00 | ₹33.00 |
 
-## 2. Storefront MRP / Retail Reference
-- **2 × 2" Frames:** Retail ₹79 (Circle/Heart ₹69)
-- **3.5 × 2.5" Frames:** Retail ₹99
-- **3 × 3" Frames:** Retail ₹99 (Circle/Heart ₹89)
-- **3 × 4" Frames:** Retail ₹119
-- **4 × 4" Frames:** Retail ₹139 (Circle/Heart ₹129)
-- **6 × 4" Frames:** Retail ₹179
-- **2.5" Circle Keychain:** Retail ₹69
-- **3 × 3" Square Keychain:** Retail ₹79
+## 2. Storefront Base Price & Retail Reference
+- **2 × 2" Frames:** Base ₹28 / MRP ₹79
+- **3.5 × 2.5" Frames:** Base ₹36 / MRP ₹99
+- **3 × 3" Frames:** Base ₹33-₹36 / MRP ₹99
+- **3 × 4" Frames:** Base ₹41 / MRP ₹119
+- **4 × 4" Frames:** Base ₹47-₹51 / MRP ₹139
+- **6 × 4" Frames:** Base ₹61 / MRP ₹179
+- **Circle Keychain (2.5"):** Base ₹32 / MRP ₹59
+- **Rectangle Keychain (2 × 3"):** Base ₹38 / MRP ₹69
 
 ## 3. Dynamic Quantity Tiers & Discounts
 - **Tiers on Storefront:** `50 pcs`, `100 pcs`, `200 pcs`, `300 pcs`, `500 pcs`, `1000 pcs`, `Custom`

@@ -117,8 +117,8 @@ const PRODUCTS: Product[] = [
     image: '/images/prod_thumb_keychain.jpg',
     category: 'Keychains & Accessories',
     sizes: [
-      { label: '2.5"', dimensions: '2.5 inch Circle with Ring', shapeName: 'Circle', basePrice: 40, originalPrice: 69, previewImage: '/images/keychain_circle_official.jpg' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch Square with Ring', shapeName: 'Square', basePrice: 48, originalPrice: 79, previewImage: '/images/keychain_square_official.jpg' }
+      { label: '2.5"', dimensions: '2.5 inch Circle with Ring', shapeName: 'Circle', basePrice: 32, originalPrice: 59, previewImage: '/images/keychain_circle_official.jpg' },
+      { label: '2 × 3"', dimensions: '2 × 3 inch Rectangle with Ring', shapeName: 'Rectangle', basePrice: 38, originalPrice: 69, previewImage: '/images/keychain_square_official.jpg' }
     ],
     accentColor: '#D97706',
     bgGlow: 'from-orange-100/60 via-amber-50/40 to-transparent'
@@ -159,6 +159,7 @@ const B2B_RATE_MATRIX: Record<string, Record<string, Record<number, number>>> = 
   },
   keychain: {
     '2.5"': { 50: 30, 100: 29.5, 200: 29, 300: 28.5, 500: 28, 1000: 27 },
+    '2 × 3"': { 50: 36, 100: 35.5, 200: 35, 300: 34.5, 500: 34, 1000: 33 },
     '3 × 3"': { 50: 36, 100: 35.5, 200: 35, 300: 34.5, 500: 34, 1000: 33 }
   }
 };
@@ -174,7 +175,8 @@ function getTierUnitRate(productId: string, sizeLabel: string, totalPcs: number,
   if (totalPcs >= 300) return rates[300];
   if (totalPcs >= 200) return rates[200];
   if (totalPcs >= 100) return rates[100];
-  return rates[50];
+  if (totalPcs >= 50) return rates[50];
+  return fallbackBase;
 }
 
 // Sliding images for Hero Carousel
@@ -497,8 +499,8 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     }
   };
 
-  // Close product/starter-kit and return to home view (respects browser history)
-  const handleCloseProduct = (targetHash?: string) => {
+  // Close product/starter-kit and return to products view (respects browser history)
+  const handleCloseProduct = (targetHash: string = '#products') => {
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete('product');
@@ -509,12 +511,12 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
       window.history.replaceState({ page: 'home' }, '', url.toString());
       setSelectedProductId(null);
       setIsStarterKitOpen(false);
-      if (targetHash) {
-        setTimeout(() => {
-          const el = document.querySelector(targetHash);
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }, 50);
-      }
+      setTimeout(() => {
+        const el = document.querySelector(targetHash || '#products');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     } catch {
       setSelectedProductId(null);
       setIsStarterKitOpen(false);
@@ -564,14 +566,16 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   // Reset size index and gallery tab when product changes
   useEffect(() => {
     setActiveSizeIndex(0);
-    setSelectedQtyLabel('50 Pcs');
+    setSelectedQtyLabel('50 pcs');
     setActiveGalleryTab('frame');
     setIsHoverZooming(false);
   }, [selectedProductId]);
 
-  // Sync scroll on view change
+  // Sync scroll on view change: only scroll to top when opening a dedicated product or kit view
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (selectedProductId || isStarterKitOpen) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [selectedProductId, isStarterKitOpen]);
 
   // Calculation for Product Detail Page
@@ -886,7 +890,7 @@ Please confirm bulk order placement and dispatch timeline.`;
           {/* Breadcrumb / Back button */}
           <button
             type="button"
-            onClick={() => handleCloseProduct()}
+            onClick={() => handleCloseProduct('#products')}
             className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#8C6436] hover:text-[#1E1B18] mb-8 py-1.5 px-3 rounded-full bg-white/70 border border-[#E8DACB] shadow-xs cursor-pointer transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
