@@ -403,8 +403,8 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isStarterKitOpen, setIsStarterKitOpen] = useState<boolean>(false);
   const [activeSizeIndex, setActiveSizeIndex] = useState<number>(0);
-  const [selectedQtyLabel, setSelectedQtyLabel] = useState<string>('50 Pcs');
-  const [customQtyValue, setCustomQtyValue] = useState<number>(75);
+  const [selectedQtyLabel, setSelectedQtyLabel] = useState<string>('50 pcs');
+  const [customQtyValue, setCustomQtyValue] = useState<number | ''>(75);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [activeGalleryTab, setActiveGalleryTab] = useState<'frame' | 'magnets' | 'how_to_use' | 'on_fridge' | 'gift_box'>('frame');
@@ -577,7 +577,9 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   // Calculation for Product Detail Page
   const currentSize = activeProduct ? activeProduct.sizes[activeSizeIndex] || activeProduct.sizes[0] : null;
   const currentTier = QUANTITY_TIERS.find((t) => t.label === selectedQtyLabel) || QUANTITY_TIERS[0];
-  const actualQty = currentTier.label === 'Custom' ? Math.max(1, customQtyValue) : currentTier.count;
+  const actualQty = currentTier.label === 'Custom'
+    ? Math.max(1, typeof customQtyValue === 'number' && !isNaN(customQtyValue) ? customQtyValue : 1)
+    : currentTier.count;
   const unitOriginalPrice = currentSize ? currentSize.originalPrice : 79;
   const unitDiscountedPrice = activeProduct && currentSize
     ? getTierUnitRate(activeProduct.id, currentSize.label, actualQty, currentSize.basePrice)
@@ -1098,7 +1100,23 @@ Please confirm bulk order placement and dispatch timeline.`;
                       min={1}
                       max={10000}
                       value={customQtyValue}
-                      onChange={(e) => setCustomQtyValue(Math.max(1, parseInt(e.target.value) || 1))}
+                      placeholder="e.g. 75"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setCustomQtyValue('');
+                        } else {
+                          const parsed = parseInt(val, 10);
+                          if (!isNaN(parsed)) {
+                            setCustomQtyValue(Math.min(10000, Math.max(0, parsed)));
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        if (customQtyValue === '' || customQtyValue < 1) {
+                          setCustomQtyValue(1);
+                        }
+                      }}
                       className="w-28 px-3 py-1.5 rounded-lg border border-[#D8C7B5] bg-white font-mono text-sm text-[#1E1B18] outline-none focus:ring-2 focus:ring-[#C4A574]"
                     />
                     <span className="text-xs font-mono text-[#8C7A68]">frames</span>
