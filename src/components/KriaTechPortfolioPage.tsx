@@ -1587,21 +1587,35 @@ Please confirm bulk order placement and dispatch timeline.`;
           </section>
 
           {/* ─── DEDICATED KRIA SUBSCRIPTION SECTION (FROM POSTER) ─── */}
-          <section id="subscription" className="py-8 sm:py-12 max-w-7xl mx-auto px-4 sm:px-8">
+          <section id="subscription" className="py-8 sm:py-14 max-w-7xl mx-auto px-4 sm:px-8 space-y-6 sm:space-y-8">
+            <div className="text-center max-w-2xl mx-auto mb-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[11px] tracking-wider uppercase font-semibold border border-[#EAD5BA] mb-2">
+                <Crown className="h-3.5 w-3.5 text-[#B8860B]" />
+                <span>Exclusive Member Privileges</span>
+              </div>
+              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
+                KRIA Subscription Plans
+              </h2>
+              <p className="font-serif italic text-base sm:text-lg text-[#8C6436] mt-1">
+                More Savings. Priority Service. Factory Direct Privileges.
+              </p>
+            </div>
+
+            {/* Plan 1: Quarterly Subscription (₹499 · 3 Months) */}
             <div className="rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FCFAF6] via-white to-[#F6EDE2] backdrop-blur-2xl border border-[#EADECE] p-5 sm:p-10 shadow-[0_20px_50px_rgba(180,140,80,0.1)]">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-center">
                 
                 {/* Left Description & Benefits */}
                 <div className="lg:col-span-7 space-y-4 sm:space-y-5">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[11px] tracking-wider uppercase font-semibold border border-[#EAD5BA]">
-                    <Crown className="h-3.5 w-3.5 text-[#B8860B]" />
-                    <span>Exclusive Member Privilege</span>
+                    <Clock className="h-3.5 w-3.5 text-[#8C6436]" />
+                    <span>Quarterly Plan · 3 Months</span>
                   </div>
 
                   <div>
-                    <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
-                      KRIA Subscription
-                    </h2>
+                    <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-light text-[#1E1B18] leading-tight">
+                      KRIA Subscription <span className="font-sans text-lg sm:text-xl text-[#8C6436] font-normal">(Quarterly)</span>
+                    </h3>
                     <p className="font-serif italic text-base sm:text-lg text-[#8C6436] mt-0.5">
                       More Savings. Priority Service.
                     </p>
@@ -1663,13 +1677,13 @@ Please confirm bulk order placement and dispatch timeline.`;
                   {/* Join Now WhatsApp CTA */}
                   <div className="pt-1">
                     <a
-                      href={waLink("Hi KRIA Tech! I would like to join the KRIA Subscription plan (ONLY ₹499 for 3 MONTHS VALIDITY). Please share activation details for ₹2 OFF on every frame, 1-day dispatch, and priority customer service.")}
+                      href={waLink("Hi KRIA Tech! I would like to join the KRIA Subscription Quarterly plan (ONLY ₹499 for 3 MONTHS VALIDITY). Please share activation details for ₹2 OFF on every frame, 1-day dispatch, and priority customer service.")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
                     >
                       <MessageCircle className="h-4 w-4" />
-                      <span>Join KRIA Subscription (₹499)</span>
+                      <span>Join Quarterly Plan (₹499)</span>
                     </a>
                   </div>
                 </div>
@@ -1680,6 +1694,115 @@ Please confirm bulk order placement and dispatch timeline.`;
                     <img 
                       src="/images/kria_subscription_banner.jpg" 
                       alt="KRIA Subscription - Only ₹499, 3 Months Validity"
+                      className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-500"
+                    />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Plan 2: Annual VIP Subscription (₹999 · 12 Months) */}
+            <div className="rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FFFDF9] via-[#FAF3E4] to-[#F5E6CC] backdrop-blur-2xl border-2 border-[#D4AF37] p-5 sm:p-10 shadow-[0_25px_60px_rgba(212,175,55,0.18)] relative overflow-hidden">
+              {/* Gold Ribbon Tag */}
+              <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1E1B18] text-[#F9E79F] font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-md border border-[#D4AF37]/50">
+                  <Sparkles className="h-3 w-3 text-amber-400" />
+                  <span>Best Value · Save ₹997</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-center">
+                
+                {/* Left Description & Benefits */}
+                <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[11px] tracking-wider uppercase font-semibold border border-[#D4AF37]/50">
+                    <Crown className="h-3.5 w-3.5 text-[#B8860B]" />
+                    <span>Annual VIP Privilege</span>
+                  </div>
+
+                  <div>
+                    <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-light text-[#1E1B18] leading-tight">
+                      KRIA Subscription <span className="font-sans text-lg sm:text-xl text-[#B8860B] font-bold">(Annual VIP)</span>
+                    </h3>
+                    <p className="font-serif italic text-base sm:text-lg text-[#8C6436] mt-0.5">
+                      More Savings. Priority Service.
+                    </p>
+                  </div>
+
+                  {/* Gold Badge: ONLY ₹999 · 12 MONTHS VALIDITY */}
+                  <div className="inline-flex items-center gap-3 py-2 px-4 rounded-xl bg-gradient-to-r from-[#FDEFD8] via-[#FFF6E5] to-[#F5E0BA] border border-[#D4AF37] shadow-sm">
+                    <span className="font-serif text-2xl sm:text-3xl font-bold text-[#8C6436]">
+                      ONLY ₹999
+                    </span>
+                    <span className="h-5 w-px bg-[#D4AF37]/60" />
+                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-[#6B4E2B] font-bold">
+                      12 MONTHS VALIDITY
+                    </span>
+                  </div>
+
+                  {/* 3 Main Value Pillars from Annual Poster */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                    {/* Pillar 1 */}
+                    <div className="p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-7 w-7 rounded-lg bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mx-auto sm:mx-0">
+                        <Coins className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="font-serif text-base font-bold text-[#B8860B]">₹3 OFF</div>
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                          On Every Frame
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Pillar 2 */}
+                    <div className="p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-7 w-7 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-800 flex items-center justify-center mx-auto sm:mx-0">
+                        <Truck className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="font-serif text-base font-bold text-[#1E1B18]">1 Day Dispatch</div>
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                          On Ready to Stock Frames
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Pillar 3 */}
+                    <div className="p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-7 w-7 rounded-lg bg-purple-100 border border-purple-300 text-purple-800 flex items-center justify-center mx-auto sm:mx-0">
+                        <Crown className="h-4 w-4 text-[#B8860B]" />
+                      </div>
+                      <div>
+                        <div className="font-serif text-base font-bold text-[#1E1B18]">Customer Priority</div>
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                          Faster Support & Exclusive
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Join Now WhatsApp CTA */}
+                  <div className="pt-1">
+                    <a
+                      href={waLink("Hi KRIA Tech! I would like to join the KRIA Annual Subscription VIP plan (ONLY ₹999 for 12 MONTHS VALIDITY). Please share activation details for ₹3 OFF on every frame, 1-day dispatch on ready to stock frames, and priority VIP customer service.")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-[0_6px_22px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      <span>Join Annual VIP Plan (₹999)</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Right Visual Poster Showcase */}
+                <div className="lg:col-span-5">
+                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.2)] border-2 border-[#D4AF37] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.25)] transition-all duration-300">
+                    <img 
+                      src="/images/kria_subscription_annual_999.jpg" 
+                      alt="KRIA Subscription - Only ₹999, 12 Months Validity"
                       className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-500"
                     />
                   </div>

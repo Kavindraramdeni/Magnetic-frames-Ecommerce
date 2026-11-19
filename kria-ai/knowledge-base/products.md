@@ -41,6 +41,8 @@
 ## 4. Paid Sample Starter Kit
 - **KRIA Tech Demo Starter Kit:** 24 Pieces Total (20 custom acrylic photo frames in assorted sizes & shapes + 4 FREE bonus keychains) — **₹999** (free doorstep air delivery). Strictly limited to 1 kit per business/first-time buyer as a paid quality sample.
 
-## 5. KRIA Subscription
-- **Price:** ₹499 for 3 Months Validity
-- **Perks:** ₹2 OFF per frame on bulk orders + 1-Day Priority Dispatch + Dedicated Customer Support
+## 5. KRIA Subscription Plans
+- **Quarterly Plan:** ₹499 for 3 Months Validity
+  - **Perks:** ₹2 OFF per frame on bulk orders + 1-Day Priority Dispatch on ready frames + Dedicated Customer Support
+- **Annual VIP Plan:** ₹999 for 12 Months Validity (Save ₹997 vs quarterly)
+  - **Perks:** ₹3 OFF per frame on bulk orders + 1-Day Priority Dispatch on ready to stock frames + Exclusive VIP Customer Priority & Faster Support
