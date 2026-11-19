@@ -16,6 +16,7 @@ function waLink(msg: string) {
 interface ProductSize {
   label: string;
   dimensions: string;
+  shapeName?: string;
   basePrice: number;
   originalPrice: number;
   previewImage?: string;
@@ -116,8 +117,8 @@ const PRODUCTS: Product[] = [
     image: '/images/prod_thumb_keychain.jpg',
     category: 'Keychains & Accessories',
     sizes: [
-      { label: '2.5"', dimensions: '2.5 inch Circle with Ring', basePrice: 40, originalPrice: 69, previewImage: '/images/keychain_circle_official.jpg' },
-      { label: '3 × 3"', dimensions: '3 × 3 inch Square with Ring', basePrice: 48, originalPrice: 79, previewImage: '/images/keychain_square_official.jpg' }
+      { label: '2.5"', dimensions: '2.5 inch Circle with Ring', shapeName: 'Circle', basePrice: 40, originalPrice: 69, previewImage: '/images/keychain_circle_official.jpg' },
+      { label: '3 × 3"', dimensions: '3 × 3 inch Square with Ring', shapeName: 'Square', basePrice: 48, originalPrice: 79, previewImage: '/images/keychain_square_official.jpg' }
     ],
     accentColor: '#D97706',
     bgGlow: 'from-orange-100/60 via-amber-50/40 to-transparent'
@@ -950,7 +951,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                     Choose dimension
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className={`grid ${activeProduct.sizes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
                   {activeProduct.sizes.map((sz, idx) => (
                     <button
                       key={idx}
@@ -966,6 +967,11 @@ Please confirm bulk order placement and dispatch timeline.`;
                       }`}
                     >
                       <span className="font-serif text-lg font-medium">{sz.label}</span>
+                      {sz.shapeName && (
+                        <span className={`text-[11px] font-mono font-semibold uppercase tracking-wider mt-0.5 ${activeSizeIndex === idx ? 'text-amber-300' : 'text-[#8C6436]'}`}>
+                          {sz.shapeName}
+                        </span>
+                      )}
                       <span className={`text-[10px] font-mono mt-0.5 ${activeSizeIndex === idx ? 'text-neutral-300' : 'text-[#8A7969]'}`}>
                         Base ₹{sz.basePrice}
                       </span>
@@ -1332,14 +1338,21 @@ Please confirm bulk order placement and dispatch timeline.`;
                       <p className="text-[9px] font-mono uppercase tracking-widest text-[#9A8775] mb-1.5 font-bold">
                         Available Sizes
                       </p>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5">
                         {prod.sizes.map((s, idx) => (
-                          <span
+                          <div
                             key={idx}
-                            className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#FAF4ED] text-[#695B4E] border border-[#EAE0D3]"
+                            className="flex flex-col items-center px-2 py-1 rounded-lg bg-[#FAF4ED] border border-[#EAE0D3]"
                           >
-                            {s.label}
-                          </span>
+                            <span className="text-[10px] font-mono font-medium text-[#695B4E]">
+                              {s.label}
+                            </span>
+                            {s.shapeName && (
+                              <span className="text-[8px] font-mono uppercase tracking-wider font-bold text-[#8C6436]">
+                                {s.shapeName}
+                              </span>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>
