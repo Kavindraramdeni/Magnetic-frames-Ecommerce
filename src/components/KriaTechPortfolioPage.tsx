@@ -125,12 +125,14 @@ const PRODUCTS: Product[] = [
 ];
 
 const QUANTITY_TIERS = [
+  { label: '10 Pcs', count: 10, discountPct: 0 },
+  { label: '20 Pcs', count: 20, discountPct: 5 },
   { label: '50 Pcs', count: 50, discountPct: 15 },
   { label: '100 pcs', count: 100, discountPct: 25 },
   { label: '250 pcs', count: 250, discountPct: 28 },
   { label: '500 pcs', count: 500, discountPct: 30 },
   { label: '1000 pcs', count: 1000, discountPct: 33 },
-  { label: 'Custom', count: 0, discountPct: 15 }
+  { label: 'Custom', count: 0, discountPct: 0 }
 ];
 
 // Sliding images for Hero Carousel
@@ -533,8 +535,8 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   // Calculation for Product Detail Page
   const currentSize = activeProduct ? activeProduct.sizes[activeSizeIndex] || activeProduct.sizes[0] : null;
   const currentTier = QUANTITY_TIERS.find((t) => t.label === selectedQtyLabel) || QUANTITY_TIERS[0];
-  const actualQty = currentTier.label === 'Custom' ? Math.max(50, customQtyValue) : currentTier.count;
-  const discountRate = actualQty >= 1000 ? 0.33 : actualQty >= 500 ? 0.30 : actualQty >= 250 ? 0.28 : actualQty >= 100 ? 0.25 : 0.15;
+  const actualQty = currentTier.label === 'Custom' ? Math.max(1, customQtyValue) : currentTier.count;
+  const discountRate = actualQty >= 1000 ? 0.33 : actualQty >= 500 ? 0.30 : actualQty >= 250 ? 0.28 : actualQty >= 100 ? 0.25 : actualQty >= 50 ? 0.15 : actualQty >= 20 ? 0.05 : 0;
   const unitOriginalPrice = currentSize ? currentSize.basePrice : 49;
   const unitDiscountedPrice = Math.round(unitOriginalPrice * (1 - discountRate));
   const discountPercentage = Math.round(discountRate * 100);
@@ -569,7 +571,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
         const existing = updated[existingIdx];
         const newQty = existing.quantity + newItem.quantity;
         // Recalculate tier discount
-        const newDiscountRate = newQty >= 1000 ? 0.33 : newQty >= 500 ? 0.30 : newQty >= 250 ? 0.28 : newQty >= 100 ? 0.25 : 0.15;
+        const newDiscountRate = newQty >= 1000 ? 0.33 : newQty >= 500 ? 0.30 : newQty >= 250 ? 0.28 : newQty >= 100 ? 0.25 : newQty >= 50 ? 0.15 : newQty >= 20 ? 0.05 : 0;
         const newUnitPrice = Math.round(existing.originalUnitPrice * (1 - newDiscountRate));
         updated[existingIdx] = {
           ...existing,
@@ -595,7 +597,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
         .map((item) => {
           if (item.id === id) {
             const newQty = Math.max(1, item.quantity + delta);
-            const newDiscountRate = newQty >= 1000 ? 0.50 : newQty >= 500 ? 0.45 : newQty >= 250 ? 0.40 : newQty >= 100 ? 0.35 : newQty >= 50 ? 0.30 : 0.15;
+            const newDiscountRate = newQty >= 1000 ? 0.33 : newQty >= 500 ? 0.30 : newQty >= 250 ? 0.28 : newQty >= 100 ? 0.25 : newQty >= 50 ? 0.15 : newQty >= 20 ? 0.05 : 0;
             const newUnitPrice = Math.round(item.originalUnitPrice * (1 - newDiscountRate));
             return {
               ...item,
@@ -982,7 +984,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                     Volume Tier Discount
                   </span>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                   {QUANTITY_TIERS.map((t) => (
                     <button
                       key={t.label}
@@ -1002,13 +1004,13 @@ Please confirm bulk order placement and dispatch timeline.`;
                 {/* Custom Quantity Stepper if Custom is chosen */}
                 {selectedQtyLabel === 'Custom' && (
                   <div className="mt-4 pt-3 border-t border-[#EFE5D9] flex items-center gap-3">
-                    <span className="text-xs font-mono text-[#6E6153]">Enter exact pieces (MOQ 50):</span>
+                    <span className="text-xs font-mono text-[#6E6153]">Enter exact pieces:</span>
                     <input
                       type="number"
-                      min={50}
+                      min={1}
                       max={10000}
                       value={customQtyValue}
-                      onChange={(e) => setCustomQtyValue(Math.max(50, parseInt(e.target.value) || 50))}
+                      onChange={(e) => setCustomQtyValue(Math.max(1, parseInt(e.target.value) || 1))}
                       className="w-28 px-3 py-1.5 rounded-lg border border-[#D8C7B5] bg-white font-mono text-sm text-[#1E1B18] outline-none focus:ring-2 focus:ring-[#C4A574]"
                     />
                     <span className="text-xs font-mono text-[#8C7A68]">frames</span>
@@ -1043,34 +1045,22 @@ Please confirm bulk order placement and dispatch timeline.`;
                   </div>
                 </div>
 
-                {/* 4. Action Buttons: Add to Cart + Direct WhatsApp Order */}
-                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  {/* Button A: Add To Cart (allows adding different shapes & sizes) */}
+                {/* 4. Action Button: Add to Cart */}
+                <div className="pt-2">
                   <button
                     type="button"
                     onClick={handleAddToCart}
-                    className="flex-1 inline-flex items-center justify-center gap-2.5 py-4 px-5 rounded-2xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-md hover:shadow-lg transition-all cursor-pointer group"
+                    className="w-full inline-flex items-center justify-center gap-2.5 py-4 px-5 rounded-2xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-md hover:shadow-lg transition-all cursor-pointer group"
                   >
                     <ShoppingCart className="h-4.5 w-4.5 text-[#E5D7C5] group-hover:scale-110 transition-transform" />
                     <span>Add to Cart ({actualQty} pcs)</span>
                   </button>
-
-                  {/* Button B: Direct WhatsApp Quote */}
-                  <a
-                    href={waLink(buildExactQuoteMessage(activeProduct.name, currentSize.label, currentSize.dimensions, actualQty, unitDiscountedPrice, unitOriginalPrice, totalPrice, factorySavings))}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 inline-flex items-center justify-center gap-2.5 py-4 px-5 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-[0_8px_25px_rgba(37,211,102,0.35)] hover:shadow-[0_12px_32px_rgba(37,211,102,0.48)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
-                  >
-                    <MessageCircle className="h-4.5 w-4.5" />
-                    <span>Order Now on WhatsApp</span>
-                  </a>
                 </div>
 
                 <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
                   <Info className="h-4 w-4 shrink-0 text-amber-700 mt-0.5" />
                   <span>
-                    Add multiple shapes and sizes to your Cart! When you are ready, tap <strong>"Order All on WhatsApp"</strong> from the cart drawer to submit your entire custom combination in one clean message.
+                    Add multiple shapes and sizes to your Cart! When you reach the minimum order of <strong>50 pcs</strong>, tap <strong>"Order All on WhatsApp"</strong> from the cart drawer to submit your entire order.
                   </span>
                 </div>
               </div>
@@ -1930,16 +1920,32 @@ Please confirm bulk order placement and dispatch timeline.`;
                   </div>
                 </div>
 
-                {/* Submit All to WhatsApp */}
-                <a
-                  href={waLink(buildMultiCartWhatsAppMessage())}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-[0_6px_22px_rgba(37,211,102,0.35)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
-                >
-                  <MessageCircle className="h-4.5 w-4.5" />
-                  <span>Order All on WhatsApp (₹{totalCartPrice.toLocaleString('en-IN')})</span>
-                </a>
+                {/* Submit All to WhatsApp — Unlocked when min quantity is 50 pcs */}
+                {totalCartFrames >= 50 ? (
+                  <a
+                    href={waLink(buildMultiCartWhatsAppMessage())}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-[0_6px_22px_rgba(37,211,102,0.35)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+                  >
+                    <MessageCircle className="h-4.5 w-4.5" />
+                    <span>Order All on WhatsApp ({totalCartFrames} pcs)</span>
+                  </a>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full inline-flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl bg-stone-200 text-stone-500 text-xs sm:text-sm font-bold uppercase tracking-[0.14em] cursor-not-allowed border border-stone-300"
+                    >
+                      <MessageCircle className="h-4.5 w-4.5 text-stone-400" />
+                      <span>Order All on WhatsApp ({totalCartFrames} pcs)</span>
+                    </button>
+                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-center text-xs font-mono text-amber-800">
+                      ⚠️ Minimum wholesale order is <strong>50 pcs</strong>. Add <strong>{50 - totalCartFrames} more pcs</strong> to unlock WhatsApp ordering.
+                    </div>
+                  </div>
+                )}
 
                 <p className="text-[10px] font-mono text-center text-[#8C7A68]">
                   🔒 Your entire multi-shape order summary will be sent to WhatsApp. Please confirm order placement and dispatch timeline!
