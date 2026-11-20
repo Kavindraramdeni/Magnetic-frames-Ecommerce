@@ -412,6 +412,7 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [activeGalleryTab, setActiveGalleryTab] = useState<'frame' | 'magnets' | 'how_to_use' | 'on_fridge' | 'gift_box'>('frame');
   const [isHoverZooming, setIsHoverZooming] = useState<boolean>(false);
   const [zoomCoords, setZoomCoords] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
+  const [activeSubTab, setActiveSubTab] = useState<'quarterly' | 'annual'>('annual');
 
   // Multi-item Cart State (Different shapes & sizes)
   const [cart, setCart] = useState<KriaCartItem[]>(() => {
@@ -1328,8 +1329,8 @@ Please confirm bulk order placement and dispatch timeline.`;
         <main className="relative z-10">
           
           {/* ─── SLIDING IMAGES HERO SECTION ──────────────────────── */}
-          <section className="relative px-3 sm:px-8 pt-3 sm:pt-6 pb-6 sm:pb-10 max-w-7xl mx-auto">
-            <div className="relative rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-[0_15px_40px_rgba(180,140,80,0.12)] border border-white/80 bg-[#1E1B18] aspect-[16/9] sm:aspect-[21/9] max-h-[520px]">
+          <section className="relative px-3 sm:px-8 pt-2 sm:pt-6 pb-3 sm:pb-8 max-w-7xl mx-auto">
+            <div className="relative rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-[0_15px_40px_rgba(180,140,80,0.12)] border border-white/80 bg-[#1E1B18] aspect-[16/9] sm:aspect-[21/9] max-h-[480px]">
               
               {/* Carousel Slides */}
               {HERO_SLIDES.map((slide, idx) => (
@@ -1394,65 +1395,63 @@ Please confirm bulk order placement and dispatch timeline.`;
           </section>
 
           {/* ─── 5 SIGNATURE PRODUCTS (RECTANGLE, SQUARE, CIRCLE, HEART, KEYCHAIN) ─── */}
-          <section id="products" className="py-8 sm:py-14 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
-              <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-1.5">
+          <section id="products" className="py-6 sm:py-12 max-w-7xl mx-auto px-3 sm:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-5 sm:mb-8">
+              <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-1">
                 Factory-Direct B2B Wholesale · Hyderabad
               </p>
-              <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18]">
+              <h1 className="font-serif text-xl sm:text-3xl lg:text-4xl font-light text-[#1E1B18]">
                 Wholesale Custom Acrylic Magnets &amp; Keychains
               </h1>
-              <p className="mt-2 text-xs sm:text-sm text-[#6E6153] leading-relaxed">
-                Choose a 2mm cast acrylic shape to preview dimensions, N35 neodymium magnet specs, and bulk tier discounts.
+              <p className="mt-1 text-[11px] sm:text-sm text-[#6E6153] leading-relaxed max-w-xl mx-auto">
+                Choose a 2mm cast acrylic shape to preview dimensions, magnet specs, and bulk tier discounts.
               </p>
             </div>
 
-            {/* 5 Cards Grid: Rectangle, Square, Circle, Heart, Keychain */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
+            {/* 5 Cards Responsive Grid: 2 cols on Mobile, 3 cols on Tablet, 5 cols on Desktop */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-5">
               {PRODUCTS.map((prod) => (
                 <div
                   key={prod.id}
                   onClick={() => handleOpenProduct(prod.id)}
-                  className="group rounded-3xl bg-white/75 backdrop-blur-xl border border-white hover:border-[#D9C4AC] p-4 sm:p-5 shadow-[0_12px_35px_rgba(180,140,80,0.06)] hover:shadow-[0_22px_55px_rgba(180,140,80,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                  className="group rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-xl border border-white hover:border-[#D9C4AC] p-2.5 sm:p-5 shadow-[0_8px_25px_rgba(180,140,80,0.06)] hover:shadow-[0_22px_55px_rgba(180,140,80,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
                 >
                   <div>
                     {/* Visual Area */}
-                    <div className={`relative h-56 sm:h-64 rounded-2xl bg-gradient-to-b ${prod.bgGlow} flex items-center justify-center p-2 overflow-hidden mb-3.5 transition-transform duration-300 group-hover:scale-[1.02]`}>
+                    <div className={`relative h-32 sm:h-64 rounded-xl sm:rounded-2xl bg-gradient-to-b ${prod.bgGlow} flex items-center justify-center p-1.5 sm:p-2 overflow-hidden mb-2 sm:mb-3.5 transition-transform duration-300 group-hover:scale-[1.02]`}>
                       <img
                         src={prod.image}
                         alt={`${prod.name} — Wholesale Custom 2mm Acrylic Photo Fridge Magnet by KRIA Tech`}
-                        className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(90,60,30,0.18)] group-hover:scale-110 transition-transform duration-500"
+                        className="w-full h-full object-contain filter drop-shadow-[0_8px_18px_rgba(90,60,30,0.18)] group-hover:scale-110 transition-transform duration-500"
                       />
-                      <div className="absolute top-2.5 right-2.5">
-                        <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB] shadow-xs">
+                      <div className="absolute top-1.5 right-1.5 sm:top-2.5 sm:right-2.5">
+                        <span className="text-[8px] sm:text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] border border-[#E8DACB] shadow-xs">
                           2mm Cast
                         </span>
                       </div>
                     </div>
 
-                    {/* Title & Tagline */}
-                    
-                    <h3 className="font-serif text-xl sm:text-2xl font-medium text-[#1E1B18] mt-0.5 group-hover:text-[#8C6436] transition-colors leading-snug">
+                    {/* Title */}
+                    <h3 className="font-serif text-sm sm:text-xl font-medium text-[#1E1B18] mt-0.5 group-hover:text-[#8C6436] transition-colors leading-tight line-clamp-1 sm:line-clamp-none">
                       {prod.name}
                     </h3>
-                    
 
                     {/* Formats preview */}
-                    <div className="mt-3 pt-3 border-t border-[#EFE5D9]">
-                      <p className="text-[9px] font-mono uppercase tracking-widest text-[#9A8775] mb-1.5 font-bold">
+                    <div className="mt-2 sm:mt-3 pt-1.5 sm:pt-3 border-t border-[#EFE5D9]">
+                      <p className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-[#9A8775] mb-1 font-bold hidden sm:block">
                         Available Sizes
                       </p>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-1">
                         {prod.sizes.map((s, idx) => (
                           <div
                             key={idx}
-                            className="flex flex-col items-center px-2 py-1 rounded-lg bg-[#FAF4ED] border border-[#EAE0D3]"
+                            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#FAF4ED] border border-[#EAE0D3]"
                           >
-                            <span className="text-[10px] font-mono font-medium text-[#695B4E]">
+                            <span className="text-[9px] sm:text-[10px] font-mono font-medium text-[#695B4E]">
                               {s.label}
                             </span>
                             {s.shapeName && (
-                              <span className="text-[8px] font-mono uppercase tracking-wider font-bold text-[#8C6436]">
+                              <span className="text-[7px] sm:text-[8px] font-mono uppercase tracking-wider font-bold text-[#8C6436]">
                                 {s.shapeName}
                               </span>
                             )}
@@ -1463,10 +1462,11 @@ Please confirm bulk order placement and dispatch timeline.`;
                   </div>
 
                   {/* Open Separate Product Page CTA */}
-                  <div className="mt-6 pt-4 border-t border-[#EFE5D9]">
-                    <div className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#1E1B18] group-hover:bg-[#8C6436] text-[#FDFBF7] text-xs font-bold uppercase tracking-wider transition-colors">
-                      <span>Choose Size & Quantity</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
+                  <div className="mt-3 sm:mt-6 pt-2 sm:pt-4 border-t border-[#EFE5D9]">
+                    <div className="w-full inline-flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 rounded-xl bg-[#1E1B18] group-hover:bg-[#8C6436] text-[#FDFBF7] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors">
+                      <span className="hidden sm:inline">Choose Size & Quantity</span>
+                      <span className="sm:hidden">Configure</span>
+                      <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </div>
                   </div>
                 </div>
@@ -1475,18 +1475,17 @@ Please confirm bulk order placement and dispatch timeline.`;
           </section>
 
           {/* ─── DEDICATED STARTER KIT SECTION: 2-COLUMN PREVIEW BLOCK ─── */}
-          <section id="starter-kit" className="py-8 sm:py-12 max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FAF3EA] via-white to-[#F4E9DC] backdrop-blur-2xl border border-white p-5 sm:p-10 shadow-[0_20px_50px_rgba(180,140,80,0.1)]">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-center">
+          <section id="starter-kit" className="py-5 sm:py-12 max-w-7xl mx-auto px-3 sm:px-8">
+            <div className="rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FAF3EA] via-white to-[#F4E9DC] backdrop-blur-2xl border border-white p-4 sm:p-10 shadow-[0_15px_40px_rgba(180,140,80,0.08)]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-10 items-center">
                 
-                {/* Left Side: Preview Image of Starter Kit (Clickable to open all 12 products) */}
                 {/* Left Side: Clickable Single Fridge Photo Preview of the Starter Kit */}
                 <div 
                   onClick={handleOpenStarterKit}
-                  className="lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.12)] border border-white group cursor-pointer"
+                  className="lg:col-span-5 relative rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_10px_25px_rgba(180,140,80,0.12)] border border-white group cursor-pointer max-h-56 sm:max-h-none"
                   title="Click to inspect the Demo Starter Kit"
                 >
-                  <div className="relative aspect-[4/3] rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF4ED]">
+                  <div className="relative aspect-[16/10] sm:aspect-[4/3] rounded-xl sm:rounded-3xl overflow-hidden bg-[#FAF4ED]">
                     <img 
                       src="/images/starter_kit_complete_fridge_collection.jpg" 
                       alt="Kria Tech Demo Starter Kit Preview"
@@ -1494,16 +1493,16 @@ Please confirm bulk order placement and dispatch timeline.`;
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                     
-                    <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] font-mono text-[10px] sm:text-[11px] font-bold border border-[#EADBCC] shadow-xs">
+                    <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-white/90 backdrop-blur-md text-[#7C6348] font-mono text-[9px] sm:text-[11px] font-bold border border-[#EADBCC] shadow-xs">
                       24 Pieces Total
                     </div>
                     
-                    <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-emerald-600 text-white font-mono text-[10px] sm:text-[11px] font-bold shadow-md">
+                    <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-600 text-white font-mono text-[9px] sm:text-[11px] font-bold shadow-md">
                       ₹999 Total
                     </div>
 
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-[11px] font-mono">
-                      <span className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full">
+                    <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-3 sm:left-3 sm:right-3 flex items-center justify-between text-white text-[10px] sm:text-[11px] font-mono">
+                      <span className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full">
                         <ZoomIn className="h-3 w-3" />
                         <span>Tap to zoom starter kit</span>
                       </span>
@@ -1512,68 +1511,66 @@ Please confirm bulk order placement and dispatch timeline.`;
                 </div>
 
                 {/* Right Side: Copy & Action Buttons */}
-                <div className="lg:col-span-7 space-y-4 sm:space-y-5">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-[11px] tracking-wider uppercase font-semibold">
-                    <Package className="h-3.5 w-3.5 text-[#8C6436]" />
+                <div className="lg:col-span-7 space-y-3 sm:space-y-5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#EFE3D3] text-[#7A562D] font-mono text-[10px] sm:text-[11px] tracking-wider uppercase font-semibold">
+                    <Package className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#8C6436]" />
                     <span>Kria Tech Demo Starter Kit</span>
                   </div>
 
                   <div>
-                    <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
+                    <h2 className="font-serif text-xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
                       Start Your Magnet Business for Just ₹999!
                     </h2>
                   </div>
 
-                  <ul className="space-y-2 text-xs sm:text-sm text-[#52463A] font-sans">
-                    <li className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <ul className="space-y-1 sm:space-y-2 text-[11px] sm:text-sm text-[#52463A] font-sans">
+                    <li className="flex items-start gap-1.5 sm:gap-2">
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Start a fridge magnet stall with minimal investment.</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <li className="flex items-start gap-1.5 sm:gap-2">
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Test our quality before ordering in bulk.</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <li className="flex items-start gap-1.5 sm:gap-2">
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>20 Acrylic Frames in different sizes & shapes.</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <li className="flex items-start gap-1.5 sm:gap-2">
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>4 FREE Bonus Keychains — <strong>24 Pieces Total</strong>.</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <li className="flex items-start gap-1.5 sm:gap-2">
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>Perfect for beginners, stall owners & resellers.</span>
                     </li>
                   </ul>
 
-                  <div className="space-y-1 py-1">
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-serif text-4xl sm:text-6xl font-bold text-[#1E1B18] tracking-tight">₹999</span>
-                      <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-3 py-1 rounded-full uppercase tracking-wider">
+                  <div className="space-y-1 py-0.5 sm:py-1">
+                    <div className="flex items-baseline gap-2.5 sm:gap-3">
+                      <span className="font-serif text-3xl sm:text-6xl font-bold text-[#1E1B18] tracking-tight">₹999</span>
+                      <span className="text-[10px] sm:text-xs font-mono font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-wider">
                         Special Starter Kit Price
                       </span>
                     </div>
                   </div>
 
                   {/* Below Buttons: Button to inspect kit + CTA for WhatsApp order */}
-                  <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-                    {/* Button 1: Opens full kit preview */}
+                  <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                     <button
                       type="button"
                       onClick={handleOpenStarterKit}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-md transition-all cursor-pointer group"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl bg-[#1E1B18] hover:bg-[#8C6436] text-white text-[11px] sm:text-xs font-bold uppercase tracking-[0.12em] shadow-md transition-all cursor-pointer group"
                     >
                       <span>View Demo Starter Kit</span>
                       <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                     </button>
 
-                    {/* Button 2: WhatsApp order */}
                     <a
                       href={waLink("Hi KRIA Tech! I would like to order the Kria Tech Demo Starter Kit (₹999 Special Starter Kit Price: 20 Acrylic Frames in different sizes & shapes + 4 FREE Bonus Keychains — 24 Pieces Total). Please confirm order placement and dispatch timeline.")}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.12em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-[11px] sm:text-xs font-bold uppercase tracking-[0.12em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
                     >
                       <MessageCircle className="h-4 w-4" />
                       <span>Order Your Starter Kit</span>
@@ -1587,87 +1584,117 @@ Please confirm bulk order placement and dispatch timeline.`;
           </section>
 
           {/* ─── DEDICATED KRIA SUBSCRIPTION SECTION (FROM POSTER) ─── */}
-          <section id="subscription" className="py-8 sm:py-14 max-w-7xl mx-auto px-4 sm:px-8 space-y-6 sm:space-y-8">
+          <section id="subscription" className="py-5 sm:py-14 max-w-7xl mx-auto px-3 sm:px-8 space-y-4 sm:space-y-8">
             <div className="text-center max-w-2xl mx-auto mb-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[11px] tracking-wider uppercase font-semibold border border-[#EAD5BA] mb-2">
-                <Crown className="h-3.5 w-3.5 text-[#B8860B]" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[10px] sm:text-[11px] tracking-wider uppercase font-semibold border border-[#EAD5BA] mb-1.5">
+                <Crown className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#B8860B]" />
                 <span>Exclusive Member Privileges</span>
               </div>
-              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
+              <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light text-[#1E1B18] leading-tight">
                 KRIA Subscription Plans
               </h2>
-              <p className="font-serif italic text-base sm:text-lg text-[#8C6436] mt-1">
+              <p className="font-serif italic text-sm sm:text-lg text-[#8C6436] mt-0.5">
                 More Savings. Priority Service. Factory Direct Privileges.
               </p>
             </div>
 
+            {/* Mobile Plan Switcher Toggle (Visible on Mobile / Tablet, hidden on Desktop lg) */}
+            <div className="flex lg:hidden justify-center pt-1 pb-1">
+              <div className="inline-flex p-1 rounded-full bg-[#EFE4D6] border border-[#DECFBE] shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('annual')}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    activeSubTab === 'annual'
+                      ? 'bg-[#1E1B18] text-[#F9E79F] shadow-sm'
+                      : 'text-[#6B5744] hover:text-[#1E1B18]'
+                  }`}
+                >
+                  <Crown className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Annual VIP (₹999)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('quarterly')}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    activeSubTab === 'quarterly'
+                      ? 'bg-[#1E1B18] text-white shadow-sm'
+                      : 'text-[#6B5744] hover:text-[#1E1B18]'
+                  }`}
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>Quarterly (₹499)</span>
+                </button>
+              </div>
+            </div>
+
             {/* Plan 1: Quarterly Subscription (₹499 · 3 Months) */}
-            <div className="rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FCFAF6] via-white to-[#F6EDE2] backdrop-blur-2xl border border-[#EADECE] p-5 sm:p-10 shadow-[0_20px_50px_rgba(180,140,80,0.1)]">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-center">
+            <div className={`${activeSubTab === 'quarterly' ? 'block' : 'hidden'} lg:block rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FCFAF6] via-white to-[#F6EDE2] backdrop-blur-2xl border border-[#EADECE] p-4 sm:p-10 shadow-[0_15px_45px_rgba(180,140,80,0.08)]`}>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-10 items-center">
                 
                 {/* Left Description & Benefits */}
-                <div className="lg:col-span-7 space-y-4 sm:space-y-5">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[11px] tracking-wider uppercase font-semibold border border-[#EAD5BA]">
-                    <Clock className="h-3.5 w-3.5 text-[#8C6436]" />
+                <div className="lg:col-span-7 space-y-3 sm:space-y-5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[10px] sm:text-[11px] tracking-wider uppercase font-semibold border border-[#EAD5BA]">
+                    <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#8C6436]" />
                     <span>Quarterly Plan · 3 Months</span>
                   </div>
 
                   <div>
-                    <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-light text-[#1E1B18] leading-tight">
-                      KRIA Subscription <span className="font-sans text-lg sm:text-xl text-[#8C6436] font-normal">(Quarterly)</span>
+                    <h3 className="font-serif text-xl sm:text-3xl lg:text-4xl font-light text-[#1E1B18] leading-tight">
+                      KRIA Subscription <span className="font-sans text-base sm:text-xl text-[#8C6436] font-normal">(Quarterly)</span>
                     </h3>
-                    <p className="font-serif italic text-base sm:text-lg text-[#8C6436] mt-0.5">
+                    <p className="font-serif italic text-xs sm:text-lg text-[#8C6436] mt-0.5">
                       More Savings. Priority Service.
                     </p>
                   </div>
 
                   {/* Gold Badge: ONLY ₹499 · 3 MONTHS VALIDITY */}
-                  <div className="inline-flex items-center gap-3 py-2 px-4 rounded-xl bg-gradient-to-r from-[#FDEFD8] via-[#FFF9F0] to-[#F7E7CE] border border-[#DEB887] shadow-xs">
-                    <span className="font-serif text-2xl sm:text-3xl font-bold text-[#8C6436]">
+                  <div className="inline-flex items-center gap-2.5 py-1.5 px-3 sm:py-2 sm:px-4 rounded-xl bg-gradient-to-r from-[#FDEFD8] via-[#FFF9F0] to-[#F7E7CE] border border-[#DEB887] shadow-xs">
+                    <span className="font-serif text-xl sm:text-3xl font-bold text-[#8C6436]">
                       ONLY ₹499
                     </span>
-                    <span className="h-5 w-px bg-[#DEB887]/60" />
-                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-[#6B4E2B] font-bold">
+                    <span className="h-4 sm:h-5 w-px bg-[#DEB887]/60" />
+                    <span className="font-mono text-[9px] sm:text-xs uppercase tracking-widest text-[#6B4E2B] font-bold">
                       3 MONTHS VALIDITY
                     </span>
                   </div>
 
-                  {/* 3 Main Value Pillars from Poster */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  {/* 3 Main Value Pillars from Poster - 3 columns on Mobile for minimal scrolling */}
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 pt-1">
                     {/* Pillar 1 */}
-                    <div className="p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
-                      <div className="h-7 w-7 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto sm:mx-0">
-                        <Coins className="h-4 w-4" />
+                    <div className="p-2 sm:p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                       <div>
-                        <div className="font-serif text-base font-bold text-[#1E1B18]">₹2 OFF</div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                        <div className="font-serif text-sm sm:text-base font-bold text-[#1E1B18]">₹2 OFF</div>
+                        <p className="text-[8px] sm:text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold leading-tight">
                           On Every Frame
                         </p>
                       </div>
                     </div>
 
                     {/* Pillar 2 */}
-                    <div className="p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
-                      <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto sm:mx-0">
-                        <Truck className="h-4 w-4" />
+                    <div className="p-2 sm:p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                       <div>
-                        <div className="font-serif text-base font-bold text-[#1E1B18]">1 Day Dispatch</div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                        <div className="font-serif text-sm sm:text-base font-bold text-[#1E1B18]">1 Day Dispatch</div>
+                        <p className="text-[8px] sm:text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold leading-tight">
                           On Ready Frames
                         </p>
                       </div>
                     </div>
 
                     {/* Pillar 3 */}
-                    <div className="p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
-                      <div className="h-7 w-7 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center mx-auto sm:mx-0">
-                        <Crown className="h-4 w-4" />
+                    <div className="p-2 sm:p-3 rounded-xl bg-white border border-[#EADBCC] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center mx-auto sm:mx-0">
+                        <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                       <div>
-                        <div className="font-serif text-base font-bold text-[#1E1B18]">Customer Priority</div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                        <div className="font-serif text-sm sm:text-base font-bold text-[#1E1B18]">Priority</div>
+                        <p className="text-[8px] sm:text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold leading-tight">
                           Exclusive Support
                         </p>
                       </div>
@@ -1680,7 +1707,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                       href={waLink("Hi KRIA Tech! I would like to join the KRIA Subscription Quarterly plan (ONLY ₹499 for 3 MONTHS VALIDITY). Please share activation details for ₹2 OFF on every frame, 1-day dispatch, and priority customer service.")}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center w-full sm:w-auto gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-[11px] sm:text-xs font-bold uppercase tracking-[0.14em] shadow-[0_6px_20px_rgba(37,211,102,0.3)] transition-all cursor-pointer"
                     >
                       <MessageCircle className="h-4 w-4" />
                       <span>Join Quarterly Plan (₹499)</span>
@@ -1690,11 +1717,11 @@ Please confirm bulk order placement and dispatch timeline.`;
 
                 {/* Right Visual Poster Showcase */}
                 <div className="lg:col-span-5">
-                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.15)] border-2 border-[#E7D6C2] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.2)] transition-all duration-300">
+                  <div className="relative rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(180,140,80,0.15)] border-2 border-[#E7D6C2] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.2)] transition-all duration-300 max-h-56 sm:max-h-none">
                     <img 
                       src="/images/kria_subscription_banner.jpg" 
                       alt="KRIA Subscription - Only ₹499, 3 Months Validity"
-                      className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-500"
+                      className="w-full h-48 sm:h-auto object-cover sm:object-contain object-top group-hover:scale-[1.01] transition-transform duration-500"
                     />
                   </div>
                 </div>
@@ -1703,92 +1730,92 @@ Please confirm bulk order placement and dispatch timeline.`;
             </div>
 
             {/* Plan 2: Annual VIP Subscription (₹999 · 12 Months) */}
-            <div className="rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FFFDF9] via-[#FAF3E4] to-[#F5E6CC] backdrop-blur-2xl border-2 border-[#D4AF37] p-5 sm:p-10 shadow-[0_25px_60px_rgba(212,175,55,0.18)] relative overflow-hidden">
+            <div className={`${activeSubTab === 'annual' ? 'block' : 'hidden'} lg:block rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#FFFDF9] via-[#FAF3E4] to-[#F5E6CC] backdrop-blur-2xl border-2 border-[#D4AF37] p-4 sm:p-10 shadow-[0_20px_55px_rgba(212,175,55,0.18)] relative overflow-hidden`}>
               {/* Gold Ribbon Tag */}
-              <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1E1B18] text-[#F9E79F] font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-md border border-[#D4AF37]/50">
+              <div className="absolute top-3 right-3 sm:top-6 sm:right-6">
+                <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#1E1B18] text-[#F9E79F] font-mono text-[9px] sm:text-xs font-bold uppercase tracking-wider shadow-md border border-[#D4AF37]/50">
                   <Sparkles className="h-3 w-3 text-amber-400" />
                   <span>Best Value · Save ₹997</span>
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-center">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-10 items-center">
                 
                 {/* Visual Poster Showcase (Left on Desktop, Opposite to Plan 1) */}
                 <div className="lg:col-span-5 order-2 lg:order-1">
-                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(180,140,80,0.2)] border-2 border-[#D4AF37] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.25)] transition-all duration-300">
+                  <div className="relative rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(180,140,80,0.2)] border-2 border-[#D4AF37] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.25)] transition-all duration-300 max-h-56 sm:max-h-none">
                     <img 
                       src="/images/kria_subscription_annual_999.jpg" 
                       alt="KRIA Subscription - Only ₹999, 12 Months Validity"
-                      className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-500"
+                      className="w-full h-48 sm:h-auto object-cover sm:object-contain object-top group-hover:scale-[1.01] transition-transform duration-500"
                     />
                   </div>
                 </div>
 
                 {/* Description & Benefits (Right on Desktop, Opposite to Plan 1) */}
-                <div className="lg:col-span-7 order-1 lg:order-2 space-y-4 sm:space-y-5">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[11px] tracking-wider uppercase font-semibold border border-[#D4AF37]/50">
-                    <Crown className="h-3.5 w-3.5 text-[#B8860B]" />
+                <div className="lg:col-span-7 order-1 lg:order-2 space-y-3 sm:space-y-5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#FAF0E2] text-[#8C6436] font-mono text-[10px] sm:text-[11px] tracking-wider uppercase font-semibold border border-[#D4AF37]/50">
+                    <Crown className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#B8860B]" />
                     <span>Annual VIP Privilege</span>
                   </div>
 
                   <div>
-                    <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-light text-[#1E1B18] leading-tight">
-                      KRIA Subscription <span className="font-sans text-lg sm:text-xl text-[#B8860B] font-bold">(Annual VIP)</span>
+                    <h3 className="font-serif text-xl sm:text-3xl lg:text-4xl font-light text-[#1E1B18] leading-tight">
+                      KRIA Subscription <span className="font-sans text-base sm:text-xl text-[#B8860B] font-bold">(Annual VIP)</span>
                     </h3>
-                    <p className="font-serif italic text-base sm:text-lg text-[#8C6436] mt-0.5">
+                    <p className="font-serif italic text-xs sm:text-lg text-[#8C6436] mt-0.5">
                       More Savings. Priority Service.
                     </p>
                   </div>
 
                   {/* Gold Badge: ONLY ₹999 · 12 MONTHS VALIDITY */}
-                  <div className="inline-flex items-center gap-3 py-2 px-4 rounded-xl bg-gradient-to-r from-[#FDEFD8] via-[#FFF6E5] to-[#F5E0BA] border border-[#D4AF37] shadow-sm">
-                    <span className="font-serif text-2xl sm:text-3xl font-bold text-[#8C6436]">
+                  <div className="inline-flex items-center gap-2.5 py-1.5 px-3 sm:py-2 sm:px-4 rounded-xl bg-gradient-to-r from-[#FDEFD8] via-[#FFF6E5] to-[#F5E0BA] border border-[#D4AF37] shadow-sm">
+                    <span className="font-serif text-xl sm:text-3xl font-bold text-[#8C6436]">
                       ONLY ₹999
                     </span>
-                    <span className="h-5 w-px bg-[#D4AF37]/60" />
-                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-[#6B4E2B] font-bold">
+                    <span className="h-4 sm:h-5 w-px bg-[#D4AF37]/60" />
+                    <span className="font-mono text-[9px] sm:text-xs uppercase tracking-widest text-[#6B4E2B] font-bold">
                       12 MONTHS VALIDITY
                     </span>
                   </div>
 
-                  {/* 3 Main Value Pillars from Annual Poster */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  {/* 3 Main Value Pillars from Annual Poster - 3 columns on Mobile */}
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 pt-1">
                     {/* Pillar 1 */}
-                    <div className="p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
-                      <div className="h-7 w-7 rounded-lg bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mx-auto sm:mx-0">
-                        <Coins className="h-4 w-4" />
+                    <div className="p-2 sm:p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mx-auto sm:mx-0">
+                        <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                       <div>
-                        <div className="font-serif text-base font-bold text-[#B8860B]">₹3 OFF</div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
+                        <div className="font-serif text-sm sm:text-base font-bold text-[#B8860B]">₹3 OFF</div>
+                        <p className="text-[8px] sm:text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold leading-tight">
                           On Every Frame
                         </p>
                       </div>
                     </div>
 
                     {/* Pillar 2 */}
-                    <div className="p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
-                      <div className="h-7 w-7 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-800 flex items-center justify-center mx-auto sm:mx-0">
-                        <Truck className="h-4 w-4" />
+                    <div className="p-2 sm:p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-800 flex items-center justify-center mx-auto sm:mx-0">
+                        <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                       <div>
-                        <div className="font-serif text-base font-bold text-[#1E1B18]">1 Day Dispatch</div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
-                          On Ready to Stock Frames
+                        <div className="font-serif text-sm sm:text-base font-bold text-[#1E1B18]">1 Day Dispatch</div>
+                        <p className="text-[8px] sm:text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold leading-tight">
+                          Ready Frames
                         </p>
                       </div>
                     </div>
 
                     {/* Pillar 3 */}
-                    <div className="p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
-                      <div className="h-7 w-7 rounded-lg bg-purple-100 border border-purple-300 text-purple-800 flex items-center justify-center mx-auto sm:mx-0">
-                        <Crown className="h-4 w-4 text-[#B8860B]" />
+                    <div className="p-2 sm:p-3 rounded-xl bg-white/95 border border-[#E7D0A8] shadow-xs text-center sm:text-left flex flex-col justify-between space-y-1">
+                      <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-purple-100 border border-purple-300 text-purple-800 flex items-center justify-center mx-auto sm:mx-0">
+                        <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#B8860B]" />
                       </div>
                       <div>
-                        <div className="font-serif text-base font-bold text-[#1E1B18]">Customer Priority</div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold">
-                          Faster Support & Exclusive
+                        <div className="font-serif text-sm sm:text-base font-bold text-[#1E1B18]">Priority</div>
+                        <p className="text-[8px] sm:text-[10px] font-mono uppercase tracking-wider text-[#7A6A5A] font-semibold leading-tight">
+                          Exclusive Support
                         </p>
                       </div>
                     </div>
@@ -1800,7 +1827,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                       href={waLink("Hi KRIA Tech! I would like to join the KRIA Annual Subscription VIP plan (ONLY ₹999 for 12 MONTHS VALIDITY). Please share activation details for ₹3 OFF on every frame, 1-day dispatch on ready to stock frames, and priority VIP customer service.")}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-xs font-bold uppercase tracking-[0.14em] shadow-[0_6px_22px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center w-full sm:w-auto gap-2 px-5 py-2.5 sm:px-6 sm:py-3.5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] hover:scale-[1.01] active:scale-[0.99] text-white text-[11px] sm:text-xs font-bold uppercase tracking-[0.14em] shadow-[0_6px_22px_rgba(37,211,102,0.35)] transition-all cursor-pointer"
                     >
                       <MessageCircle className="h-4 w-4" />
                       <span>Join Annual VIP Plan (₹999)</span>
