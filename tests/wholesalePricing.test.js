@@ -31,14 +31,16 @@ test('Wholesale Pricing Suite - Scenario 1: 100 pieces of one model', () => {
   assert.equal(result.totalCartQty, 100);
   assert.equal(result.items.length, 1);
 
-  // Rate for 100+ pcs of Square 2×2" is ₹27.50
+  // Rate for 100+ pcs of Square 2×2" is ₹27.50, Original MRP is ₹79
   const item = result.items[0];
   assert.equal(item.effectiveUnitPrice, 27.5);
   assert.equal(item.regularUnitPrice, 28.0);
+  assert.equal(item.originalUnitPrice, 79.0);
   assert.equal(item.lineTotal, 2750);
-  assert.equal(item.lineSavings, 50); // 100 * (28 - 27.5) = 50
+  // Savings: Original Price (79) - Current Wholesale Price (27.5) = 51.50/pc -> 5,150 total
+  assert.equal(item.lineSavings, 5150);
   assert.equal(result.totalAmount, 2750);
-  assert.equal(result.totalSavings, 50);
+  assert.equal(result.totalSavings, 5150);
   assert.equal(result.milestone.currentTierMinQty, 100);
 });
 
@@ -50,12 +52,15 @@ test('Wholesale Pricing Suite - Scenario 2: 500 pieces of one model', () => {
   assert.equal(result.totalEligibleQty, 500);
   assert.equal(result.items.length, 1);
 
-  // Rate for 500+ pcs of Rectangle 6×4" is ₹59.00 (regular ₹61)
+  // Rate for 500+ pcs of Rectangle 6×4" is ₹59.00 (regular ₹61, original MRP ₹179)
   const item = result.items[0];
   assert.equal(item.effectiveUnitPrice, 59.0);
   assert.equal(item.regularUnitPrice, 61.0);
+  assert.equal(item.originalUnitPrice, 179.0);
   assert.equal(item.lineTotal, 29500);
-  assert.equal(item.lineSavings, 1000); // 500 * (61 - 59) = 1000
+  // Savings: Original Price (179) - Current Wholesale Price (59) = 120/pc -> 60,000 total
+  assert.equal(item.lineSavings, 60000);
+  assert.equal(result.totalSavings, 60000);
   assert.equal(result.milestone.currentTierMinQty, 500);
 });
 

@@ -5,6 +5,10 @@
  * The total combined quantity of all eligible products in the cart determines
  * the wholesale pricing tier applied to EVERY eligible product.
  * Each product and size variant retains its own distinct unit price at each quantity tier.
+ * 
+ * SAVINGS CALCULATION RULE:
+ * Savings are calculated as (Original Retail MRP Price - Current Unlocked Tier Price),
+ * providing the true factory-direct wholesale savings to the customer.
  */
 
 export interface WholesaleTier {
@@ -16,7 +20,8 @@ export interface WholesaleTier {
 export interface ProductVariantPricingConfig {
   productId: string;   // e.g. "square", "rectangle", "circle", "heart", "keychain"
   sizeLabel: string;   // e.g. "2 × 2\"", "3.5 × 2.5\"", "2.5\""
-  regularPrice: number; // Single piece / baseline retail price
+  regularPrice: number; // Base wholesale rate (< 50 pcs)
+  originalPrice: number; // Storefront / Retail MRP reference price (e.g. 79, 99, 119, 179)
   eligibleForCombinedQty: boolean; // Flag to participate in combined cart calculation (default: true)
   tiers: WholesaleTier[]; // Ascending order of minQty
 }
@@ -38,9 +43,11 @@ export interface CartInputItem {
 export interface CalculatedCartLineItem extends CartInputItem {
   effectiveUnitPrice: number;
   regularUnitPrice: number;
+  originalUnitPrice: number;
   lineTotal: number;
   lineRegularTotal: number;
-  lineSavings: number;
+  lineOriginalTotal: number;
+  lineSavings: number; // originalPrice - current effective price
   unlockedTierMinQty: number;
   isEligible: boolean;
 }
@@ -61,7 +68,8 @@ export interface CombinedCartPricingResult {
   items: CalculatedCartLineItem[];
   totalAmount: number;
   totalRegularAmount: number;
-  totalSavings: number;
+  totalOriginalAmount: number;
+  totalSavings: number; // Total Original MRP Amount - Total Current Wholesale Amount
   milestone: TierMilestone;
   currency: string;
 }
@@ -79,6 +87,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'square',
     sizeLabel: '2 × 2"',
     regularPrice: 28,
+    originalPrice: 79,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 28, label: 'Regular (<50)' },
@@ -95,6 +104,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'square',
     sizeLabel: '3 × 3"',
     regularPrice: 36,
+    originalPrice: 99,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 36, label: 'Regular (<50)' },
@@ -111,6 +121,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'square',
     sizeLabel: '4 × 4"',
     regularPrice: 51,
+    originalPrice: 139,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 51, label: 'Regular (<50)' },
@@ -129,6 +140,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'rectangle',
     sizeLabel: '3.5 × 2.5"',
     regularPrice: 36,
+    originalPrice: 99,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 36, label: 'Regular (<50)' },
@@ -145,6 +157,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'rectangle',
     sizeLabel: '3 × 4"',
     regularPrice: 41,
+    originalPrice: 119,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 41, label: 'Regular (<50)' },
@@ -161,6 +174,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'rectangle',
     sizeLabel: '6 × 4"',
     regularPrice: 61,
+    originalPrice: 179,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 61, label: 'Regular (<50)' },
@@ -179,6 +193,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'circle',
     sizeLabel: '2 × 2"',
     regularPrice: 25,
+    originalPrice: 79,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 25, label: 'Regular (<50)' },
@@ -195,6 +210,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'circle',
     sizeLabel: '3 × 3"',
     regularPrice: 33,
+    originalPrice: 99,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 33, label: 'Regular (<50)' },
@@ -211,6 +227,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'circle',
     sizeLabel: '4 × 4"',
     regularPrice: 47,
+    originalPrice: 139,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 47, label: 'Regular (<50)' },
@@ -229,6 +246,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'heart',
     sizeLabel: '2 × 2"',
     regularPrice: 25,
+    originalPrice: 79,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 25, label: 'Regular (<50)' },
@@ -245,6 +263,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'heart',
     sizeLabel: '3 × 3"',
     regularPrice: 33,
+    originalPrice: 99,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 33, label: 'Regular (<50)' },
@@ -261,6 +280,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'heart',
     sizeLabel: '4 × 4"',
     regularPrice: 47,
+    originalPrice: 139,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 47, label: 'Regular (<50)' },
@@ -279,6 +299,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'keychain',
     sizeLabel: '2.5"',
     regularPrice: 32,
+    originalPrice: 59,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 32, label: 'Regular (<50)' },
@@ -295,6 +316,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'keychain',
     sizeLabel: '2 × 3"',
     regularPrice: 38,
+    originalPrice: 69,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 38, label: 'Regular (<50)' },
@@ -311,6 +333,7 @@ export const DEFAULT_PRODUCT_PRICING_CONFIGS: ProductVariantPricingConfig[] = [
     productId: 'keychain',
     sizeLabel: '3 × 3"',
     regularPrice: 38,
+    originalPrice: 69,
     eligibleForCombinedQty: true,
     tiers: [
       { minQty: 0, price: 38, label: 'Regular (<50)' },
@@ -411,6 +434,7 @@ export function calculateTierMilestone(
  * 
  * Takes cart items and computes combined cart wholesale pricing.
  * Revalidates every single line item and calculates authoritative totals.
+ * Savings are calculated as: (Original MRP Reference Price - Current Unlocked Tier Price)
  */
 export function calculateCombinedCartPricing(
   items: CartInputItem[],
@@ -424,6 +448,7 @@ export function calculateCombinedCartPricing(
       items: [],
       totalAmount: 0,
       totalRegularAmount: 0,
+      totalOriginalAmount: 0,
       totalSavings: 0,
       milestone: calculateTierMilestone(0),
       currency: 'INR'
@@ -462,6 +487,8 @@ export function calculateCombinedCartPricing(
   const calculatedItems: CalculatedCartLineItem[] = preppedItems.map((prepped) => {
     const config = prepped.config;
     const regularPrice = config ? config.regularPrice : (prepped.originalUnitPrice || prepped.unitPrice || 0);
+    // Original MRP / Storefront Reference Price (e.g. 79, 99, 119, 179)
+    const originalPrice = config ? config.originalPrice : (prepped.originalUnitPrice || regularPrice);
 
     let effectiveUnitPrice = regularPrice;
     let unlockedMinQty = 0;
@@ -479,7 +506,10 @@ export function calculateCombinedCartPricing(
     // Line totals
     const lineTotal = Math.round(effectiveUnitPrice * prepped.quantity * 100) / 100;
     const lineRegularTotal = Math.round(regularPrice * prepped.quantity * 100) / 100;
-    const lineSavings = Math.max(0, Math.round((lineRegularTotal - lineTotal) * 100) / 100);
+    const lineOriginalTotal = Math.round(originalPrice * prepped.quantity * 100) / 100;
+
+    // Savings = Original Price (MRP) - Current Price
+    const lineSavings = Math.max(0, Math.round((lineOriginalTotal - lineTotal) * 100) / 100);
 
     return {
       id: prepped.id,
@@ -493,11 +523,12 @@ export function calculateCombinedCartPricing(
       isEligible: prepped.isEligible,
       effectiveUnitPrice,
       regularUnitPrice: regularPrice,
+      originalUnitPrice: originalPrice,
       unitPrice: effectiveUnitPrice,
-      originalUnitPrice: regularPrice,
       totalPrice: lineTotal,
       lineTotal,
       lineRegularTotal,
+      lineOriginalTotal,
       lineSavings,
       unlockedTierMinQty: unlockedMinQty
     };
@@ -506,7 +537,10 @@ export function calculateCombinedCartPricing(
   // 3. Aggregate totals
   const totalAmount = Math.round(calculatedItems.reduce((sum, it) => sum + it.lineTotal, 0) * 100) / 100;
   const totalRegularAmount = Math.round(calculatedItems.reduce((sum, it) => sum + it.lineRegularTotal, 0) * 100) / 100;
-  const totalSavings = Math.max(0, Math.round((totalRegularAmount - totalAmount) * 100) / 100);
+  const totalOriginalAmount = Math.round(calculatedItems.reduce((sum, it) => sum + it.lineOriginalTotal, 0) * 100) / 100;
+  
+  // Total Savings = Original MRP Total - Current Wholesale Total (not regular base - discounted tier)
+  const totalSavings = Math.max(0, Math.round((totalOriginalAmount - totalAmount) * 100) / 100);
 
   // 4. Milestone progress
   const milestone = calculateTierMilestone(totalEligibleQty);
@@ -518,6 +552,7 @@ export function calculateCombinedCartPricing(
     items: calculatedItems,
     totalAmount,
     totalRegularAmount,
+    totalOriginalAmount,
     totalSavings,
     milestone,
     currency: 'INR'

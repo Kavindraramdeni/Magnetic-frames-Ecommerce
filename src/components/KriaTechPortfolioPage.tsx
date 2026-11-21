@@ -2296,9 +2296,9 @@ Please confirm bulk order placement and dispatch timeline.`;
                           <span className="text-[#1E1B18] font-bold">
                             ₹{item.effectiveUnitPrice % 1 === 0 ? item.effectiveUnitPrice : item.effectiveUnitPrice.toFixed(2)}/pc
                           </span>
-                          {item.regularUnitPrice > item.effectiveUnitPrice && (
-                            <span className="line-through text-stone-400">
-                              ₹{item.regularUnitPrice}
+                          {item.originalUnitPrice > item.effectiveUnitPrice && (
+                            <span className="line-through text-stone-400" title="Original Retail MRP">
+                              ₹{item.originalUnitPrice}
                             </span>
                           )}
                           <span>× {item.quantity} pcs</span>

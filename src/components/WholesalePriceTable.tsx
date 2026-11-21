@@ -95,11 +95,11 @@ export const WholesalePriceTable: React.FC<WholesalePriceTableProps> = ({
       ) : (
         <div className="p-3.5 rounded-2xl bg-[#FAF5EE] border border-[#E9D9C8] text-xs font-mono text-[#6E5D4B] space-y-1">
           <div className="flex items-center justify-between">
-            <span>Regular Baseline Price:</span>
-            <strong className="text-[#1E1B18] font-serif text-sm">₹{config.regularPrice}/pc</strong>
+            <span>Original Market MRP:</span>
+            <strong className="text-[#1E1B18] font-serif text-sm line-through">₹{config.originalPrice || 79}/pc</strong>
           </div>
           <p className="text-[11px] text-[#8C6436]">
-            💡 Add 50 pieces (mix any models) to unlock factory wholesale rates from <strong>₹{sortedTiers.find(t => t.minQty === 50)?.price || currentUnlockedPrice}/pc</strong>.
+            💡 Add 50 pieces (mix any models) to unlock factory wholesale rates from <strong>₹{sortedTiers.find(t => t.minQty === 50)?.price || currentUnlockedPrice}/pc</strong> (Save ₹{Math.max(0, (config.originalPrice || 79) - (sortedTiers.find(t => t.minQty === 50)?.price || currentUnlockedPrice)).toFixed(2)}/pc vs MRP).
           </p>
         </div>
       )}
@@ -111,7 +111,7 @@ export const WholesalePriceTable: React.FC<WholesalePriceTableProps> = ({
             <tr className="bg-[#FAF3EA] border-b border-[#EFE4D6] text-[11px] uppercase tracking-wider text-[#7A6B5C]">
               <th className="py-2.5 px-3 font-semibold">Total Cart Quantity</th>
               <th className="py-2.5 px-3 font-semibold text-right">Price Per Piece</th>
-              <th className="py-2.5 px-3 font-semibold text-right hidden sm:table-cell">Savings / pc</th>
+              <th className="py-2.5 px-3 font-semibold text-right hidden sm:table-cell">Savings vs MRP</th>
               <th className="py-2.5 px-3 font-semibold text-center">Status</th>
             </tr>
           </thead>
@@ -119,7 +119,8 @@ export const WholesalePriceTable: React.FC<WholesalePriceTableProps> = ({
             {sortedTiers.map((tier) => {
               const isUnlocked = totalCartQty >= tier.minQty;
               const isCurrentBest = unlockedMinQty === tier.minQty;
-              const savingsPerPc = Math.max(0, config.regularPrice - tier.price);
+              const referencePrice = config.originalPrice || config.regularPrice;
+              const savingsPerPc = Math.max(0, referencePrice - tier.price);
 
               return (
                 <tr
@@ -142,8 +143,8 @@ export const WholesalePriceTable: React.FC<WholesalePriceTableProps> = ({
                   <td className="py-2.5 px-3 text-right font-serif text-sm">
                     ₹{tier.price % 1 === 0 ? tier.price : tier.price.toFixed(2)}
                   </td>
-                  <td className="py-2.5 px-3 text-right hidden sm:table-cell text-emerald-700">
-                    {savingsPerPc > 0 ? `₹${savingsPerPc % 1 === 0 ? savingsPerPc : savingsPerPc.toFixed(2)} off` : '—'}
+                  <td className="py-2.5 px-3 text-right hidden sm:table-cell text-emerald-700 font-semibold">
+                    {savingsPerPc > 0 ? `Save ₹${savingsPerPc % 1 === 0 ? savingsPerPc : savingsPerPc.toFixed(2)}/pc` : '—'}
                   </td>
                   <td className="py-2.5 px-3 text-center">
                     {isCurrentBest && totalCartQty > 0 ? (

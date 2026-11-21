@@ -38,6 +38,7 @@ export const WholesalePricingAdminModal: React.FC<WholesalePricingAdminModalProp
 
   // Editor form state
   const [regularPrice, setRegularPrice] = useState<number>(currentConfig ? currentConfig.regularPrice : 28);
+  const [originalPrice, setOriginalPrice] = useState<number>(currentConfig ? currentConfig.originalPrice || 79 : 79);
   const [eligibleForCombinedQty, setEligibleForCombinedQty] = useState<boolean>(
     currentConfig ? currentConfig.eligibleForCombinedQty !== false : true
   );
@@ -63,6 +64,7 @@ export const WholesalePricingAdminModal: React.FC<WholesalePricingAdminModalProp
     const nextConf = configs.find((c) => c.productId === newProdId && c.sizeLabel === nextSize);
     if (nextConf) {
       setRegularPrice(nextConf.regularPrice);
+      setOriginalPrice(nextConf.originalPrice || 79);
       setEligibleForCombinedQty(nextConf.eligibleForCombinedQty !== false);
       setTiers([...nextConf.tiers]);
     }
@@ -74,6 +76,7 @@ export const WholesalePricingAdminModal: React.FC<WholesalePricingAdminModalProp
     const nextConf = configs.find((c) => c.productId === selectedProductId && c.sizeLabel === newSize);
     if (nextConf) {
       setRegularPrice(nextConf.regularPrice);
+      setOriginalPrice(nextConf.originalPrice || 79);
       setEligibleForCombinedQty(nextConf.eligibleForCombinedQty !== false);
       setTiers([...nextConf.tiers]);
     }
@@ -130,6 +133,7 @@ export const WholesalePricingAdminModal: React.FC<WholesalePricingAdminModalProp
         productId: selectedProductId,
         sizeLabel: selectedSizeLabel,
         regularPrice: Number(regularPrice) || 0,
+        originalPrice: Number(originalPrice) || 79,
         eligibleForCombinedQty,
         tiers: tiers.sort((a, b) => a.minQty - b.minQty)
       };
@@ -237,7 +241,22 @@ export const WholesalePricingAdminModal: React.FC<WholesalePricingAdminModalProp
           {/* Global Settings for Variant */}
           <div className="p-4 rounded-2xl bg-white border border-[#E9D9C8] space-y-3 font-mono text-xs">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <label className="text-[#524536] font-semibold">Regular Baseline Price (Below 50 pcs):</label>
+              <label className="text-[#524536] font-semibold">Original Market MRP (Savings Reference):</label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[#7A6A59]">₹</span>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={originalPrice}
+                  onChange={(e) => setOriginalPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+                  className="w-24 px-2.5 py-1 rounded-lg border border-[#D8C7B5] bg-[#FAF8F5] text-right font-serif text-sm font-bold text-stone-600"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[#F2E8DC] flex items-center justify-between flex-wrap gap-2">
+              <label className="text-[#524536] font-semibold">Base Wholesale Rate (Below 50 pcs):</label>
               <div className="flex items-center gap-1.5">
                 <span className="text-[#7A6A59]">₹</span>
                 <input

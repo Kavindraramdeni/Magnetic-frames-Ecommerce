@@ -117,7 +117,7 @@ app.put("/api/products/:productId/tiers", (req: Request, res: Response) => {
     }
 
     const { productId } = req.params;
-    const { sizeLabel, regularPrice, tiers, eligibleForCombinedQty } = req.body;
+    const { sizeLabel, regularPrice, originalPrice, tiers, eligibleForCombinedQty } = req.body;
 
     if (!sizeLabel || !Array.isArray(tiers)) {
       return res.status(400).json({ success: false, error: "Invalid tier data" });
@@ -131,6 +131,7 @@ app.put("/api/products/:productId/tiers", (req: Request, res: Response) => {
       productId,
       sizeLabel,
       regularPrice: Number(regularPrice) || 0,
+      originalPrice: Number(originalPrice) || (existingIdx >= 0 ? activePricingConfigs[existingIdx].originalPrice : 79),
       eligibleForCombinedQty: eligibleForCombinedQty !== false,
       tiers: tiers.map((t: any) => ({
         minQty: Math.max(0, Number(t.minQty) || 0),
