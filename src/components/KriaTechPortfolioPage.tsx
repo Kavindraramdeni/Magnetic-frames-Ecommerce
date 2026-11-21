@@ -1239,7 +1239,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                 )}
               </div>
 
-              {/* 3. Dark Luxury Wholesale Price Tag (Matching Mockup) */}
+              {/* 3. Normal Theme Luxury Wholesale Price Tag (Apple Style) */}
               {activeProduct && currentSize && (
                 <KriaPriceTag
                   productId={activeProduct.id}

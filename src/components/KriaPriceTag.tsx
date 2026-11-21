@@ -53,87 +53,85 @@ export const KriaPriceTag: React.FC<KriaPriceTagProps> = ({
 
   const hasVolumeDiscount = currentPrice < factoryBasePrice || qualifyingQty >= 50;
 
-  // Display count for top badge matching mockup: "500 PIECES IN CART"
+  // Display count for the pieces in cart badge beside discounted price tag
   const displayCartQty = totalCartQty > 0 ? totalCartQty : (selectedBatchQty > 0 ? selectedBatchQty : 0);
 
   return (
-    <div className="w-full bg-[#050505] text-white rounded-3xl p-6 sm:p-7 border border-[#222222] shadow-[0_16px_45px_rgba(0,0,0,0.7)] font-sans antialiased select-none transition-all">
+    <div className="w-full bg-[#FAF8F5] text-[#1D1D1F] rounded-3xl p-6 sm:p-7 border border-[#E8DFD5] shadow-[0_8px_30px_rgba(30,27,24,0.05)] font-sans antialiased select-none transition-all space-y-5">
       
-      {/* Top Status Pill: e.g. "500 PIECES IN CART" */}
-      <div className="flex justify-center mb-6">
-        <div className="inline-flex items-center justify-center px-5 py-1.5 rounded-full bg-[#032313] border border-[#0A4D27] text-[#05DF72] text-xs font-mono font-bold tracking-wider uppercase shadow-xs">
-          {displayCartQty > 0
-            ? `${displayCartQty.toLocaleString('en-IN')} PIECES IN CART`
-            : 'MIX MODELS IN CART'}
-        </div>
-      </div>
-
-      {/* Reference Benchmark Prices */}
-      <div className="space-y-3.5 text-sm sm:text-base">
+      {/* 1. Reference Benchmark Prices (Apple-style clean rows) */}
+      <div className="space-y-3 text-sm sm:text-base">
         {/* Reseller price */}
-        <div className="flex items-center justify-between text-[#E0E0E0]">
-          <span className="font-normal">Reseller price</span>
-          <span className="font-mono line-through text-[#8E8E8E] text-base sm:text-lg">
+        <div className="flex items-center justify-between">
+          <span className="text-[#6E6E73] font-normal">Reseller price</span>
+          <span className="font-mono line-through text-[#86868B] text-base sm:text-lg">
             {formatRupee(resellerPrice)}
           </span>
         </div>
 
         {/* Factory direct price */}
-        <div className="flex items-center justify-between text-[#E0E0E0]">
-          <span className="font-normal">Factory direct price</span>
-          <span className={`font-mono text-base sm:text-lg ${hasVolumeDiscount ? 'line-through text-[#8E8E8E]' : 'text-[#E0E0E0]'}`}>
+        <div className="flex items-center justify-between">
+          <span className="text-[#6E6E73] font-normal">Factory direct price</span>
+          <span className={`font-mono text-base sm:text-lg ${hasVolumeDiscount ? 'line-through text-[#86868B]' : 'text-[#1D1D1F]'}`}>
             {formatRupee(factoryBasePrice)}
           </span>
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-[#1C1C1C] my-5" />
+      {/* Subtle Hairline Divider */}
+      <div className="border-t border-[#E8DFD5]" />
 
-      {/* Highlighted Unlocked Price */}
-      <div className="space-y-1">
-        <div className="text-[#05DF72] font-bold text-xs sm:text-sm tracking-wider uppercase">
-          YOUR DISCOUNTED PRICE
+      {/* 2. Highlighted Discounted Price Tag + (Pieces in Cart) beside it */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200/90 text-emerald-800 text-xs font-bold tracking-wider uppercase">
+            YOUR DISCOUNTED PRICE
+          </span>
+          <span className="text-xs sm:text-sm font-semibold text-emerald-800 tracking-tight">
+            ({displayCartQty > 0 ? `${displayCartQty.toLocaleString('en-IN')} pieces in cart` : 'mix models in cart'})
+          </span>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-4xl sm:text-5xl font-bold text-[#05DF72] font-mono tracking-tight">
+
+        {/* Large Apple-style Price Number */}
+        <div className="flex items-baseline gap-2.5 flex-wrap pt-0.5">
+          <span className="text-4xl sm:text-5xl font-bold tracking-tight text-[#1D1D1F] font-mono">
             {formatRupee(currentPrice)}
           </span>
-          <span className="text-sm sm:text-base text-[#E0E0E0] font-normal">
+          <span className="text-sm sm:text-base text-[#6E6E73] font-normal">
             per piece
           </span>
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-[#1C1C1C] my-5" />
+      {/* Subtle Hairline Divider */}
+      <div className="border-t border-[#E8DFD5]" />
 
-      {/* Next Tier Milestone Upsell */}
+      {/* 3. Next Tier Milestone Upsell Callout (Apple-style subtle box) */}
       {nextTier ? (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-white text-base sm:text-lg">
+        <div className="p-4 sm:p-4.5 rounded-2xl bg-white border border-[#E8DFD5] shadow-xs space-y-1">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="font-semibold text-[#1D1D1F] text-base sm:text-lg">
               Add {piecesNeeded.toLocaleString('en-IN')} more piece{piecesNeeded !== 1 ? 's' : ''}
             </span>
-            <span className="font-bold text-[#05DF72] text-xl sm:text-2xl font-mono">
+            <span className="font-bold text-emerald-700 text-xl sm:text-2xl font-mono">
               {formatRupee(nextTierPrice)}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-neutral-400 font-normal leading-snug">
+          <p className="text-xs sm:text-sm text-[#6E6E73] font-normal leading-relaxed">
             Unlock an even lower price by reaching {nextMilestoneQty.toLocaleString('en-IN')} pieces in your cart!
           </p>
         </div>
       ) : (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-white text-base sm:text-lg">
+        <div className="p-4 sm:p-4.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-1">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="font-semibold text-emerald-900 text-base sm:text-lg">
               Maximum Volume Tier Unlocked
             </span>
-            <span className="font-bold text-[#05DF72] text-xl sm:text-2xl font-mono">
+            <span className="font-bold text-emerald-800 text-xl sm:text-2xl font-mono">
               {formatRupee(currentPrice)}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-emerald-400 font-normal leading-snug">
+          <p className="text-xs sm:text-sm text-emerald-700 font-normal leading-relaxed">
             🎉 You have unlocked our lowest factory-direct manufacturing rate!
           </p>
         </div>
