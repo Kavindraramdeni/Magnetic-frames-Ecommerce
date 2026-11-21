@@ -244,7 +244,35 @@
   </head>
   <body>
     <div id="root">
-      <!-- Semantic Pre-Hydration Markup for Search Engines & Fast Rendering -->
+      <!-- Luxury Pre-Hydration Loading Screen: Displayed while React mounts -->
+      <style>
+        @keyframes kriaPulse {
+          0%, 100% { opacity: 0.9; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.03); }
+        }
+        @keyframes kriaSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      </style>
+      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #FAF6F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 24px; box-sizing: border-box;">
+        <img
+          src="/images/kria_logo_official.png"
+          alt="KRIA Tech Emblem"
+          style="width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 10px 30px rgba(140, 100, 54, 0.15); margin-bottom: 20px; animation: kriaPulse 2s ease-in-out infinite;"
+        />
+        <div style="font-size: 17px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #1E1B18; margin-bottom: 6px;">
+          KRIA TECH
+        </div>
+        <div style="font-size: 11px; font-family: monospace; letter-spacing: 0.22em; text-transform: uppercase; color: #8C6436; margin-bottom: 28px;">
+          Hyderabad Atelier · Factory Direct
+        </div>
+        <div style="width: 24px; height: 24px; border: 2.5px solid #EADECE; border-top: 2.5px solid #8C6436; border-radius: 50%; animation: kriaSpin 0.8s linear infinite;"></div>
+      </div>
+    </div>
+
+    <!-- Semantic SEO & Non-JS Fallback for Search Engines and Web Crawlers -->
+    <noscript>
       <header style="padding: 24px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         <h1 style="font-size: 28px; color: #1E1B18; margin-bottom: 8px;">
           KRIA Tech | Factory-Direct B2B Manufacturer of Custom Acrylic Fridge Magnets &amp; Keychains
@@ -272,7 +300,7 @@
           <p>Location: Hyderabad, Telangana, India · Phone / WhatsApp: <a href="tel:+919392576792" style="color: #8C6436; font-weight: bold;">+91-9392576792</a> · Website: <a href="https://kriatech.in" style="color: #8C6436;">https://kriatech.in</a></p>
         </footer>
       </main>
-    </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
