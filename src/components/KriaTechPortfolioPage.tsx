@@ -16,6 +16,7 @@ import {
 } from '../pricingEngine.ts';
 import { WholesalePriceTable } from './WholesalePriceTable';
 import { WholesalePricingAdminModal } from './WholesalePricingAdminModal';
+import { KriaPriceTag } from './KriaPriceTag';
 
 const WA_NUMBER = '919392576792';
 
@@ -1238,35 +1239,32 @@ Please confirm bulk order placement and dispatch timeline.`;
                 )}
               </div>
 
-              {/* 3. Live Pricing Calculation Box */}
-              <div className="p-6 rounded-3xl bg-gradient-to-br from-[#FAF3EA] via-white to-[#F5ECE1] border border-[#E4D4C3] shadow-[0_10px_30px_rgba(180,140,80,0.08)] space-y-4">
-                <div className="flex items-baseline justify-between gap-4 flex-wrap">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-serif text-4xl sm:text-5xl font-medium text-[#1E1B18]">
-                      ₹{unitDiscountedPrice % 1 === 0 ? unitDiscountedPrice : unitDiscountedPrice.toFixed(2)}
-                    </span>
-                    <span className="text-base text-[#918171] line-through font-mono">
-                      ₹{unitOriginalPrice}/ pc
-                    </span>
-                  </div>
-                  <span className="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-mono font-bold tracking-wider">
-                    {discountPercentage}% OFF
-                  </span>
-                </div>
+              {/* 3. Dark Luxury Wholesale Price Tag (Matching Mockup) */}
+              {activeProduct && currentSize && (
+                <KriaPriceTag
+                  productId={activeProduct.id}
+                  sizeLabel={currentSize.label}
+                  totalCartQty={cartPricingResult.totalEligibleQty}
+                  selectedBatchQty={actualQty}
+                  configs={pricingConfigs}
+                />
+              )}
 
-                <div className="pt-3 border-t border-[#EAE0D3] space-y-2 font-mono text-xs">
+              {/* 4. Batch Order Summary & Add to Cart Action */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-white border border-[#E4D4C3] shadow-[0_10px_30px_rgba(180,140,80,0.08)] space-y-4">
+                <div className="space-y-2.5 font-mono text-xs">
                   <div className="flex justify-between items-center text-[#5A4D3E]">
-                    <span>Total ({actualQty} pcs):</span>
-                    <strong className="text-base text-[#1E1B18] font-serif">₹{totalPrice.toLocaleString('en-IN', { minimumFractionDigits: totalPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
+                    <span className="text-sm font-sans font-medium text-[#1E1B18]">Selected Batch Total ({actualQty} pcs):</span>
+                    <strong className="text-lg text-[#1E1B18] font-serif">₹{totalPrice.toLocaleString('en-IN', { minimumFractionDigits: totalPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
                   </div>
-                  <div className="flex justify-between items-center text-emerald-800 bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200">
-                    <span className="font-semibold">Factory Direct Savings:</span>
-                    <strong className="font-bold">₹{factorySavings.toLocaleString('en-IN', { minimumFractionDigits: factorySavings % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
+                  <div className="flex justify-between items-center text-emerald-800 bg-emerald-50/70 p-3 rounded-xl border border-emerald-200">
+                    <span className="font-semibold">Factory Direct Savings (vs Retail):</span>
+                    <strong className="font-bold text-sm">₹{factorySavings.toLocaleString('en-IN', { minimumFractionDigits: factorySavings % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
                   </div>
                 </div>
 
-                {/* 4. Action Button: Add to Cart */}
-                <div className="pt-2">
+                {/* Action Button: Add to Cart */}
+                <div className="pt-1">
                   <button
                     type="button"
                     onClick={handleAddToCart}
