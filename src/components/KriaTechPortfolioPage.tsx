@@ -796,7 +796,7 @@ Please confirm bulk order placement and dispatch timeline.`;
               <span className="font-serif text-xl sm:text-2xl font-semibold tracking-tight text-[#1E1B18] leading-none group-hover:text-[#8C6436] transition-colors">
                 KRIA<span className="text-[#A78255] font-light">Tech</span>
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-[#918171] mt-0.5">
+              <span className="text-[7.5px] sm:text-[9px] font-mono uppercase tracking-[0.14em] sm:tracking-[0.25em] text-[#918171] mt-0.5 whitespace-nowrap">
                 Cast Acrylic Atelier · Hyderabad
               </span>
             </div>
@@ -1463,10 +1463,9 @@ Please confirm bulk order placement and dispatch timeline.`;
 
                   {/* Open Separate Product Page CTA */}
                   <div className="mt-3 sm:mt-6 pt-2 sm:pt-4 border-t border-[#EFE5D9]">
-                    <div className="w-full inline-flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 rounded-xl bg-[#1E1B18] group-hover:bg-[#8C6436] text-[#FDFBF7] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors">
-                      <span className="hidden sm:inline">Choose Size & Quantity</span>
-                      <span className="sm:hidden">Configure</span>
-                      <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <div className="w-full inline-flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1.5 sm:px-4 rounded-xl bg-[#1E1B18] group-hover:bg-[#8C6436] text-[#FDFBF7] text-[9.5px] sm:text-xs font-bold uppercase tracking-wider transition-colors text-center">
+                      <span>Choose Size &amp; Quantity</span>
+                      <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     </div>
                   </div>
                 </div>
@@ -1717,11 +1716,11 @@ Please confirm bulk order placement and dispatch timeline.`;
 
                 {/* Right Visual Poster Showcase */}
                 <div className="lg:col-span-5">
-                  <div className="relative rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(180,140,80,0.15)] border-2 border-[#E7D6C2] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.2)] transition-all duration-300 max-h-56 sm:max-h-none">
+                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(180,140,80,0.15)] border-2 border-[#E7D6C2] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.2)] transition-all duration-300 aspect-square max-w-[340px] sm:max-w-none mx-auto w-full">
                     <img 
                       src="/images/kria_subscription_banner.jpg" 
                       alt="KRIA Subscription - Only ₹499, 3 Months Validity"
-                      className="w-full h-48 sm:h-auto object-cover sm:object-contain object-top group-hover:scale-[1.01] transition-transform duration-500"
+                      className="w-full h-full object-contain group-hover:scale-[1.01] transition-transform duration-500"
                     />
                   </div>
                 </div>
@@ -1743,11 +1742,11 @@ Please confirm bulk order placement and dispatch timeline.`;
                 
                 {/* Visual Poster Showcase (Left on Desktop, Opposite to Plan 1) */}
                 <div className="lg:col-span-5 order-2 lg:order-1">
-                  <div className="relative rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(180,140,80,0.2)] border-2 border-[#D4AF37] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.25)] transition-all duration-300 max-h-56 sm:max-h-none">
+                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(180,140,80,0.2)] border-2 border-[#D4AF37] bg-white group hover:shadow-[0_20px_45px_rgba(180,140,80,0.25)] transition-all duration-300 aspect-square max-w-[340px] sm:max-w-none mx-auto w-full">
                     <img 
                       src="/images/kria_subscription_annual_999.jpg" 
                       alt="KRIA Subscription - Only ₹999, 12 Months Validity"
-                      className="w-full h-48 sm:h-auto object-cover sm:object-contain object-top group-hover:scale-[1.01] transition-transform duration-500"
+                      className="w-full h-full object-contain group-hover:scale-[1.01] transition-transform duration-500"
                     />
                   </div>
                 </div>
