@@ -787,19 +787,14 @@ Please confirm bulk order placement and dispatch timeline.`;
           <button 
             type="button"
             onClick={() => handleCloseProduct()}
-            className="flex items-center gap-3 group cursor-pointer text-left"
+            className="flex items-center gap-2.5 sm:gap-3 group cursor-pointer text-left"
           >
-            <div className="h-10 w-10 rounded-2xl bg-white border border-[#D8C2A6]/80 flex items-center justify-center p-1 shadow-[0_4px_12px_rgba(180,140,90,0.15)] group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+            <div className="h-10 w-10 rounded-2xl bg-white border border-[#761618]/40 flex items-center justify-center p-1.5 shadow-[0_4px_12px_rgba(118,22,24,0.08)] group-hover:scale-105 transition-transform duration-300 overflow-hidden">
               <img src="/images/kria_logo_official.png" alt="KRIA Logo" className="h-full w-full object-contain" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-serif text-xl sm:text-2xl font-semibold tracking-tight text-[#1E1B18] leading-none group-hover:text-[#8C6436] transition-colors">
-                KRIA<span className="text-[#A78255] font-light">Tech</span>
-              </span>
-              <span className="text-[7.5px] sm:text-[9px] font-mono uppercase tracking-[0.14em] sm:tracking-[0.25em] text-[#918171] mt-0.5 whitespace-nowrap">
-                Cast Acrylic Atelier · Hyderabad
-              </span>
-            </div>
+            <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider text-[#761618] leading-none">
+              KRIA TECH
+            </span>
           </button>
 
           {/* Desktop Navigation Links: products, starter kit, subscription */}
@@ -1398,7 +1393,7 @@ Please confirm bulk order placement and dispatch timeline.`;
           <section id="products" className="py-6 sm:py-12 max-w-7xl mx-auto px-3 sm:px-8">
             <div className="text-center max-w-3xl mx-auto mb-5 sm:mb-8">
               <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.25em] text-[#8C6436] font-bold mb-1">
-                Factory-Direct B2B Wholesale · Hyderabad
+                Factory-Direct B2B Wholesale
               </p>
               <h1 className="font-serif text-xl sm:text-3xl lg:text-4xl font-light text-[#1E1B18]">
                 Wholesale Custom Acrylic Magnets &amp; Keychains
@@ -1892,11 +1887,11 @@ Please confirm bulk order placement and dispatch timeline.`;
             {/* Col 1: Brand Info */}
             <div className="md:col-span-5 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-white border border-[#E0D0BF] flex items-center justify-center p-1 shadow-xs overflow-hidden">
-                  <img src="/images/kria_logo_official.png" alt="KRIA Tech" className="h-full w-full object-contain" />
+                <div className="h-8 w-8 rounded-xl bg-white border border-[#761618]/40 flex items-center justify-center p-1 shadow-xs overflow-hidden">
+                  <img src="/images/kria_logo_official.png" alt="KRIA Logo" className="h-full w-full object-contain" />
                 </div>
-                <span className="font-serif text-xl font-semibold tracking-tight text-[#1E1B18]">
-                  KRIA<span className="text-[#A78255] font-light">Tech</span>
+                <span className="font-serif text-xl font-bold tracking-wider text-[#761618]">
+                  KRIA TECH
                 </span>
               </div>
               <p className="text-xs text-[#6E6152] leading-relaxed max-w-sm">
