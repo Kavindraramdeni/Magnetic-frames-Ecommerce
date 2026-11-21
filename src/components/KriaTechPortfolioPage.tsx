@@ -1,11 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   MessageCircle, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck,
   Package, Award, Heart, Sparkles, CheckCircle2, Phone,
   MapPin, Clock, Users, ArrowUpRight,
   ArrowLeft, ZoomIn, Check, Info, Calendar, Gift, Crown, Truck, Coins, Key,
-  ShoppingCart, Trash2, Plus, Minus, X
+  ShoppingCart, Trash2, Plus, Minus, X, Settings
 } from 'lucide-react';
+import {
+  calculateCombinedCartPricing,
+  calculateTierMilestone,
+  DEFAULT_PRODUCT_PRICING_CONFIGS,
+  ProductVariantPricingConfig,
+  findPricingConfig,
+  getTierRateForQuantity
+} from '../pricingEngine.ts';
+import { WholesalePriceTable } from './WholesalePriceTable';
+import { WholesalePricingAdminModal } from './WholesalePricingAdminModal';
 
 const WA_NUMBER = '919392576792';
 
@@ -164,7 +174,13 @@ const B2B_RATE_MATRIX: Record<string, Record<string, Record<number, number>>> = 
   }
 };
 
-function getTierUnitRate(productId: string, sizeLabel: string, totalPcs: number, fallbackBase: number): number {
+function getTierUnitRate(productId: string, sizeLabel: string, totalPcs: number, fallbackBase: number, configs?: ProductVariantPricingConfig[]): number {
+  if (configs) {
+    const cfg = findPricingConfig(productId, sizeLabel, configs);
+    if (cfg) {
+      return getTierRateForQuantity(cfg, totalPcs).unitPrice;
+    }
+  }
   const prod = B2B_RATE_MATRIX[productId];
   if (!prod) return fallbackBase;
   const rates = prod[sizeLabel];
@@ -426,6 +442,61 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState<boolean>(false);
   const [cartToastMessage, setCartToastMessage] = useState<string | null>(null);
 
+  // Dynamic Wholesale Pricing Tier Configurations (Admin editable & persistent)
+  const [pricingConfigs, setPricingConfigs] = useState<ProductVariantPricingConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem('kria_pricing_configs');
+      return saved ? JSON.parse(saved) : DEFAULT_PRODUCT_PRICING_CONFIGS;
+    } catch {
+      return DEFAULT_PRODUCT_PRICING_CONFIGS;
+    }
+  });
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
+
+  // Fetch latest wholesale tier matrix from backend API on mount
+  useEffect(() => {
+    fetch('/api/products/tiers')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
+          setPricingConfigs(data.data);
+          try {
+            localStorage.setItem('kria_pricing_configs', JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch remote wholesale tiers:', err);
+      });
+  }, []);
+
+  // Keyboard shortcut Ctrl+Shift+W to open Admin Pricing Modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'w') {
+        e.preventDefault();
+        setIsAdminModalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Authoritative combined cart wholesale calculation result
+  const cartPricingResult = useMemo(() => {
+    return calculateCombinedCartPricing(cart, pricingConfigs);
+  }, [cart, pricingConfigs]);
+
+  // Background server revalidation check
+  useEffect(() => {
+    if (cart.length === 0) return;
+    fetch('/api/cart/revalidate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: cart })
+    }).catch(() => {});
+  }, [cart]);
+
   // Persist cart to localStorage
   useEffect(() => {
     try {
@@ -586,8 +657,11 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     ? Math.max(1, typeof customQtyValue === 'number' && !isNaN(customQtyValue) ? customQtyValue : 1)
     : currentTier.count;
   const unitOriginalPrice = currentSize ? currentSize.originalPrice : 79;
+  
+  // Qualifying pieces for this product: unlocked by combined cart or chosen batch qty
+  const qualifyingQty = Math.max(cartPricingResult.totalEligibleQty, actualQty);
   const unitDiscountedPrice = activeProduct && currentSize
-    ? getTierUnitRate(activeProduct.id, currentSize.label, actualQty, currentSize.basePrice)
+    ? getTierUnitRate(activeProduct.id, currentSize.label, qualifyingQty, currentSize.basePrice, pricingConfigs)
     : 28;
   const discountPercentage = unitOriginalPrice > unitDiscountedPrice
     ? Math.round(((unitOriginalPrice - unitDiscountedPrice) / unitOriginalPrice) * 100)
@@ -595,6 +669,34 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
   const totalPrice = Math.round(unitDiscountedPrice * actualQty * 100) / 100;
   const originalTotalPrice = unitOriginalPrice * actualQty;
   const factorySavings = Math.round((originalTotalPrice - totalPrice) * 100) / 100;
+
+  // Save handler for admin pricing updates
+  const handleSavePricingConfig = async (updatedConfig: ProductVariantPricingConfig): Promise<boolean> => {
+    try {
+      const nextConfigs = pricingConfigs.map((c) =>
+        c.productId === updatedConfig.productId && c.sizeLabel === updatedConfig.sizeLabel
+          ? updatedConfig
+          : c
+      );
+      if (!pricingConfigs.some((c) => c.productId === updatedConfig.productId && c.sizeLabel === updatedConfig.sizeLabel)) {
+        nextConfigs.push(updatedConfig);
+      }
+      setPricingConfigs(nextConfigs);
+      try {
+        localStorage.setItem('kria_pricing_configs', JSON.stringify(nextConfigs));
+      } catch {}
+
+      const res = await fetch(`/api/products/${updatedConfig.productId}/tiers`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedConfig)
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn('Backend update failed, saved locally:', err);
+      return false;
+    }
+  };
 
   // Multi-Item Cart Actions
   const handleAddToCart = () => {
@@ -632,16 +734,20 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
         updatedItems = [...prev, newItem];
       }
 
-      // Dynamic B2B Cart-Wide Tier Pricing: based on total cart pieces!
-      const newTotalCartPcs = updatedItems.reduce((acc, it) => acc + it.quantity, 0);
-      return updatedItems.map((item) => {
-        const tierRate = getTierUnitRate(item.productId, item.sizeLabel, newTotalCartPcs, item.unitPrice);
-        return {
-          ...item,
-          unitPrice: tierRate,
-          totalPrice: Math.round(tierRate * item.quantity * 100) / 100
-        };
-      });
+      // Dynamic B2B Cart-Wide Tier Pricing: authoritative combined calculation!
+      const calculated = calculateCombinedCartPricing(updatedItems, pricingConfigs);
+      return calculated.items.map((it) => ({
+        id: it.id,
+        productId: it.productId,
+        productName: it.productName,
+        productImage: it.productImage || '',
+        sizeLabel: it.sizeLabel,
+        dimensions: it.dimensions || '',
+        quantity: it.quantity,
+        unitPrice: it.effectiveUnitPrice,
+        originalUnitPrice: it.regularUnitPrice,
+        totalPrice: it.lineTotal
+      }));
     });
 
     setCartToastMessage(`Added ${actualQty}x ${activeProduct.name} (${currentSize.label}) to Cart!`);
@@ -670,31 +776,38 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
         return item;
       });
 
-      // Recalculate all item prices based on new total cart pieces!
-      const newTotalCartPcs = updated.reduce((acc, it) => acc + it.quantity, 0);
-      return updated.map((item) => {
-        const tierRate = getTierUnitRate(item.productId, item.sizeLabel, newTotalCartPcs, item.unitPrice);
-        return {
-          ...item,
-          unitPrice: tierRate,
-          totalPrice: Math.round(tierRate * item.quantity * 100) / 100
-        };
-      });
+      const calculated = calculateCombinedCartPricing(updated, pricingConfigs);
+      return calculated.items.map((it) => ({
+        id: it.id,
+        productId: it.productId,
+        productName: it.productName,
+        productImage: it.productImage || '',
+        sizeLabel: it.sizeLabel,
+        dimensions: it.dimensions || '',
+        quantity: it.quantity,
+        unitPrice: it.effectiveUnitPrice,
+        originalUnitPrice: it.regularUnitPrice,
+        totalPrice: it.lineTotal
+      }));
     });
   };
 
   const handleRemoveCartItem = (id: string) => {
     setCart((prev) => {
       const filtered = prev.filter((it) => it.id !== id);
-      const newTotalCartPcs = filtered.reduce((acc, it) => acc + it.quantity, 0);
-      return filtered.map((item) => {
-        const tierRate = getTierUnitRate(item.productId, item.sizeLabel, newTotalCartPcs, item.unitPrice);
-        return {
-          ...item,
-          unitPrice: tierRate,
-          totalPrice: Math.round(tierRate * item.quantity * 100) / 100
-        };
-      });
+      const calculated = calculateCombinedCartPricing(filtered, pricingConfigs);
+      return calculated.items.map((it) => ({
+        id: it.id,
+        productId: it.productId,
+        productName: it.productName,
+        productImage: it.productImage || '',
+        sizeLabel: it.sizeLabel,
+        dimensions: it.dimensions || '',
+        quantity: it.quantity,
+        unitPrice: it.effectiveUnitPrice,
+        originalUnitPrice: it.regularUnitPrice,
+        totalPrice: it.lineTotal
+      }));
     });
   };
 
@@ -702,26 +815,27 @@ export default function KriaTechPortfolioPage({ onBackToStore }: Props) {
     setCart([]);
   };
 
-  // Cart summary calculations
-  const totalCartFrames = cart.reduce((acc, it) => acc + it.quantity, 0);
-  const totalCartPrice = cart.reduce((acc, it) => acc + it.totalPrice, 0);
-  const totalCartOriginal = cart.reduce((acc, it) => acc + (it.originalUnitPrice * it.quantity), 0);
-  const totalCartSavings = totalCartOriginal - totalCartPrice;
+  // Cart summary calculations synced with authoritative engine
+  const totalCartFrames = cartPricingResult.totalCartQty;
+  const totalCartPrice = cartPricingResult.totalAmount;
+  const totalCartOriginal = cartPricingResult.totalRegularAmount;
+  const totalCartSavings = cartPricingResult.totalSavings;
 
   // Build Comprehensive Multi-Product WhatsApp Order Message
   const buildMultiCartWhatsAppMessage = () => {
     if (cart.length === 0) return '';
     let msg = `Hi KRIA Tech! I would like to place an order for multiple customized acrylic products:\n\n`;
     msg += `🛒 *ORDER SUMMARY (${cart.length} item types · ${totalCartFrames} total pcs):*\n`;
+    msg += `🏆 *UNLOCKED WHOLESALE TIER: ${cartPricingResult.milestone.currentTierLabel}*\n`;
     msg += `─────────────────────────\n`;
 
-    cart.forEach((it, idx) => {
-      const formattedUnitPrice = it.unitPrice % 1 === 0 ? it.unitPrice.toString() : it.unitPrice.toFixed(2);
-      const formattedTotalPrice = it.totalPrice.toLocaleString('en-IN', { minimumFractionDigits: it.totalPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+    cartPricingResult.items.forEach((it, idx) => {
+      const formattedUnitPrice = it.effectiveUnitPrice % 1 === 0 ? it.effectiveUnitPrice.toString() : it.effectiveUnitPrice.toFixed(2);
+      const formattedTotalPrice = it.lineTotal.toLocaleString('en-IN', { minimumFractionDigits: it.lineTotal % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
       msg += `${idx + 1}. *${it.productName}*\n`;
-      msg += `   • Size: ${it.sizeLabel} (${it.dimensions})\n`;
+      msg += `   • Size: ${it.sizeLabel} (${it.dimensions || ''})\n`;
       msg += `   • Quantity: ${it.quantity} pcs\n`;
-      msg += `   • Price: ₹${formattedUnitPrice}/pc (₹${formattedTotalPrice})\n\n`;
+      msg += `   • Wholesale Price: ₹${formattedUnitPrice}/pc (₹${formattedTotalPrice})\n\n`;
     });
 
     msg += `─────────────────────────\n`;
@@ -1170,6 +1284,17 @@ Please confirm bulk order placement and dispatch timeline.`;
                   </span>
                 </div>
               </div>
+
+              {/* 4. Combined Cart Wholesale Price Table */}
+              {activeProduct && currentSize && (
+                <WholesalePriceTable
+                  productId={activeProduct.id}
+                  productName={activeProduct.name}
+                  sizeLabel={currentSize.label}
+                  totalCartQty={cartPricingResult.totalEligibleQty}
+                  configs={pricingConfigs}
+                />
+              )}
 
               {/* Guarantees & Features */}
               <div className="space-y-2.5 pt-1 text-xs text-[#635547]">
@@ -1933,6 +2058,17 @@ Please confirm bulk order placement and dispatch timeline.`;
                     Store
                   </a>
                 </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setIsAdminModalOpen(true)}
+                    className="hover:text-[#8C6436] transition-colors cursor-pointer text-left flex items-center gap-1.5 text-stone-500 hover:text-stone-800"
+                    title="Configure Wholesale Tier Rates (Ctrl+Shift+W)"
+                  >
+                    <Settings className="h-3.5 w-3.5 text-[#8C6436]" />
+                    <span>Wholesale Admin</span>
+                  </button>
+                </li>
               </ul>
             </div>
 
@@ -2067,9 +2203,54 @@ Please confirm bulk order placement and dispatch timeline.`;
               </div>
             </div>
 
+            {/* Wholesale Rule Banner (Section 5 Requirement) */}
+            <div className="py-2.5 px-4 bg-gradient-to-r from-[#FAF1E3] via-amber-50 to-[#FAF1E3] border-b border-[#E8DACB] text-center">
+              <p className="text-[11px] font-mono font-bold text-[#761618] uppercase tracking-wider">
+                Mix Any Models. Combine Your Quantities. Unlock Better Wholesale Prices.
+              </p>
+            </div>
+
+            {/* Dynamic Combined Cart Tier Progress Bar */}
+            {cartPricingResult.totalCartQty > 0 && (
+              <div className="p-4 bg-white border-b border-[#EADECE] space-y-2.5 font-mono text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                    <span className="text-[#524434] font-semibold">Combined Eligible Qty:</span>
+                    <strong className="text-[#1E1B18]">{cartPricingResult.totalEligibleQty} pcs</strong>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    {cartPricingResult.milestone.currentTierLabel}
+                  </span>
+                </div>
+
+                {/* Visual Progress Bar */}
+                <div className="w-full bg-[#EFE8DE] h-2.5 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="bg-gradient-to-r from-[#8C6436] to-emerald-600 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${cartPricingResult.milestone.progressPercentage}%` }}
+                  />
+                </div>
+
+                {/* Milestone Details */}
+                <div className="flex items-center justify-between text-[10px] text-[#7A6B5C]">
+                  {cartPricingResult.milestone.nextTierMinQty ? (
+                    <span>
+                      Add <strong className="text-[#8C6436] font-bold">{cartPricingResult.milestone.piecesNeededForNextTier} more pcs</strong> to unlock <strong className="text-emerald-700">{cartPricingResult.milestone.nextTierLabel}</strong>!
+                    </span>
+                  ) : (
+                    <span className="text-emerald-700 font-bold">
+                      🎉 Highest Wholesale Tier Unlocked (2,000+ pcs)!
+                    </span>
+                  )}
+                  <span className="font-bold text-[#1E1B18]">{cartPricingResult.milestone.progressPercentage}%</span>
+                </div>
+              </div>
+            )}
+
             {/* Cart Items List */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
-              {cart.length === 0 ? (
+              {cartPricingResult.items.length === 0 ? (
                 <div className="py-16 text-center space-y-3">
                   <div className="h-16 w-16 rounded-full bg-[#FAF0E2] border border-[#E7D6C0] flex items-center justify-center mx-auto text-[#8C6436]">
                     <ShoppingCart className="h-7 w-7 opacity-60" />
@@ -2091,7 +2272,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                   </button>
                 </div>
               ) : (
-                cart.map((item) => (
+                cartPricingResult.items.map((item) => (
                   <div
                     key={item.id}
                     className="p-3.5 rounded-2xl bg-white border border-[#EADBCC] shadow-xs flex items-center justify-between gap-3 group"
@@ -2099,7 +2280,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-14 w-14 rounded-xl bg-[#FAF5EE] border border-[#EADBCC] flex items-center justify-center p-1 shrink-0 overflow-hidden">
                         <img
-                          src={item.productImage}
+                          src={item.productImage || '/images/kria_logo_official.png'}
                           alt={item.productName}
                           className="w-full h-full object-contain"
                         />
@@ -2111,16 +2292,29 @@ Please confirm bulk order placement and dispatch timeline.`;
                         <p className="text-[11px] font-mono text-[#8C6436] font-medium mt-0.5">
                           {item.sizeLabel}
                         </p>
-                        <p className="text-[10px] font-mono text-[#8A7969]">
-                          ₹{item.unitPrice % 1 === 0 ? item.unitPrice : item.unitPrice.toFixed(2)}/pc × {item.quantity} pcs
-                        </p>
+                        <div className="flex items-center gap-1.5 text-[10px] font-mono text-[#8A7969]">
+                          <span className="text-[#1E1B18] font-bold">
+                            ₹{item.effectiveUnitPrice % 1 === 0 ? item.effectiveUnitPrice : item.effectiveUnitPrice.toFixed(2)}/pc
+                          </span>
+                          {item.regularUnitPrice > item.effectiveUnitPrice && (
+                            <span className="line-through text-stone-400">
+                              ₹{item.regularUnitPrice}
+                            </span>
+                          )}
+                          <span>× {item.quantity} pcs</span>
+                        </div>
                       </div>
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <span className="font-serif text-sm font-bold text-[#1E1B18]">
-                        ₹{item.totalPrice.toLocaleString('en-IN', { minimumFractionDigits: item.totalPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}
+                        ₹{item.lineTotal.toLocaleString('en-IN', { minimumFractionDigits: item.lineTotal % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}
                       </span>
+                      {item.lineSavings > 0 && (
+                        <span className="text-[10px] font-mono text-emerald-700 font-semibold">
+                          Save ₹{item.lineSavings.toLocaleString('en-IN')}
+                        </span>
+                      )}
 
                       {/* Quantity Stepper */}
                       <div className="flex items-center gap-1 bg-[#FAF6F0] border border-[#E7D7C4] rounded-lg p-0.5">
@@ -2160,29 +2354,35 @@ Please confirm bulk order placement and dispatch timeline.`;
             </div>
 
             {/* Drawer Footer with Structured WhatsApp Checkout CTA */}
-            {cart.length > 0 && (
+            {cartPricingResult.items.length > 0 && (
               <div className="p-4 sm:p-5 bg-white border-t border-[#EADECE] space-y-3">
                 <div className="space-y-1.5 font-mono text-xs">
                   <div className="flex justify-between items-center text-[#6E6152]">
                     <span>Total Items:</span>
-                    <strong className="text-[#1E1B18]">{cart.length} types · {totalCartFrames} total pcs</strong>
+                    <strong className="text-[#1E1B18]">{cart.length} types · {cartPricingResult.totalCartQty} total pcs</strong>
                   </div>
-                  {totalCartSavings > 0 && (
+                  <div className="flex justify-between items-center text-[#6E6152]">
+                    <span>Current Wholesale Tier:</span>
+                    <strong className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded text-[10px]">
+                      {cartPricingResult.milestone.currentTierLabel}
+                    </strong>
+                  </div>
+                  {cartPricingResult.totalSavings > 0 && (
                     <div className="flex justify-between items-center text-emerald-800 bg-emerald-50/70 p-2 rounded-lg border border-emerald-200">
-                      <span>Total Savings:</span>
-                      <strong className="font-bold">₹{totalCartSavings.toLocaleString('en-IN', { minimumFractionDigits: totalCartSavings % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
+                      <span>Total Factory Savings:</span>
+                      <strong className="font-bold">₹{cartPricingResult.totalSavings.toLocaleString('en-IN', { minimumFractionDigits: cartPricingResult.totalSavings % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</strong>
                     </div>
                   )}
                   <div className="flex justify-between items-baseline pt-1 border-t border-[#EFE5D9]">
                     <span className="font-bold text-[#1E1B18]">Grand Total:</span>
                     <span className="font-serif text-2xl font-bold text-[#1E1B18]">
-                      ₹{totalCartPrice.toLocaleString('en-IN', { minimumFractionDigits: totalCartPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}
+                      ₹{cartPricingResult.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: cartPricingResult.totalAmount % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>
 
                 {/* Submit All to WhatsApp — Unlocked when min quantity is 50 pcs */}
-                {totalCartFrames >= 50 ? (
+                {cartPricingResult.totalCartQty >= 50 ? (
                   <a
                     href={waLink(buildMultiCartWhatsAppMessage())}
                     target="_blank"
@@ -2190,7 +2390,7 @@ Please confirm bulk order placement and dispatch timeline.`;
                     className="w-full inline-flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#1EBE5D] text-white text-xs sm:text-sm font-bold uppercase tracking-[0.14em] shadow-[0_6px_22px_rgba(37,211,102,0.35)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
                   >
                     <MessageCircle className="h-4.5 w-4.5" />
-                    <span>Order All on WhatsApp ({totalCartFrames} pcs)</span>
+                    <span>Order All on WhatsApp ({cartPricingResult.totalCartQty} pcs)</span>
                   </a>
                 ) : (
                   <div className="space-y-2">
@@ -2200,10 +2400,10 @@ Please confirm bulk order placement and dispatch timeline.`;
                       className="w-full inline-flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl bg-stone-200 text-stone-500 text-xs sm:text-sm font-bold uppercase tracking-[0.14em] cursor-not-allowed border border-stone-300"
                     >
                       <MessageCircle className="h-4.5 w-4.5 text-stone-400" />
-                      <span>Order All on WhatsApp ({totalCartFrames} pcs)</span>
+                      <span>Order All on WhatsApp ({cartPricingResult.totalCartQty} pcs)</span>
                     </button>
                     <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-center text-xs font-mono text-amber-800">
-                      ⚠️ Minimum wholesale order is <strong>50 pcs</strong>. Add <strong>{50 - totalCartFrames} more pcs</strong> to unlock WhatsApp ordering.
+                      ⚠️ Minimum wholesale order is <strong>50 pcs</strong>. Add <strong>{50 - cartPricingResult.totalCartQty} more pcs</strong> to unlock WhatsApp ordering.
                     </div>
                   </div>
                 )}
@@ -2217,6 +2417,14 @@ Please confirm bulk order placement and dispatch timeline.`;
           </div>
         </div>
       )}
+
+      {/* ─── WHOLESALE PRICING ADMIN MANAGEMENT MODAL ───────────── */}
+      <WholesalePricingAdminModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        configs={pricingConfigs}
+        onSaveConfig={handleSavePricingConfig}
+      />
 
     </div>
   );
